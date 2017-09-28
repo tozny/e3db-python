@@ -17,13 +17,18 @@ class Client:
 
     def do_test(self):
         import requests
-        r = requests.get(self.get_url('v1','storage','fobar'), auth=self.e3db_auth)
+        r = requests.get(self.get_url('v1','storage','stuff'), auth=self.e3db_auth)
         print r.status_code
 
+    @classmethod
     def register(self, registration_token, client_name, public_key, private_key=None, backup=False):
         # self.api_url
         pass
 
+    @classmethod
+    def generate_keypair(self):
+        public_key, private_key = Crypto.generate_keypair()
+        return Crypto.encode_public_key(public_key), Crypto.encode_private_key(private_key)
 
     def client_info(self, client_id):
         pass

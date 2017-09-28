@@ -1,5 +1,5 @@
 import e3db
-from e3db.client import E3DBAuth
+from e3db.auth import E3DBAuth
 import requests
 
 conf = e3db.Config()

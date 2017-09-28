@@ -4,7 +4,8 @@ from requests.auth import HTTPBasicAuth
 import datetime
 
 class E3DBAuth(AuthBase):
-    def __init__(self, api_key_id, api_secret, api_url="https://api.e3db.com"):
+    DEFAULT_API_URL = "https://api.e3db.com"
+    def __init__(self, api_key_id, api_secret, api_url=DEFAULT_API_URL):
         self.api_key_id = api_key_id
         self.api_secret = api_secret
         self.api_url = api_url

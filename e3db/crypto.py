@@ -1,22 +1,22 @@
 import base64
-import nacl.public
 import nacl.utils
 import nacl.secret
+import nacl.public
 
 class Crypto:
     def __init__(self):
         pass
-    def decode_public_key(key):
+    def decode_public_key(self, key):
         return nacl.public.PublicKey(self.base64decode(key))
-    def encode_public_key(key):
+    def encode_public_key(self, key):
         return self.base64encode(str(key))
-    def decode_private_key(key):
+    def decode_private_key(self, key):
         return nacl.public.PrivateKey(self.base64decode(key))
-    def encode_private_key(key):
+    def encode_private_key(self, key):
         return self.base64encode(str(key))
-    def secret_box_random_key():
+    def secret_box_random_key(self):
         return nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
-    def secret_box_random_nonce():
+    def secret_box_random_nonce(self):
         return nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
     def base64decode(self, s):
         # From https://stackoverflow.com/a/9956217
@@ -26,3 +26,7 @@ class Crypto:
     def base64encode(self, s):
         # remove "=" padding for general SDK compatibility
         return base64.urlsafe_b64encode(s).strip("=")
+    def generate_keypair(self):
+        # return public, private
+        key = nacl.public.PrivateKey.generate()
+        return key, key.public_key

@@ -17,53 +17,53 @@ class Client:
 
     def do_test(self):
         import requests
-        r = requests.get(self.get_url('v1','auth','storage'), auth=self.e3db_auth)
+        r = requests.get(self.get_url('v1','storage','fobar'), auth=self.e3db_auth)
         print r.status_code
 
-    def register(registration_token, client_name, public_key, private_key=None, backup=False):
+    def register(self, registration_token, client_name, public_key, private_key=None, backup=False):
         # self.api_url
         pass
 
 
-    def client_info(client_id):
+    def client_info(self, client_id):
         pass
 
-    def client_key(client_id):
+    def client_key(self, client_id):
         pass
 
-    def read_raw(record_id):
+    def read_raw(self, record_id):
         pass
 
-    def read(record_id):
+    def read(self, record_id):
         pass
 
-    def write(type, data, plain):
+    def write(self, type, data, plain):
         pass
 
-    def update(record):
+    def update(self, record):
         pass
 
-    def delete(record_id):
+    def delete(self, record_id):
         pass
 
-    def backup(client_id, registration_token):
+    def backup(self, client_id, registration_token):
         pass
 
-    def query(data=True, raw=False, writer=None, record=None, type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
+    def query(self, data=True, raw=False, writer=None, record=None, type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
         pass
 
-    def share(type, reader_id):
+    def share(self, type, reader_id):
         pass
 
-    def revoke(type, reader_id):
+    def revoke(self, type, reader_id):
         pass
 
-    def outgoing_sharing():
+    def outgoing_sharing(self):
         pass
 
-    def incoming_sharing():
+    def incoming_sharing(self):
         pass
 
-    def get_url(*args):
+    def get_url(self, *args):
         # list of paths that we make a nice url from
         return self.api_url + '/' + '/'.join(args)

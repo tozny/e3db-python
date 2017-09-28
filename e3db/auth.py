@@ -19,10 +19,13 @@ class E3DBAuth(AuthBase):
         if (self.token == None) or (datetime.datetime.utcnow() > self.expires_at):
             grant = {'grant_type': 'client_credentials'}
             refresh_request = requests.post(url="{0}/v1/auth/token".format(self.api_url), auth=HTTPBasicAuth(self.api_key_id, self.api_secret), data=grant)
-            refresh_json = refresh_request.json()
-            self.token = refresh_json['access_token']
-            expire_time = refresh_json['expires_at']
-            # now save that as a datetime object so we can do later comparison
-            self.expires_at = datetime.datetime.strptime(expire_time, "%Y-%m-%dT%H:%M:%S.%fZ" )
+            # check if status code was 200 OK
+            if refresh_request.status_code == 200:
+                refresh_json = refresh_request.json()
+                self.token = refresh_json['access_token']
+                expire_time = refresh_json['expires_at']
+                # now save that as a datetime object so we can do later comparison
+                self.expires_at = datetime.datetime.strptime(expire_time, "%Y-%m-%dT%H:%M:%S.%fZ" )
+            # TODO throw error if auth failed
         r.headers['Authorization'] = 'Bearer ' + self.token
         return r

@@ -1,5 +1,6 @@
 import e3db
 import os
+import binascii
 
 # A registration token is required to set up a client. In this situation,
 # we assume an environment variable called REGISTRATION_TOKEN is set
@@ -11,3 +12,11 @@ public_key, private_key = e3db.Client.generate_keypair()
 
 print "Public Key: {0}".format(public_key)
 print "Private Key: {0}".format(private_key)
+
+
+# Clients must be registered with a name unique to your account to help
+# differentiate between different sets of credentials in the Admin Console.
+# In this example, the name is set at random
+client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+
+print "Client Name: {0}".format(client_name)

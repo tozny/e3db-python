@@ -23,3 +23,20 @@ client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
 print "Client Name: {0}".format(client_name)
 
 client_info = e3db.Client.register(token, client_name, wrapped_key, api_url="https://dev.e3db.com")
+
+print "Client ID: {0}".format(client_info['client_id'])
+print "API Key ID: {0}".format(client_info['api_key_id'])
+print "API Secret: {0}".format(client_info['api_secret'])
+
+config = e3db.Config('1',
+    client_info['client_id'], \
+    client_info['api_key_id'], \
+    client_info['api_secret'], \
+    '', \
+    public_key, \
+    private_key, \
+    )
+
+client = e3db.Client(config())
+
+client.debug()

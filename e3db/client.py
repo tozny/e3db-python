@@ -24,10 +24,8 @@ class Client:
         self.private_key = config['private_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
 
-    def do_test(self):
-        import requests
-        r = requests.get(self.get_url('v1','storage','stuff'), auth=self.e3db_auth)
-        print r.status_code
+    def debug(self):
+        import pdb; pdb.set_trace()
 
     def __decrypt_record(self, record):
         pass
@@ -97,7 +95,25 @@ class Client:
         pass
 
     def backup(self, client_id, registration_token):
-        pass
+        credentials = {
+            'version': '1',
+            'client_id': self.client_id,
+            'api_key_id': self.api_key_id,
+            'api_secret': self.api_secret,
+            'client_email': self.client_email,
+            'public_key': self.public_key,
+            'private_key': self.private_key,
+            'api_url': self.api_url
+        }
+        print credentials
+
+        self.write('tozny.key_backup', credentials, {'client': self.client_id})
+        # share this record type with the backup client
+        self.share('tozny.key_backup', client_id)
+
+        url = self.get_url('v1', 'account', 'backup', registration_token, self.client_id)
+        print url
+        requests.post(url=url, auth=self.e3db_auth)
 
     def query(self, data=True, raw=False, writer=None, record=None, type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
         pass

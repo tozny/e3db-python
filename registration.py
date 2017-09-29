@@ -5,6 +5,7 @@ import binascii
 # A registration token is required to set up a client. In this situation,
 # we assume an environment variable called REGISTRATION_TOKEN is set
 token = os.environ["REGISTRATION_TOKEN"]
+api_url = os.environ["DEFAULT_API_URL"]
 
 print "Using Registration Token: {0}".format(token)
 
@@ -23,7 +24,18 @@ client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
 
 print "Client Name: {0}".format(client_name)
 
-client_info = e3db.Client.register(token, client_name, wrapped_key, api_url="https://dev.e3db.com")
+#client_info = e3db.Client.register(token, client_name, wrapped_key, api_url=api_url)
+
+# Optionally, you can automatically back up the credentials of the newly-created
+# client to your InnoVault account (accessible via https://console.tozny.com) by
+# passing your private key and a backup flag when registering. The private key is
+# not sent anywhere, but is used by the newly-created client to sign an encrypted
+# copy of its credentials that is itself stored in e3db for later use.
+#
+# Client credentials are not backed up by default.
+
+client_info = e3db.Client.register(token, client_name, wrapped_key, private_key=private_key, backup=True, api_url=api_url)
+
 
 print "Client ID: {0}".format(client_info['client_id'])
 print "API Key ID: {0}".format(client_info['api_key_id'])
@@ -36,7 +48,7 @@ config = e3db.Config('1',
     '', \
     public_key, \
     private_key, \
-    api_url="https://dev.e3db.com" \
+    api_url=api_url \
     )
 
 client = e3db.Client(config())

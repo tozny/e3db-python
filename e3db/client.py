@@ -1,14 +1,50 @@
 from auth import E3DBAuth
 from crypto import Crypto
+from config import Config
 import requests
 
 class PublicKey():
     def __init__(self, key_type, public_key):
-        self.key_type = key_type
-        self.public_key = public_key
+        self.key_type = str(key_type)
+        self.public_key = str(public_key)
 
-    def jsonSerialize(self):
+    def json_serialize(self):
         return {self.key_type: self.public_key}
+
+    def get_pubkey(self):
+        return self.public_key
+
+class Record():
+    def __init__(self, meta, data):
+        self.meta = meta
+        self.data = data
+    def json_serialize(self):
+        return {
+            'meta': self.meta,
+            'data': self.data
+        }
+
+class Meta():
+    def __init__(self, record_id, writer_id, user_id, record_type, plain, created, last_modified, version):
+        self.record_id = record_id
+        self.writer_id = writer_id
+        self.user_id = user_id
+        self.record_type = record_type
+        self.plain = plain
+        self.created = created
+        self.last_modified = last_modified
+        self.version = version
+    def json_serialize(self):
+        return {
+            'record_id': self.record_id,
+            'writer_id': self.writer_id,
+            'user_id': self.user_id,
+            'record_type': self.record_type,
+            'plain': self.plain,
+            'created': self.created,
+            'last_modified': self.last_modified,
+            'version': self.version
+        }
 
 class Client:
     DEFAULT_QUERY_COUNT = 100
@@ -57,16 +93,33 @@ class Client:
             'token': registration_token,
             'client': {
                 'name': client_name,
-                'public_key': wrapped_public_key.jsonSerialize()
+                'public_key': wrapped_public_key.json_serialize()
             }
         }
         response = requests.post(url=url, json=payload)
+        client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
 
-        if backup == True and private_key == None:
-            raise RuntimeError, "Cannot back up client credentials without a private key!"
+        if backup == True:
+            if private_key == None:
+                raise RuntimeError, "Cannot back up client credentials without a private key!"
+            else:
+                config = Config('1',
+                    client_info['client_id'], \
+                    client_info['api_key_id'], \
+                    client_info['api_secret'], \
+                    '', \
+                    wrapped_public_key, \
+                    private_key, \
+                    api_url=api_url \
+                    )
+
+                client = Client(config())
+
+                client.backup(backup_client_id, registration_token)
+
         #if response.status_code != 201
-        return response.json()
+        return client_info
 
     @classmethod
     def generate_keypair(self):
@@ -101,18 +154,16 @@ class Client:
             'api_key_id': self.api_key_id,
             'api_secret': self.api_secret,
             'client_email': self.client_email,
-            'public_key': self.public_key,
+            'public_key': self.public_key.get_pubkey(),
             'private_key': self.private_key,
             'api_url': self.api_url
         }
-        print credentials
 
         self.write('tozny.key_backup', credentials, {'client': self.client_id})
         # share this record type with the backup client
         self.share('tozny.key_backup', client_id)
 
         url = self.get_url('v1', 'account', 'backup', registration_token, self.client_id)
-        print url
         requests.post(url=url, auth=self.e3db_auth)
 
     def query(self, data=True, raw=False, writer=None, record=None, type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):

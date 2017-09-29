@@ -23,17 +23,37 @@ class Client:
         self.public_key = config['public_key']
         self.private_key = config['private_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
-        self.crypto = Crypto()
 
     def do_test(self):
         import requests
         r = requests.get(self.get_url('v1','storage','stuff'), auth=self.e3db_auth)
         print r.status_code
 
+    def __decrypt_record(self, record):
+        pass
+
+    def __decrypt_record_with_key(self, record):
+        pass
+
+    def __encrypt_record(self, plaintext_record):
+        pass
+
+    def __decrypt_eak(self, json):
+        pass
+
+    def __get_access_key(self, writer_id, user_id, reader_id, type):
+        pass
+
+    def __put_access_key(self, writer_id, user_id, reader_id, type, ak):
+        pass
+
+    def __delete_access_key(self, writer_id, user_id, reader_id, type):
+        pass
+
+
     @classmethod
     def register(self, registration_token, client_name, wrapped_public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
-        #{name: "test", public_key: {curve25519: "ek8UuoQlaTBt-7hQshl3JaT9C0Qq6JcISnt7Zzf1OzQ"}}
-        #TODO support backup
+        # TODO support backup
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
         payload = {
             'token': registration_token,

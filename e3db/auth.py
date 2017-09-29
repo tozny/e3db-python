@@ -27,5 +27,5 @@ class E3DBAuth(AuthBase):
                 # now save that as a datetime object so we can do later comparison
                 self.expires_at = datetime.datetime.strptime(expire_time, "%Y-%m-%dT%H:%M:%S.%fZ" )
             # TODO throw error if auth failed
-        r.headers['Authorization'] = 'Bearer ' + self.token
+        r.headers['Authorization'] = 'Bearer ' + str(self.token)
         return r

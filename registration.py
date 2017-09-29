@@ -13,6 +13,7 @@ public_key, private_key = e3db.Client.generate_keypair()
 print "Public Key: {0}".format(public_key)
 print "Private Key: {0}".format(private_key)
 
+# The e3db server keeps track of the name of the curve used with public keys
 wrapped_key = e3db.PublicKey('curve25519', public_key)
 
 # Clients must be registered with a name unique to your account to help
@@ -35,8 +36,9 @@ config = e3db.Config('1',
     '', \
     public_key, \
     private_key, \
+    api_url="https://dev.e3db.com" \
     )
 
 client = e3db.Client(config())
 
-client.debug()
+# now we have a working client!

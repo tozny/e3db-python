@@ -1,8 +1,18 @@
 from auth import E3DBAuth
 from crypto import Crypto
+import requests
+
+class PublicKey():
+    def __init__(self, key_type, public_key):
+        self.key_type = key_type
+        self.public_key = public_key
+
+    def jsonSerialize(self):
+        return {self.key_type: self.public_key}
 
 class Client:
     DEFAULT_QUERY_COUNT = 100
+    DEFAULT_API_URL = "https://api.e3db.com"
 
     def __init__(self, config):
         self.api_url = config['api_url']
@@ -21,9 +31,24 @@ class Client:
         print r.status_code
 
     @classmethod
-    def register(self, registration_token, client_name, public_key, private_key=None, backup=False):
-        # self.api_url
-        pass
+    def register(self, registration_token, client_name, wrapped_public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
+        #{name: "test", public_key: {curve25519: "ek8UuoQlaTBt-7hQshl3JaT9C0Qq6JcISnt7Zzf1OzQ"}}
+        #TODO support backup
+        url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
+        payload = {
+            'token': registration_token,
+            'client': {
+                'name': client_name,
+                'public_key': wrapped_public_key.jsonSerialize()
+            }
+        }
+        response = requests.post(url=url, json=payload)
+        backup_client_id = response.headers['x-backup-client']
+
+        if backup == True and private_key == None:
+            raise RuntimeError, "Cannot back up client credentials without a private key!"
+        #if response.status_code != 201
+        return response.json()
 
     @classmethod
     def generate_keypair(self):

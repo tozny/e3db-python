@@ -1,3 +1,3 @@
 from config import Config
-from client import Client
+from client import Client, PublicKey
 from crypto import Crypto

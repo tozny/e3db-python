@@ -15,7 +15,7 @@ class PublicKey():
         return self.public_key
 
 class Record():
-    def __init__(self, meta, data):
+    def __init__(self, meta=None, data=None):
         self.meta = meta
         self.data = data
     def json_serialize(self):
@@ -25,7 +25,9 @@ class Record():
         }
 
 class Meta():
-    def __init__(self, record_id, writer_id, user_id, record_type, plain, created, last_modified, version):
+    def __init__(self, record_id=None, writer_id=None, user_id=None, \
+        record_type=None, plain=None, created=None, last_modified=None, \
+        version=None):
         self.record_id = record_id
         self.writer_id = writer_id
         self.user_id = user_id
@@ -73,7 +75,13 @@ class Client:
         pass
 
     def __decrypt_eak(self, json):
-        pass
+        k = json['authorizer_public_key']['curve25519']
+        authorizer_pubkey = Crypto.decode_public_key(k)
+        fields = json['eak'].split('.')
+        ciphertext = Crypto.base64decode(fields[0])
+        nonce = Crypto.base64decode(fields[1])
+        box = Crypto.box(authorizer_pubkey, Crypto.decode_private_key(self.private_key))
+        return box.decrypt(none, ciphertext)
 
     def __get_access_key(self, writer_id, user_id, reader_id, type):
         pass
@@ -139,7 +147,11 @@ class Client:
         pass
 
     def write(self, type, data, plain):
-        pass
+        url = self.get_url("v1", "storage", "records")
+        meta = Meta(writer_id=self.client_id, user_id=self.client_id, type=type, plain=plain)
+        record = Record(meta, data)
+        encrypted_record = encrypt_record(record)
+        #resp = requests.post(url=url, json=encrypted_record., auth=self.e3db_auth)
 
     def update(self, record):
         pass

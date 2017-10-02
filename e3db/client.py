@@ -83,15 +83,27 @@ class Client:
         box = Crypto.box(authorizer_pubkey, Crypto.decode_private_key(self.private_key))
         return box.decrypt(none, ciphertext)
 
-    def __get_access_key(self, writer_id, user_id, reader_id, type):
-        pass
+    def __get_access_key(self, writer_id, user_id, reader_id, record_type):
+        url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        response = requests.get(url=url, auth=self.e3db_auth)
+        json = response.json()
+        # return the ak
+        return self.__decrypt_eak(json)
 
-    def __put_access_key(self, writer_id, user_id, reader_id, type, ak):
-        pass
+    def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
+        reader_key = self.client_key(reader_id)
+        none = Crypto.secret_box_random_nonce()
+        eak = Crypto.box(reader_key, self.private_key).encrypt(nonce, ak)
+        encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
+        url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        json = {
+            'eak': encoded_eak
+        }
+        response = requests.put(url=url, json=json, auth=self.e3db_auth)
 
-    def __delete_access_key(self, writer_id, user_id, reader_id, type):
-        pass
-
+    def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
+        url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        requests.delete(url=url, auth=self.e3db_auth)
 
     @classmethod
     def register(self, registration_token, client_name, wrapped_public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):

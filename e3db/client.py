@@ -22,12 +22,12 @@ class Record():
 
     def json_serialize(self):
         return {
-            'meta': self.meta,
+            'meta': self.meta.json_serialize(),
             'data': self.data
         }
 
     def update(self, meta, data):
-        self.meta = meta
+        self.meta.update(meta)
         self.data = data
 
 class Meta():
@@ -53,17 +53,15 @@ class Meta():
             'last_modified': self.last_modified,
             'version': self.version
         }
-    def update(record_id=None, writer_id=None, user_id=None, \
-        record_type=None, plain=None, created=None, last_modified=None, \
-        version=None):
-        self.record_id = record_id
-        self.writer_id = writer_id
-        self.user_id = user_id
-        self.record_type = record_type
-        self.plain = plain
-        self.created = created
-        self.last_modified = last_modified
-        self.version = version
+    def update(self, json):
+        self.record_id = json['record_id']
+        self.writer_id = json['writer_id']
+        self.user_id = json['user_id']
+        self.record_type = json['type']
+        self.plain = json['plain']
+        self.created = json['created']
+        self.last_modified = json['last_modified']
+        self.version = json['version']
 
 class ClientInfo():
     def __init__(self, client_id, public_key, validated):
@@ -96,7 +94,7 @@ class Client:
         import pdb; pdb.set_trace()
 
     def __decrypt_record(self, record):
-        meta = record.json_serialize()['meta'].json_serialize()
+        meta = record.json_serialize()['meta']
         writer_id = meta['writer_id']
         user_id = meta['user_id']
         record_type = meta['type']
@@ -125,7 +123,7 @@ class Client:
     def __encrypt_record(self, plaintext_record):
         record = plaintext_record.json_serialize()
 
-        meta = record['meta'].json_serialize()
+        meta = record['meta']
         writer_id = meta['writer_id']
         user_id = meta['user_id']
         record_type = meta['type']
@@ -137,9 +135,7 @@ class Client:
             ak = Crypto.secret_box_random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
-        print "encrypt record:"
         for key, value in record['data'].iteritems():
-            print key,value
             dk = Crypto.secret_box_random_key()
             efN = Crypto.secret_box_random_nonce()
             ef = Crypto.secret_box(dk).encrypt(str(value), efN)
@@ -265,7 +261,7 @@ class Client:
         meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
-        #resp = requests.post(url=url, json=encrypted_record., auth=self.e3db_auth)
+        resp = requests.post(url=url, json=encrypted_record.json_serialize(), auth=self.e3db_auth)
 
     def update(self, record):
         pass
@@ -296,6 +292,7 @@ class Client:
         pass
 
     def share(self, type, reader_id):
+
         pass
 
     def revoke(self, type, reader_id):

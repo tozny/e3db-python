@@ -5,15 +5,15 @@ import nacl.public
 
 class Crypto:
     @classmethod
-    def box(public_key, private_key):
+    def box(self, public_key, private_key):
         return nacl.public.Box(public_key, private_key)
 
     @classmethod
-    def secret_box(key):
+    def secret_box(self, key):
         return nacl.secret.SecretBox(key)
 
     @classmethod
-    def decode_public_key(key):
+    def decode_public_key(self, key):
         return nacl.public.PublicKey(Crypto.base64decode(key))
 
     @classmethod
@@ -29,15 +29,15 @@ class Crypto:
         return Crypto.base64encode(str(key))
 
     @classmethod
-    def secret_box_random_key():
+    def secret_box_random_key(self):
         return nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
 
     @classmethod
-    def secret_box_random_nonce():
+    def secret_box_random_nonce(self):
         return nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
 
     @classmethod
-    def base64decode(s):
+    def base64decode(self, s):
         # From https://stackoverflow.com/a/9956217
         # Python base64 implementation requires padding, which may not be present in the
         # encoded public/private keypair

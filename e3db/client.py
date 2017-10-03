@@ -2,6 +2,7 @@ from auth import E3DBAuth
 from crypto import Crypto
 from config import Config
 import requests
+import urllib
 
 class PublicKey():
     def __init__(self, key_type, public_key):
@@ -18,11 +19,16 @@ class Record():
     def __init__(self, meta=None, data=None):
         self.meta = meta
         self.data = data
+
     def json_serialize(self):
         return {
             'meta': self.meta,
             'data': self.data
         }
+
+    def update(self, meta, data):
+        self.meta = meta
+        self.data = data
 
 class Meta():
     def __init__(self, record_id=None, writer_id=None, user_id=None, \
@@ -41,12 +47,24 @@ class Meta():
             'record_id': self.record_id,
             'writer_id': self.writer_id,
             'user_id': self.user_id,
-            'record_type': self.record_type,
+            'type': self.record_type,
             'plain': self.plain,
             'created': self.created,
             'last_modified': self.last_modified,
             'version': self.version
         }
+    def update(record_id=None, writer_id=None, user_id=None, \
+        record_type=None, plain=None, created=None, last_modified=None, \
+        version=None):
+        self.record_id = record_id
+        self.writer_id = writer_id
+        self.user_id = user_id
+        self.record_type = record_type
+        self.plain = plain
+        self.created = created
+        self.last_modified = last_modified
+        self.version = version
+
 
 class Client:
     DEFAULT_QUERY_COUNT = 100
@@ -66,13 +84,62 @@ class Client:
         import pdb; pdb.set_trace()
 
     def __decrypt_record(self, record):
-        pass
+        meta = record.json_serialize()['meta'].json_serialize()
+        writer_id = meta['writer_id']
+        user_id = meta['user_id']
+        record_type = meta['type']
+        ak = self.__get_access_key(writer_id, user_id, self.client_id, record_type)
+        return self.__decrypt_record_with_key(record, ak)
 
-    def __decrypt_record_with_key(self, record):
-        pass
+    def __decrypt_record_with_key(self, record, ak):
+        encrypted_record = record.json_serialize()
+
+        for key,value in encrypted_record['data'].iteritems():
+            fields = value.split(".")
+
+            edk = Crypto.base64decode(fields[0])
+            edkN = Crypto.base64decode(fields[1])
+            ef = Crypto.base64decode(fields[2])
+            efN = Crypto.base64decode(fields[3])
+
+            dk = Crypto.secret_box(ak).decrypt(edkN, edk)
+            pv = Crypto.secret_box(dk).decrypt(efN, ef)
+
+            encrypted_record['data'][key] = pv
+        # swap encrypted data with plaintext record information
+        record.update(encrypted_record['meta'], encrypted_record['data'])
+        return record
 
     def __encrypt_record(self, plaintext_record):
-        pass
+        record = plaintext_record.json_serialize()
+
+        meta = record['meta'].json_serialize()
+        writer_id = meta['writer_id']
+        user_id = meta['user_id']
+        record_type = meta['type']
+
+        ak = self.__get_access_key(writer_id, user_id, self.client_id, record_type)
+
+        # if the ak is missing, we need to create and push one to the server.=
+        if ak == None:
+            ak = Crypto.secret_box_random_key()
+            self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
+
+        for key, value in record['data'].iteritems():
+            dk = Crypto.secret_box_random_key()
+            efN = Crypto.secret_box_random_nonce()
+            ef = Crypto.secret_box(dk).encrypt(efN, value)
+            edkN = Crypto.secret_box_random_nonce()
+            edk = Crypto.secret_box(ak).encrypt(edkN, dk)
+
+            record['data'][key] = "{0}.{1}.{2}.{3}".format(Crypto.base64encode(edk), \
+                Crypto.base64encode(edkN), \
+                Crypto.base64encode(ef), \
+                Crypto.base64encode(efN))
+
+        # swap plaintext data with encrypted record information
+        plaintext_record.update(record['meta'], record['data'])
+        return plaintext_record
 
     def __decrypt_eak(self, json):
         k = json['authorizer_public_key']['curve25519']
@@ -86,13 +153,18 @@ class Client:
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         response = requests.get(url=url, auth=self.e3db_auth)
-        json = response.json()
-        # return the ak
-        return self.__decrypt_eak(json)
+        # return None if eak not found, otherwise return eak
+        if response.status_code == 404:
+            return None
+        else:
+            json = response.json()
+            # return the ak
+            return self.__decrypt_eak(json)
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
         reader_key = self.client_key(reader_id)
-        none = Crypto.secret_box_random_nonce()
+        nonce = Crypto.secret_box_random_nonce()
+        import pdb; pdb.set_trace()
         eak = Crypto.box(reader_key, self.private_key).encrypt(nonce, ak)
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
@@ -135,7 +207,6 @@ class Client:
                     )
 
                 client = Client(config())
-
                 client.backup(backup_client_id, registration_token)
 
         #if response.status_code != 201
@@ -147,6 +218,14 @@ class Client:
         return Crypto.encode_public_key(public_key), Crypto.encode_private_key(private_key)
 
     def client_info(self, client_id):
+        if "@" in client_id:
+            # is email address, so get client id based on email
+            base_url = self.get_url("v1", "storage", "clients", "find")
+            url = "{0}?email={1}".format(base_url, urllib.quote_plus(client_id))
+            response = requests.post(url=url, auth=self.e3db_auth)
+        else:
+            url = self.get_url("v1", "storage", "clients", client_id)
+            response = requests.post(url=url, auth=self.e3db_auth)
         pass
 
     def client_key(self, client_id):
@@ -158,11 +237,11 @@ class Client:
     def read(self, record_id):
         pass
 
-    def write(self, type, data, plain):
+    def write(self, record_type, data, plain):
         url = self.get_url("v1", "storage", "records")
-        meta = Meta(writer_id=self.client_id, user_id=self.client_id, type=type, plain=plain)
+        meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
-        encrypted_record = encrypt_record(record)
+        encrypted_record = self.__encrypt_record(record)
         #resp = requests.post(url=url, json=encrypted_record., auth=self.e3db_auth)
 
     def update(self, record):

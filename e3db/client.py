@@ -65,6 +65,18 @@ class Meta():
         self.last_modified = last_modified
         self.version = version
 
+class ClientInfo():
+    def __init__(self, client_id, public_key, validated):
+        self.client_id = client_id
+        self.public_key = public_key
+        self.validated = validated
+
+    def json_serialize(self):
+        return {
+            'client_id': self.client_id,
+            'public_key': self.public_key,
+            'validated': self.validated
+        }
 
 class Client:
     DEFAULT_QUERY_COUNT = 100
@@ -226,7 +238,12 @@ class Client:
         else:
             url = self.get_url("v1", "storage", "clients", client_id)
             response = requests.post(url=url, auth=self.e3db_auth)
-        pass
+        json = response.json()
+
+        client_id = json['client_id']
+        public_key = json['public_key']
+        validated = json['validated']
+        return ClientInfo(client_id, public_key, validated)
 
     def client_key(self, client_id):
         pass

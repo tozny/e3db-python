@@ -14,7 +14,7 @@ class Crypto:
 
     @classmethod
     def decode_public_key(self, key):
-        return nacl.public.PublicKey(Crypto.base64decode(key))
+        return nacl.public.PublicKey(Crypto.base64decode(str(key)))
 
     @classmethod
     def encode_public_key(self, key):
@@ -22,7 +22,7 @@ class Crypto:
 
     @classmethod
     def decode_private_key(self, key):
-        return nacl.public.PrivateKey(Crypto.base64decode(key))
+        return nacl.public.PrivateKey(Crypto.base64decode(str(key)))
 
     @classmethod
     def encode_private_key(self, key):
@@ -41,12 +41,12 @@ class Crypto:
         # From https://stackoverflow.com/a/9956217
         # Python base64 implementation requires padding, which may not be present in the
         # encoded public/private keypair
-        return base64.urlsafe_b64decode(s + '=' * (4 - len(s) % 4))
+        return base64.urlsafe_b64decode(str(s) + '=' * (4 - len(s) % 4))
 
     @classmethod
     def base64encode(self, s):
         # remove "=" padding for general SDK compatibility
-        return base64.urlsafe_b64encode(s).strip("=")
+        return base64.urlsafe_b64encode(str(s)).strip("=")
 
     @classmethod
     def generate_keypair(self):

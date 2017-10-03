@@ -1,80 +1,9 @@
 from auth import E3DBAuth
 from crypto import Crypto
 from config import Config
+from types import *
 import requests
 import urllib
-
-class PublicKey():
-    def __init__(self, key_type, public_key):
-        self.key_type = str(key_type)
-        self.public_key = str(public_key)
-
-    def json_serialize(self):
-        return {self.key_type: self.public_key}
-
-    def get_pubkey(self):
-        return self.public_key
-
-class Record():
-    def __init__(self, meta=None, data=None):
-        self.meta = meta
-        self.data = data
-
-    def json_serialize(self):
-        return {
-            'meta': self.meta.json_serialize(),
-            'data': self.data
-        }
-
-    def update(self, meta, data):
-        self.meta.update(meta)
-        self.data = data
-
-class Meta():
-    def __init__(self, record_id=None, writer_id=None, user_id=None, \
-        record_type=None, plain=None, created=None, last_modified=None, \
-        version=None):
-        self.record_id = record_id
-        self.writer_id = writer_id
-        self.user_id = user_id
-        self.record_type = record_type
-        self.plain = plain
-        self.created = created
-        self.last_modified = last_modified
-        self.version = version
-    def json_serialize(self):
-        return {
-            'record_id': self.record_id,
-            'writer_id': self.writer_id,
-            'user_id': self.user_id,
-            'type': self.record_type,
-            'plain': self.plain,
-            'created': self.created,
-            'last_modified': self.last_modified,
-            'version': self.version
-        }
-    def update(self, json):
-        self.record_id = json['record_id']
-        self.writer_id = json['writer_id']
-        self.user_id = json['user_id']
-        self.record_type = json['type']
-        self.plain = json['plain']
-        self.created = json['created']
-        self.last_modified = json['last_modified']
-        self.version = json['version']
-
-class ClientInfo():
-    def __init__(self, client_id, public_key, validated):
-        self.client_id = client_id
-        self.public_key = public_key
-        self.validated = validated
-
-    def json_serialize(self):
-        return {
-            'client_id': self.client_id,
-            'public_key': self.public_key,
-            'validated': self.validated
-        }
 
 class Client:
     DEFAULT_QUERY_COUNT = 100
@@ -157,8 +86,8 @@ class Client:
         fields = json['eak'].split('.')
         ciphertext = Crypto.base64decode(fields[0])
         nonce = Crypto.base64decode(fields[1])
-        box = Crypto.box(authorizer_pubkey, Crypto.decode_private_key(self.private_key))
-        return box.decrypt(none, ciphertext)
+        box = Crypto.box(Crypto.decode_private_key(self.private_key), authorizer_pubkey)
+        return box.decrypt(ciphertext)
 
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
@@ -168,11 +97,10 @@ class Client:
             return None
         else:
             json = response.json()
-            # return the ak
             return self.__decrypt_eak(json)
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
-        reader_key = Crypto.decode_public_key(self.client_key(reader_id).json_serialize()['curve25519'])
+        reader_key = self.client_key(reader_id)
         nonce = Crypto.secret_box_random_nonce()
         eak = Crypto.box(Crypto.decode_private_key(self.private_key), reader_key).encrypt(ak, nonce)
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
@@ -200,6 +128,7 @@ class Client:
         response = requests.post(url=url, json=payload)
         client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
+        print "backup client id: {0}".format(backup_client_id)
 
         if backup == True:
             if private_key == None:
@@ -231,10 +160,10 @@ class Client:
             # is email address, so get client id based on email
             base_url = self.get_url("v1", "storage", "clients", "find")
             url = "{0}?email={1}".format(base_url, urllib.quote_plus(client_id))
-            response = requests.post(url=url, auth=self.e3db_auth)
+            response = requests.get(url=url, auth=self.e3db_auth)
         else:
             url = self.get_url("v1", "storage", "clients", client_id)
-            response = requests.post(url=url, auth=self.e3db_auth)
+            response = requests.get(url=url, auth=self.e3db_auth)
         json = response.json()
 
         client_id = json['client_id']
@@ -244,11 +173,10 @@ class Client:
 
     def client_key(self, client_id):
         if client_id == self.client_id:
-            return self.public_key
+            return Crypto.decode_public_key(self.public_key.get_pubkey())
         else:
             client_info = self.client_info(client_id).json_serialize()
-            import pdb; pdb.set_trace()
-            return Crypto.decode_public_key(client_info['public_key'])
+            return Crypto.decode_public_key(client_info['public_key']['curve25519'])
 
     def read_raw(self, record_id):
         pass
@@ -288,14 +216,30 @@ class Client:
         url = self.get_url('v1', 'account', 'backup', registration_token, self.client_id)
         requests.post(url=url, auth=self.e3db_auth)
 
-    def query(self, data=True, raw=False, writer=None, record=None, type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
+    def query(self, data=True, raw=False, writer=None, record=None, record_type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
         pass
 
-    def share(self, type, reader_id):
+    def share(self, record_type, reader_id):
+        if reader_id == self.client_id:
+            return
+        elif "@" in reader_id:
+            reader_id = self.client_info(reader_id).json_serialize()['client_id']
 
-        pass
+        ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
+        self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
-    def revoke(self, type, reader_id):
+        url = self.get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
+
+        json = {
+            'allow': [
+                {'read': {}}
+            ]
+        }
+
+        requests.put(url=url, json=json, auth=self.e3db_auth)
+        import pdb; pdb.set_trace()
+
+    def revoke(self, record_type, reader_id):
         pass
 
     def outgoing_sharing(self):

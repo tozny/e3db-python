@@ -5,8 +5,8 @@ import nacl.public
 
 class Crypto:
     @classmethod
-    def box(self, public_key, private_key):
-        return nacl.public.Box(public_key, private_key)
+    def box(self, private_key, public_key):
+        return nacl.public.Box(private_key, public_key)
 
     @classmethod
     def secret_box(self, key):
@@ -21,7 +21,7 @@ class Crypto:
         return Crypto.base64encode(str(key))
 
     @classmethod
-    def decode_private_key(key):
+    def decode_private_key(self, key):
         return nacl.public.PrivateKey(Crypto.base64decode(key))
 
     @classmethod

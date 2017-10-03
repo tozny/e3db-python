@@ -137,12 +137,14 @@ class Client:
             ak = Crypto.secret_box_random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
+        print "encrypt record:"
         for key, value in record['data'].iteritems():
+            print key,value
             dk = Crypto.secret_box_random_key()
             efN = Crypto.secret_box_random_nonce()
-            ef = Crypto.secret_box(dk).encrypt(efN, value)
+            ef = Crypto.secret_box(dk).encrypt(str(value), efN)
             edkN = Crypto.secret_box_random_nonce()
-            edk = Crypto.secret_box(ak).encrypt(edkN, dk)
+            edk = Crypto.secret_box(ak).encrypt(dk, edkN)
 
             record['data'][key] = "{0}.{1}.{2}.{3}".format(Crypto.base64encode(edk), \
                 Crypto.base64encode(edkN), \
@@ -174,10 +176,9 @@ class Client:
             return self.__decrypt_eak(json)
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
-        reader_key = self.client_key(reader_id)
+        reader_key = Crypto.decode_public_key(self.client_key(reader_id).json_serialize()['curve25519'])
         nonce = Crypto.secret_box_random_nonce()
-        import pdb; pdb.set_trace()
-        eak = Crypto.box(reader_key, self.private_key).encrypt(nonce, ak)
+        eak = Crypto.box(Crypto.decode_private_key(self.private_key), reader_key).encrypt(ak, nonce)
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         json = {
@@ -246,7 +247,12 @@ class Client:
         return ClientInfo(client_id, public_key, validated)
 
     def client_key(self, client_id):
-        pass
+        if client_id == self.client_id:
+            return self.public_key
+        else:
+            client_info = self.client_info(client_id).json_serialize()
+            import pdb; pdb.set_trace()
+            return Crypto.decode_public_key(client_info['public_key'])
 
     def read_raw(self, record_id):
         pass

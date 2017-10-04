@@ -136,7 +136,6 @@ class Client:
         response = requests.post(url=url, json=payload)
         client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
-        #backup_client_id = '38bb3748-1641-4068-9742-ff05eb583476'
 
         if backup == True:
             if private_key == None:

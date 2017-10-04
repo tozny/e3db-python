@@ -215,15 +215,17 @@ class Client:
         pass
 
     def backup(self, client_id, registration_token):
+        # credentials must be json encoded in order to decode
+        # properly in the innovault console.
         credentials = {
             'version': '1',
-            'client_id': self.client_id,
-            'api_key_id': self.api_key_id,
-            'api_secret': self.api_secret,
-            'client_email': self.client_email,
-            'public_key': self.public_key,
-            'private_key': self.private_key,
-            'api_url': self.api_url
+            'client_id': "\"{0}\"".format(self.client_id),
+            'api_key_id': "\"{0}\"".format(self.api_key_id),
+            'api_secret': "\"{0}\"".format(self.api_secret),
+            'client_email': "\"{0}\"".format(self.client_email),
+            'public_key': "\"{0}\"".format(self.public_key),
+            'private_key': "\"{0}\"".format(self.private_key),
+            'api_url': "\"{0}\"".format(self.api_url)
         }
 
         self.write('tozny.key_backup', credentials, {'client': self.client_id})

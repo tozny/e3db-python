@@ -15,7 +15,7 @@ print "Public Key: {0}".format(public_key)
 print "Private Key: {0}".format(private_key)
 
 # The e3db server keeps track of the name of the curve used with public keys
-wrapped_key = e3db.PublicKey('curve25519', public_key)
+#wrapped_key = e3db.PublicKey('curve25519', public_key)
 
 # Clients must be registered with a name unique to your account to help
 # differentiate between different sets of credentials in the Admin Console.
@@ -34,7 +34,7 @@ print "Client Name: {0}".format(client_name)
 #
 # Client credentials are not backed up by default.
 
-client_info = e3db.Client.register(token, client_name, wrapped_key, private_key=private_key, backup=True, api_url=api_url)
+client_info = e3db.Client.register(token, client_name, public_key, private_key=private_key, backup=True, api_url=api_url)
 
 
 print "Client ID: {0}".format(client_info['client_id'])

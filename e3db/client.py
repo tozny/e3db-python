@@ -41,8 +41,8 @@ class Client:
             ef = Crypto.base64decode(fields[2])
             efN = Crypto.base64decode(fields[3])
 
-            dk = Crypto.secret_box(ak).decrypt(edkN, edk)
-            pv = Crypto.secret_box(dk).decrypt(efN, ef)
+            dk = Crypto.secret_box(ak).decrypt(edk, edkN)
+            pv = Crypto.secret_box(dk).decrypt(ef, efN)
 
             encrypted_record['data'][key] = pv
         # swap encrypted data with plaintext record information
@@ -68,8 +68,10 @@ class Client:
             dk = Crypto.secret_box_random_key()
             efN = Crypto.secret_box_random_nonce()
             ef = Crypto.secret_box(dk).encrypt(str(value), efN)
+            ef = ef[len(efN):] # remove nonce from ciphertext
             edkN = Crypto.secret_box_random_nonce()
             edk = Crypto.secret_box(ak).encrypt(dk, edkN)
+            edk = edk[len(edkN):] # remove nonce from ciphertext
 
             record['data'][key] = "{0}.{1}.{2}.{3}".format(Crypto.base64encode(edk), \
                 Crypto.base64encode(edkN), \
@@ -87,7 +89,7 @@ class Client:
         ciphertext = Crypto.base64decode(fields[0])
         nonce = Crypto.base64decode(fields[1])
         box = Crypto.box(Crypto.decode_private_key(self.private_key), authorizer_pubkey)
-        return box.decrypt(ciphertext)
+        return box.decrypt(ciphertext, nonce)
 
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
@@ -103,6 +105,8 @@ class Client:
         reader_key = self.client_key(reader_id)
         nonce = Crypto.secret_box_random_nonce()
         eak = Crypto.box(Crypto.decode_private_key(self.private_key), reader_key).encrypt(ak, nonce)
+        # Need to strip the nonce off the front of the eak
+        eak = eak[len(nonce):]
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         json = {
@@ -110,24 +114,29 @@ class Client:
         }
         response = requests.put(url=url, json=json, auth=self.e3db_auth)
 
+
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         requests.delete(url=url, auth=self.e3db_auth)
 
     @classmethod
-    def register(self, registration_token, client_name, wrapped_public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
+    def register(self, registration_token, client_name, public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
         # TODO support backup
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
+        wrapped_public_key = {
+            'curve25519': public_key
+        }
         payload = {
             'token': registration_token,
             'client': {
                 'name': client_name,
-                'public_key': wrapped_public_key.json_serialize()
+                'public_key': wrapped_public_key
             }
         }
         response = requests.post(url=url, json=payload)
         client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
+        #backup_client_id = '38bb3748-1641-4068-9742-ff05eb583476'
 
         if backup == True:
             if private_key == None:
@@ -138,7 +147,7 @@ class Client:
                     client_info['api_key_id'], \
                     client_info['api_secret'], \
                     '', \
-                    wrapped_public_key, \
+                    public_key, \
                     private_key, \
                     api_url=api_url \
                     )
@@ -172,15 +181,21 @@ class Client:
 
     def client_key(self, client_id):
         if client_id == self.client_id:
-            return Crypto.decode_public_key(self.public_key.get_pubkey())
+            return Crypto.decode_public_key(self.public_key)
         else:
             client_info = self.client_info(client_id).json_serialize()
             return Crypto.decode_public_key(client_info['public_key']['curve25519'])
 
-    def read_raw(self, record_id):
-        pass
+    def __read_raw(self, record_id):
+        url = self.get_url("v1", "storage", "records", record_id)
+        resp = requests.get(url=url, auth=self.e3db_auth)
+        json = response.json()
+        import pdb; pdb.set_trace()
+        #return Record(json)
+        #pass
 
     def read(self, record_id):
+        return self.__decrypt_record(self.__read_raw(record_id))
         pass
 
     def write(self, record_type, data, plain):
@@ -189,6 +204,9 @@ class Client:
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
         resp = requests.post(url=url, json=encrypted_record.json_serialize(), auth=self.e3db_auth)
+        resp_json = resp.json()
+        meta.update(resp_json['meta']) # should be same
+        decrypted = self.__decrypt_record(Record(meta, resp_json['data']))
 
     def update(self, record):
         pass
@@ -203,7 +221,7 @@ class Client:
             'api_key_id': self.api_key_id,
             'api_secret': self.api_secret,
             'client_email': self.client_email,
-            'public_key': self.public_key.get_pubkey(),
+            'public_key': self.public_key,
             'private_key': self.private_key,
             'api_url': self.api_url
         }

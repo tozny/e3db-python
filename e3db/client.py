@@ -128,7 +128,6 @@ class Client:
         response = requests.post(url=url, json=payload)
         client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
-        print "backup client id: {0}".format(backup_client_id)
 
         if backup == True:
             if private_key == None:
@@ -152,8 +151,8 @@ class Client:
 
     @classmethod
     def generate_keypair(self):
-        public_key, private_key = Crypto.generate_keypair()
-        return Crypto.encode_public_key(public_key), Crypto.encode_private_key(private_key)
+        private_key, public_key = Crypto.generate_keypair()
+        return Crypto.encode_private_key(private_key), Crypto.encode_public_key(public_key)
 
     def client_info(self, client_id):
         if "@" in client_id:
@@ -190,6 +189,7 @@ class Client:
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
         resp = requests.post(url=url, json=encrypted_record.json_serialize(), auth=self.e3db_auth)
+        import pdb; pdb.set_trace()
 
     def update(self, record):
         pass
@@ -225,6 +225,7 @@ class Client:
         elif "@" in reader_id:
             reader_id = self.client_info(reader_id).json_serialize()['client_id']
 
+        reader_id = '987cf8c7-9124-465a-99ea-5b3919d702e6'
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 

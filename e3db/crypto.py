@@ -18,7 +18,7 @@ class Crypto:
 
     @classmethod
     def encode_public_key(self, key):
-        return Crypto.base64encode(str(key))
+        return Crypto.base64encode(key)
 
     @classmethod
     def decode_private_key(self, key):
@@ -26,7 +26,7 @@ class Crypto:
 
     @classmethod
     def encode_private_key(self, key):
-        return Crypto.base64encode(str(key))
+        return Crypto.base64encode(key)
 
     @classmethod
     def secret_box_random_key(self):

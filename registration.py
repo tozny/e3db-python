@@ -9,7 +9,7 @@ api_url = os.environ["DEFAULT_API_URL"]
 
 print "Using Registration Token: {0}".format(token)
 
-public_key, private_key = e3db.Client.generate_keypair()
+private_key, public_key = e3db.Client.generate_keypair()
 
 print "Public Key: {0}".format(public_key)
 print "Private Key: {0}".format(private_key)

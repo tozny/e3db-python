@@ -189,7 +189,6 @@ class Client:
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
         resp = requests.post(url=url, json=encrypted_record.json_serialize(), auth=self.e3db_auth)
-        import pdb; pdb.set_trace()
 
     def update(self, record):
         pass
@@ -225,7 +224,6 @@ class Client:
         elif "@" in reader_id:
             reader_id = self.client_info(reader_id).json_serialize()['client_id']
 
-        reader_id = '987cf8c7-9124-465a-99ea-5b3919d702e6'
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
@@ -238,7 +236,6 @@ class Client:
         }
 
         requests.put(url=url, json=json, auth=self.e3db_auth)
-        import pdb; pdb.set_trace()
 
     def revoke(self, record_type, reader_id):
         pass

@@ -4,4 +4,7 @@ conf = e3db.Config.load('dev')
 client = e3db.Client(conf)
 #client.debug()
 
-client.write('test_type6', {"foo":"bar"}, {})
+record_id = client.write('test_type6', {"foo":"bar"}, {})
+record = client.read(record_id)
+
+import pdb; pdb.set_trace()

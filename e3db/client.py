@@ -121,7 +121,6 @@ class Client:
 
     @classmethod
     def register(self, registration_token, client_name, public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
-        # TODO support backup
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
         wrapped_public_key = {
             'curve25519': public_key
@@ -188,10 +187,23 @@ class Client:
     def __read_raw(self, record_id):
         url = self.get_url("v1", "storage", "records", record_id)
         resp = requests.get(url=url, auth=self.e3db_auth)
-        json = response.json()
-        import pdb; pdb.set_trace()
-        #return Record(json)
-        #pass
+        json = resp.json()
+        # craft meta object
+        # craft record object
+        meta_json = json['meta']
+        data_json = json['data']
+        meta = Meta(
+                record_id=meta_json['record_id'],
+                writer_id=meta_json['writer_id'],
+                user_id=meta_json['user_id'],
+                record_type=meta_json['type'],
+                plain=meta_json['plain'],
+                created=meta_json['created'],
+                last_modified=meta_json['last_modified'],
+                version=meta_json['version']
+            )
+        record = Record(meta, data_json)
+        return record
 
     def read(self, record_id):
         return self.__decrypt_record(self.__read_raw(record_id))
@@ -206,6 +218,8 @@ class Client:
         resp_json = resp.json()
         meta.update(resp_json['meta']) # should be same
         decrypted = self.__decrypt_record(Record(meta, resp_json['data']))
+        # return record id
+        return resp_json['meta']['record_id']
 
     def update(self, record):
         pass

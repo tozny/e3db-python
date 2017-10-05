@@ -1,6 +1,7 @@
 # types.py
 
 class PublicKey():
+    # TODO not used, remove?
     def __init__(self, key_type, public_key):
         self.key_type = str(key_type)
         self.public_key = str(public_key)

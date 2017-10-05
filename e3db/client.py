@@ -22,6 +22,12 @@ class Client:
     def debug(self):
         import pdb; pdb.set_trace()
 
+    def __is_email(id):
+        if "@" in id:
+            return True
+        else:
+            return False
+
     def __decrypt_record(self, record):
         meta = record.json_serialize()['meta']
         writer_id = meta['writer_id']
@@ -162,7 +168,7 @@ class Client:
         return Crypto.encode_private_key(private_key), Crypto.encode_public_key(public_key)
 
     def client_info(self, client_id):
-        if "@" in client_id:
+        if self.__is_email(client_id):
             # is email address, so get client id based on email
             base_url = self.get_url("v1", "storage", "clients", "find")
             url = "{0}?email={1}".format(base_url, urllib.quote_plus(client_id))
@@ -225,7 +231,8 @@ class Client:
         pass
 
     def delete(self, record_id):
-        pass
+        url = self.get_url("v1", "storage", "records", record_id)
+        resp = requests.delete(url=url, auth=self.e3db_auth)
 
     def backup(self, client_id, registration_token):
         # credentials must be json encoded in order to decode
@@ -254,7 +261,7 @@ class Client:
     def share(self, record_type, reader_id):
         if reader_id == self.client_id:
             return
-        elif "@" in reader_id:
+        elif self.__is_email(reader_id):
             reader_id = self.client_info(reader_id).json_serialize()['client_id']
 
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
@@ -271,7 +278,21 @@ class Client:
         requests.put(url=url, json=json, auth=self.e3db_auth)
 
     def revoke(self, record_type, reader_id):
-        pass
+        if reader_id == self.client_id:
+            return
+        elif self.__is_email(reader_id):
+            reader_id = self.client_info(reader_id).json_serialize()['client_id']
+
+        url = self.get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
+        json = {
+            'deny': [
+                {
+                    'read': {}
+                }
+            ]
+        }
+        requests.put(url=url, json=json, auth=self.e3db_auth)
+        self.__delete_access_key(self.client_id, self.client_id, reader_id, record_type)
 
     def outgoing_sharing(self):
         pass

@@ -1,5 +1,31 @@
 # types.py
 
+class IncomingSharingPolicy():
+    def __init__(self, json):
+        self.writer_id = json['writer_id']
+        self.writer_name = json['writer_name']
+        self.record_type = json['record_type']
+
+    def json_serialize(self):
+        return {
+            'writer_id': self.writer_id,
+            'writer_name': self.writer_name,
+            'record_type': self.record_type
+        }
+
+class OutgoingSharingPolicy():
+    def __init__(self, json):
+        self.reader_id = json['reader_id']
+        self.reader_name = json['reader_name']
+        self.record_type = json['record_type']
+
+    def json_serialize(self):
+        return {
+            'reader_id': self.reader_id,
+            'reader_name': self.reader_name,
+            'record_type': self.record_type
+        }
+
 class PublicKey():
     # TODO not used, remove?
     def __init__(self, key_type, public_key):

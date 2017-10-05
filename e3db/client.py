@@ -120,10 +120,35 @@ class Client:
         }
         response = requests.put(url=url, json=json, auth=self.e3db_auth)
 
-
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         requests.delete(url=url, auth=self.e3db_auth)
+
+    def __outgoing_sharing(self):
+        url = self.get_url("v1", "storage", "policy", "outgoing")
+        resp = requests.get(url=url, auth=self.e3db_auth)
+        # create list of policy objects, and return them
+        policies = []
+        # check if there are no policies
+        if resp.json() == []:
+            policies = resp.json()
+        else:
+            for policy in resp.json():
+                policies.append(IncomingSharingPolicy(policy))
+        return policies
+
+    def __incoming_sharing(self):
+        url = self.get_url("v1", "storage", "policy", "incoming")
+        resp = requests.get(url=url, auth=self.e3db_auth)
+        # create list of policy objects, and return them
+        policies = []
+        # check if there are no policies
+        if resp.json() == []:
+            policies = resp.json()
+        else:
+            for policy in resp.json():
+                policies.append(IncomingSharingPolicy(policy))
+        return policies
 
     @classmethod
     def register(self, registration_token, client_name, public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
@@ -213,7 +238,6 @@ class Client:
 
     def read(self, record_id):
         return self.__decrypt_record(self.__read_raw(record_id))
-        pass
 
     def write(self, record_type, data, plain):
         url = self.get_url("v1", "storage", "records")
@@ -228,6 +252,7 @@ class Client:
         return resp_json['meta']['record_id']
 
     def update(self, record):
+        # TODO
         pass
 
     def delete(self, record_id):
@@ -256,6 +281,7 @@ class Client:
         requests.post(url=url, auth=self.e3db_auth)
 
     def query(self, data=True, raw=False, writer=None, record=None, record_type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
+        # TODO
         pass
 
     def share(self, record_type, reader_id):
@@ -293,12 +319,6 @@ class Client:
         }
         requests.put(url=url, json=json, auth=self.e3db_auth)
         self.__delete_access_key(self.client_id, self.client_id, reader_id, record_type)
-
-    def outgoing_sharing(self):
-        pass
-
-    def incoming_sharing(self):
-        pass
 
     def get_url(self, *args):
         # list of paths that we make a nice url from

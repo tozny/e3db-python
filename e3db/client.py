@@ -189,8 +189,8 @@ class Client:
                 client = Client(config())
                 client.backup(backup_client_id, registration_token)
 
-        #if response.status_code != 201
-        return client_info
+        # make ClientDetails object
+        return ClientDetails(client_info)
 
     @classmethod
     def generate_keypair(self):

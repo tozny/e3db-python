@@ -7,6 +7,9 @@ import binascii
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
 
+# on your shell
+#export REGISTRATION_TOKEN=<your token>
+
 print "Using Registration Token: {0}".format(token)
 
 private_key, public_key = e3db.Client.generate_keypair()
@@ -35,17 +38,22 @@ print "Client Name: {0}".format(client_name)
 # Client credentials are not backed up by default.
 
 client_info = e3db.Client.register(token, client_name, public_key, private_key=private_key, backup=True, api_url=api_url)
+api_key_id, api_secret = client_info.get_api_credentials()
+client_id = client_info.get_client_id()
 
+print "Client ID: {0}".format(client_id)
+print "API Key ID: {0}".format(api_key_id)
+print "API Secret: {0}".format(api_secret)
 
-print "Client ID: {0}".format(client_info['client_id'])
-print "API Key ID: {0}".format(client_info['api_key_id'])
-print "API Secret: {0}".format(client_info['api_secret'])
+email = ""
+version = "1"
 
-config = e3db.Config('1',
-    client_info['client_id'], \
-    client_info['api_key_id'], \
-    client_info['api_secret'], \
-    '', \
+config = e3db.Config(
+    version, \
+    client_id, \
+    api_key_id, \
+    api_secret, \
+    email, \
     public_key, \
     private_key, \
     api_url=api_url \

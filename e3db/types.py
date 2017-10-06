@@ -96,6 +96,29 @@ class ClientInfo():
             'validated': self.validated
         }
 
+class ClientDetails():
+    def __init__(self, json):
+        self.client_id = json['client_id']
+        self.api_key_id = json['api_key_id']
+        self.api_secret = json['api_secret']
+        self.public_key = json['public_key']
+        self.name = json['name']
+
+    def to_json(self):
+        return {
+            'client_id': self.client_id,
+            'api_key_id': self.api_key_id,
+            'api_secret': self.api_secret,
+            'public_key': self.public_key,
+            'name': self.name
+        }
+
+    def get_api_credentials(self):
+        return (self.api_key_id, self.api_secret)
+
+    def get_client_id(self):
+        return self.client_id
+
 class QueryResult():
 
     def __init__(self, query, records):

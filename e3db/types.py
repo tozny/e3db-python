@@ -6,7 +6,7 @@ class IncomingSharingPolicy():
         self.writer_name = json['writer_name']
         self.record_type = json['record_type']
 
-    def json_serialize(self):
+    def to_json(self):
         return {
             'writer_id': self.writer_id,
             'writer_name': self.writer_name,
@@ -19,7 +19,7 @@ class OutgoingSharingPolicy():
         self.reader_name = json['reader_name']
         self.record_type = json['record_type']
 
-    def json_serialize(self):
+    def to_json(self):
         return {
             'reader_id': self.reader_id,
             'reader_name': self.reader_name,
@@ -31,14 +31,17 @@ class Record():
         self.meta = meta
         self.data = data
 
-    def json_serialize(self):
+    def to_json(self):
         return {
-            'meta': self.meta.json_serialize(),
+            'meta': self.meta.to_json(),
             'data': self.data
         }
 
     def get_meta(self):
         return self.meta
+
+    def get_data(self):
+        return self.get_data
 
     def update_meta(self, meta):
         self.meta = meta
@@ -59,7 +62,7 @@ class Meta():
         self.created = created
         self.last_modified = last_modified
         self.version = version
-    def json_serialize(self):
+    def to_json(self):
         return {
             'record_id': self.record_id,
             'writer_id': self.writer_id,
@@ -86,7 +89,7 @@ class ClientInfo():
         self.public_key = public_key
         self.validated = validated
 
-    def json_serialize(self):
+    def to_json(self):
         return {
             'client_id': self.client_id,
             'public_key': self.public_key,
@@ -121,7 +124,7 @@ class Query():
         self.plain = plain
         self.include_all_writers = include_all_writers
 
-    def json_serialize(self):
+    def to_json(self):
         return {
             'count': self.count,
             'after_index': self.after_index,

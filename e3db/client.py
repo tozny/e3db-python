@@ -30,7 +30,7 @@ class Client:
             return False
 
     def __decrypt_record(self, record):
-        meta = record.json_serialize()['meta']
+        meta = record.to_json()['meta']
         writer_id = meta['writer_id']
         user_id = meta['user_id']
         record_type = meta['type']
@@ -38,7 +38,7 @@ class Client:
         return self.__decrypt_record_with_key(record, ak)
 
     def __decrypt_record_with_key(self, record, ak):
-        encrypted_record = record.json_serialize()
+        encrypted_record = record.to_json()
 
         for key,value in encrypted_record['data'].iteritems():
             fields = value.split(".")
@@ -57,7 +57,7 @@ class Client:
         return record
 
     def __encrypt_record(self, plaintext_record):
-        record = plaintext_record.json_serialize()
+        record = plaintext_record.to_json()
 
         meta = record['meta']
         writer_id = meta['writer_id']
@@ -217,7 +217,7 @@ class Client:
         if client_id == self.client_id:
             return Crypto.decode_public_key(self.public_key)
         else:
-            client_info = self.client_info(client_id).json_serialize()
+            client_info = self.client_info(client_id).to_json()
             return Crypto.decode_public_key(client_info['public_key']['curve25519'])
 
     def __read_raw(self, record_id):
@@ -249,7 +249,7 @@ class Client:
         meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
-        resp = requests.post(url=url, json=encrypted_record.json_serialize(), auth=self.e3db_auth)
+        resp = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         resp_json = resp.json()
         meta.update(resp_json['meta']) # should be same
         decrypted = self.__decrypt_record(Record(meta, resp_json['data']))
@@ -257,11 +257,11 @@ class Client:
         return resp_json['meta']['record_id']
 
     def update(self, record):
-        record_serialized = record.json_serialize()
+        record_serialized = record.to_json()
         record_id = record_serialized['meta']['record_id']
         version = record_serialized['meta']['version']
         url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
-        resp = requests.put(url=url, json=record.json_serialize(), auth=self.e3db_auth)
+        resp = requests.put(url=url, json=record.to_json(), auth=self.e3db_auth)
         if resp.status_code == 409:
             raise ConflictError(record_id)
         json = resp.json()
@@ -352,14 +352,14 @@ class Client:
     # Fetch a single page of query results. Used internally by Client.query.
     def __query(self, query):
       url = self.__get_url('v1', 'storage', 'search')
-      resp = requests.post(url=url, json=query.json_serialize(), auth=self.e3db_auth)
+      resp = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
       return resp.json()
 
     def share(self, record_type, reader_id):
         if reader_id == self.client_id:
             return
         elif self.__is_email(reader_id):
-            reader_id = self.client_info(reader_id).json_serialize()['client_id']
+            reader_id = self.client_info(reader_id).to_json()['client_id']
 
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
@@ -378,7 +378,7 @@ class Client:
         if reader_id == self.client_id:
             return
         elif self.__is_email(reader_id):
-            reader_id = self.client_info(reader_id).json_serialize()['client_id']
+            reader_id = self.client_info(reader_id).to_json()['client_id']
 
         url = self.__get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
         json = {

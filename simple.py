@@ -49,7 +49,7 @@ client.write(record_type, drill_secret, drill_plain)
 # get all records of above type
 print "Listing all records of type: {0}".format(record_type)
 for record in client.query(record_type=[record_type]):
-    record_json = record.json_serialize()
+    record_json = record.to_json()
     tool_type = record_json['meta']['plain']['Tool']
     location = record_json['meta']['plain']['Location']
     storage = record_json['meta']['plain']['Storage']
@@ -69,7 +69,7 @@ basic_query = {
 
 hammer_query = client.query(plain=basic_query)
 for record in hammer_query:
-    record_json = record.json_serialize()
+    record_json = record.to_json()
     tool_type = record_json['meta']['plain']['Tool']
     location = record_json['meta']['plain']['Location']
     storage = record_json['meta']['plain']['Storage']
@@ -98,7 +98,7 @@ advanced_query = {
 }
 
 for record in client.query(plain=advanced_query):
-    record_json = record.json_serialize()
+    record_json = record.to_json()
     tool_type = record_json['meta']['plain']['Tool']
     location = record_json['meta']['plain']['Location']
     storage = record_json['meta']['plain']['Storage']

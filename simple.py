@@ -1,5 +1,7 @@
 import e3db
 
+# Example function to give us back a 5 digit "combination lock" code,
+# padded with zeros as needed, just for our tools example.
 def generate_unlock_code():
     # generate a secure random number for our tools combination lock.
     import os
@@ -10,28 +12,74 @@ def generate_unlock_code():
     random_combo = csprng.randint(0, 99999)
     return '{:05d}'.format(random_combo)
 
-conf = e3db.Config.load('dev')
+
+conf = e3db.Config.load('dev-python')
 client = e3db.Client(conf)
-#client.debug()
 
-test_type = 'Tools'
+record_type = 'Tools'
 
-plain = {
+# Shovel
+shovel_plain = {
     "Location": "Shed",
-    "Storage": "Locked Tool Chest",
+    "Storage": "Green Locked Tool Chest",
     "Tool": "Shovel"
 }
+shovel_secret = {"Unlock Code": generate_unlock_code()}
+client.write(record_type, shovel_secret, shovel_plain)
 
-secret = {
-    "Unlock Code": generate_unlock_code()
+# Hammer
+hammer_plain = {
+    "Location": "Shed",
+    "Storage": "Red Locked Tool Chest",
+    "Tool": "Hammer"
 }
-record_id = client.write(test_type, secret, plain)
-record = client.read(record_id)
+hammer_secret = {"Unlock Code": generate_unlock_code()}
+client.write(record_type, hammer_secret, hammer_plain)
+
+# Drill
+drill_plain = {
+    "Location": "Garage",
+    "Storage": "Black Locked Storage Box",
+    "Tool": "Drill"
+}
+
+drill_secret = {"Unlock Code": generate_unlock_code()}
+client.write(record_type, drill_secret, drill_plain)
 
 # get all records of above type
-for record in client.query(record_type=[test_type]):
-    print record.json_serialize()['data']
+print "Listing all records of type: {0}".format(record_type)
+for record in client.query(record_type=[record_type]):
+    record_json = record.json_serialize()
+    tool_type = record_json['meta']['plain']['Tool']
+    location = record_json['meta']['plain']['Location']
+    storage = record_json['meta']['plain']['Storage']
+    unlock_code = record_json['data']['Unlock Code']
 
+    print "Tool: {0}, Location: {1}, Storage: {2}, Unlock Code: {3}".format(
+        tool_type, location, storage, unlock_code)
+
+
+print "\nListing all records that list the tool: Hammer"
+basic_query = {
+    'eq': {
+        'name': 'Tool',
+        'value': 'Hammer'
+    }
+}
+
+hammer_query = client.query(plain=basic_query)
+for record in hammer_query:
+    record_json = record.json_serialize()
+    tool_type = record_json['meta']['plain']['Tool']
+    location = record_json['meta']['plain']['Location']
+    storage = record_json['meta']['plain']['Storage']
+    unlock_code = record_json['data']['Unlock Code']
+
+    print "Tool: {0}, Location: {1}, Storage: {2}, Unlock Code: {3}".format(
+        tool_type, location, storage, unlock_code)
+
+
+print "\nListing all tools that are Shovels, and are also in the Shed:"
 advanced_query = {
     'and': [
         {
@@ -49,15 +97,12 @@ advanced_query = {
     ]
 }
 
-basic_query = {
-    'eq': {
-        'name': 'Tool',
-        'value': 'Hammer'
-    }
-}
-
-tech = client.query(plain=basic_query)
-
-print "Advanced query:"
 for record in client.query(plain=advanced_query):
-    print record.json_serialize()['data']
+    record_json = record.json_serialize()
+    tool_type = record_json['meta']['plain']['Tool']
+    location = record_json['meta']['plain']['Location']
+    storage = record_json['meta']['plain']['Storage']
+    unlock_code = record_json['data']['Unlock Code']
+
+    print "Tool: {0}, Location: {1}, Storage: {2}, Unlock Code: {3}".format(
+        tool_type, location, storage, unlock_code)

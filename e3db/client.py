@@ -344,13 +344,12 @@ class Client:
                     record = self.__decrypt_record_with_key(record, ak)
                 else:
                     record = __decrypt_record(record)
-                records.append(record)
+
+            records.append(record)
 
         return QueryResult(q, records)
-        #result = QueryResult(self, q, raw)
-        #return result
 
-    # Fetch a single page of query results. Used internally by {Client#query}.
+    # Fetch a single page of query results. Used internally by Client.query.
     def __query(self, query):
       url = self.__get_url('v1', 'storage', 'search')
       resp = requests.post(url=url, json=query.json_serialize(), auth=self.e3db_auth)

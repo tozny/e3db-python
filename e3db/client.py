@@ -312,6 +312,10 @@ class Client:
 
         resp = self.__query(q)
 
+        if 'error' in resp:
+            # we had an error, return this to user
+            raise QueryError(resp['error'])
+
         # take this apart
         last_index = resp['last_index']
         results = resp['results']
@@ -342,8 +346,7 @@ class Client:
                     record = __decrypt_record(record)
                 records.append(record)
 
-        import pdb; pdb.set_trace()
-
+        return QueryResult(q, records)
         #result = QueryResult(self, q, raw)
         #return result
 

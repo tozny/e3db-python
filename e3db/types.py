@@ -95,13 +95,12 @@ class ClientInfo():
 
 class QueryResult():
 
-    def __init__(self, client, query, raw):
-        self.client = client
+    def __init__(self, query, records):
         self.query = query
-        self.raw = raw
+        self.records = records
 
     def __iter__(self):
-        return self
+        return iter(self.records)
 
     def next(self):
         raise StopIteration

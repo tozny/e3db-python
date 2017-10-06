@@ -2,6 +2,7 @@ from auth import E3DBAuth
 from crypto import Crypto
 from config import Config
 from types import *
+from exceptions import *
 import requests
 import urllib
 
@@ -22,7 +23,7 @@ class Client:
     def debug(self):
         import pdb; pdb.set_trace()
 
-    def __is_email(id):
+    def __is_email(self, id):
         if "@" in id:
             return True
         else:
@@ -98,7 +99,7 @@ class Client:
         return box.decrypt(ciphertext, nonce)
 
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
-        url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         response = requests.get(url=url, auth=self.e3db_auth)
         # return None if eak not found, otherwise return eak
         if response.status_code == 404:
@@ -114,18 +115,18 @@ class Client:
         # Need to strip the nonce off the front of the eak
         eak = eak[len(nonce):]
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
-        url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         json = {
             'eak': encoded_eak
         }
         response = requests.put(url=url, json=json, auth=self.e3db_auth)
 
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
-        url = self.get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         requests.delete(url=url, auth=self.e3db_auth)
 
     def __outgoing_sharing(self):
-        url = self.get_url("v1", "storage", "policy", "outgoing")
+        url = self.__get_url("v1", "storage", "policy", "outgoing")
         resp = requests.get(url=url, auth=self.e3db_auth)
         # create list of policy objects, and return them
         policies = []
@@ -138,7 +139,7 @@ class Client:
         return policies
 
     def __incoming_sharing(self):
-        url = self.get_url("v1", "storage", "policy", "incoming")
+        url = self.__get_url("v1", "storage", "policy", "incoming")
         resp = requests.get(url=url, auth=self.e3db_auth)
         # create list of policy objects, and return them
         policies = []
@@ -149,6 +150,10 @@ class Client:
             for policy in resp.json():
                 policies.append(IncomingSharingPolicy(policy))
         return policies
+
+    def __get_url(self, *args):
+        # list of paths that we make a nice url from
+        return self.api_url + '/' + '/'.join(args)
 
     @classmethod
     def register(self, registration_token, client_name, public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
@@ -195,11 +200,11 @@ class Client:
     def client_info(self, client_id):
         if self.__is_email(client_id):
             # is email address, so get client id based on email
-            base_url = self.get_url("v1", "storage", "clients", "find")
+            base_url = self.__get_url("v1", "storage", "clients", "find")
             url = "{0}?email={1}".format(base_url, urllib.quote_plus(client_id))
             response = requests.get(url=url, auth=self.e3db_auth)
         else:
-            url = self.get_url("v1", "storage", "clients", client_id)
+            url = self.__get_url("v1", "storage", "clients", client_id)
             response = requests.get(url=url, auth=self.e3db_auth)
         json = response.json()
 
@@ -216,7 +221,7 @@ class Client:
             return Crypto.decode_public_key(client_info['public_key']['curve25519'])
 
     def __read_raw(self, record_id):
-        url = self.get_url("v1", "storage", "records", record_id)
+        url = self.__get_url("v1", "storage", "records", record_id)
         resp = requests.get(url=url, auth=self.e3db_auth)
         json = resp.json()
         # craft meta object
@@ -240,7 +245,7 @@ class Client:
         return self.__decrypt_record(self.__read_raw(record_id))
 
     def write(self, record_type, data, plain):
-        url = self.get_url("v1", "storage", "records")
+        url = self.__get_url("v1", "storage", "records")
         meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
@@ -252,11 +257,19 @@ class Client:
         return resp_json['meta']['record_id']
 
     def update(self, record):
-        # TODO
-        pass
+        record_serialized = record.json_serialize()
+        record_id = record_serialized['meta']['record_id']
+        version = record_serialized['meta']['version']
+        url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
+        resp = requests.put(url=url, json=record.json_serialize(), auth=self.e3db_auth)
+        if resp.status_code == 409:
+            raise ConflictError(record_id)
+        json = resp.json()
+        new_meta = json['meta']
+        record.get_meta().update(new_meta)
 
     def delete(self, record_id):
-        url = self.get_url("v1", "storage", "records", record_id)
+        url = self.__get_url("v1", "storage", "records", record_id)
         resp = requests.delete(url=url, auth=self.e3db_auth)
 
     def backup(self, client_id, registration_token):
@@ -277,12 +290,22 @@ class Client:
         # share this record type with the backup client
         self.share('tozny.key_backup', client_id)
 
-        url = self.get_url('v1', 'account', 'backup', registration_token, self.client_id)
+        url = self.__get_url('v1', 'account', 'backup', registration_token, self.client_id)
         requests.post(url=url, auth=self.e3db_auth)
 
     def query(self, data=True, raw=False, writer=None, record=None, record_type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
-        # TODO
-        pass
+        all_writers = False
+        if writer == "all":
+            all_writers = True
+            writer = []
+
+        q = Query(after_index=0, include_data=data, writer_ids=writer, \
+                record_ids=record, content_types=record_type, plain=plain, \
+                user_ids=None, count=page_size, \
+                include_all_writers=all_writers)
+
+        result = QueryResult(self, q, raw)
+        return result
 
     def share(self, record_type, reader_id):
         if reader_id == self.client_id:
@@ -293,7 +316,7 @@ class Client:
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
-        url = self.get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
 
         json = {
             'allow': [
@@ -309,7 +332,7 @@ class Client:
         elif self.__is_email(reader_id):
             reader_id = self.client_info(reader_id).json_serialize()['client_id']
 
-        url = self.get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
         json = {
             'deny': [
                 {
@@ -319,7 +342,3 @@ class Client:
         }
         requests.put(url=url, json=json, auth=self.e3db_auth)
         self.__delete_access_key(self.client_id, self.client_id, reader_id, record_type)
-
-    def get_url(self, *args):
-        # list of paths that we make a nice url from
-        return self.api_url + '/' + '/'.join(args)

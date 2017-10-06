@@ -49,6 +49,12 @@ class Record():
             'data': self.data
         }
 
+    def get_meta(self):
+        return self.meta
+
+    def update_meta(self, meta):
+        self.meta = meta
+
     def update(self, meta, data):
         self.meta.update(meta)
         self.data = data
@@ -98,3 +104,34 @@ class ClientInfo():
             'public_key': self.public_key,
             'validated': self.validated
         }
+
+class QueryResult():
+
+    def __init__(self, client, query, raw):
+        self.client = client
+        self.query = query
+        self.raw = raw
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        raise StopIteration
+        pass
+
+class Query():
+
+    def __init__(self, count, after_index=0, include_data=False, \
+        writer_ids=None, user_ids=None, record_ids=None, content_types=None, \
+        plain={}, include_all_writers=False):
+        self.count = count,
+        self.after_index = after_index,
+        self.include_data = include_data,
+        self.writer_ids = writer_ids,
+        self.user_ids = user_ids,
+        self.record_ids = record_ids,
+        self.content_types = content_types,
+        self.plain = plain,
+        self.include_all_writers = include_all_writers
+
+    def json_serialize()

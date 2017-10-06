@@ -6,4 +6,6 @@ client = e3db.Client(conf)
 
 record_id = client.write('test_type6', {"foo":"bar"}, {})
 record = client.read(record_id)
-client.debug()
+
+print record.json_serialize()['data']
+import pdb; pdb.set_trace()

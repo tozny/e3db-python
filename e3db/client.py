@@ -293,7 +293,7 @@ class Client:
         url = self.__get_url('v1', 'account', 'backup', registration_token, self.client_id)
         requests.post(url=url, auth=self.e3db_auth)
 
-    def query(self, data=True, raw=False, writer=None, record=None, record_type=None, plain=None, page_size=DEFAULT_QUERY_COUNT):
+    def query(self, data=True, raw=False, writer=[], record=[], record_type=[], plain=None, page_size=DEFAULT_QUERY_COUNT):
         all_writers = False
         if writer == "all":
             all_writers = True
@@ -304,8 +304,54 @@ class Client:
                 user_ids=None, count=page_size, \
                 include_all_writers=all_writers)
 
-        result = QueryResult(self, q, raw)
-        return result
+
+        # we need a client function to requests the query results from e3db server
+        # and that is then fed back into queryResult object that is iterable
+        # need to separate code + api calls from the data container that allows
+        # iteration
+
+        resp = self.__query(q)
+
+        # take this apart
+        last_index = resp['last_index']
+        results = resp['results']
+        records = []
+
+        for result in results:
+            result_meta = result['meta']
+            meta = Meta(
+                record_id=result_meta['record_id'],
+                writer_id=result_meta['writer_id'],
+                user_id=result_meta['user_id'],
+                record_type=result_meta['type'],
+                plain=result_meta['plain'],
+                created=result_meta['created'],
+                last_modified=result_meta['last_modified'],
+                version=result_meta['version']
+            )
+            result_data = result['record_data']
+            record = Record(meta=meta, data=result_data)
+
+            if data == True and raw == False:
+                # need to decrypt all the results before returning.
+                access_key = result['access_key']
+                if access_key:
+                    ak = self.__decrypt_eak(access_key)
+                    record = self.__decrypt_record_with_key(record, ak)
+                else:
+                    record = __decrypt_record(record)
+                records.append(record)
+
+        import pdb; pdb.set_trace()
+
+        #result = QueryResult(self, q, raw)
+        #return result
+
+    # Fetch a single page of query results. Used internally by {Client#query}.
+    def __query(self, query):
+      url = self.__get_url('v1', 'storage', 'search')
+      resp = requests.post(url=url, json=query.json_serialize(), auth=self.e3db_auth)
+      return resp.json()
 
     def share(self, record_type, reader_id):
         if reader_id == self.client_id:

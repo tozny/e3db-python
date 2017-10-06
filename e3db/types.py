@@ -26,18 +26,6 @@ class OutgoingSharingPolicy():
             'record_type': self.record_type
         }
 
-class PublicKey():
-    # TODO not used, remove?
-    def __init__(self, key_type, public_key):
-        self.key_type = str(key_type)
-        self.public_key = str(public_key)
-
-    def json_serialize(self):
-        return {self.key_type: self.public_key}
-
-    def get_pubkey(self):
-        return self.public_key
-
 class Record():
     def __init__(self, meta=None, data=None):
         self.meta = meta
@@ -124,14 +112,25 @@ class Query():
     def __init__(self, count, after_index=0, include_data=False, \
         writer_ids=None, user_ids=None, record_ids=None, content_types=None, \
         plain={}, include_all_writers=False):
-        self.count = count,
-        self.after_index = after_index,
-        self.include_data = include_data,
-        self.writer_ids = writer_ids,
-        self.user_ids = user_ids,
-        self.record_ids = record_ids,
-        self.content_types = content_types,
-        self.plain = plain,
+        self.count = count
+        self.after_index = after_index
+        self.include_data = include_data
+        self.writer_ids = writer_ids
+        self.user_ids = user_ids
+        self.record_ids = record_ids
+        self.content_types = content_types
+        self.plain = plain
         self.include_all_writers = include_all_writers
 
-    def json_serialize()
+    def json_serialize(self):
+        return {
+            'count': self.count,
+            'after_index': self.after_index,
+            'include_data': self.include_data,
+            'writer_ids': self.writer_ids,
+            'user_ids': self.user_ids,
+            'record_ids': self.record_ids,
+            'content_types': self.content_types,
+            'plain': self.plain,
+            'include_all_writers': self.include_all_writers
+        }

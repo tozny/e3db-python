@@ -1,5 +1,4 @@
 from config import Config
-from client import Client, PublicKey
+from client import Client
 from crypto import Crypto
-from types import PublicKey
 from exceptions import *

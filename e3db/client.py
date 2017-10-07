@@ -165,7 +165,9 @@ class Client:
             'token': registration_token,
             'client': {
                 'name': client_name,
-                'public_key': wrapped_public_key
+                'public_key': {
+                    'curve25519': public_key
+                }
             }
         }
         response = requests.post(url=url, json=payload)
@@ -175,12 +177,14 @@ class Client:
         if backup == True:
             if private_key == None:
                 raise RuntimeError, "Cannot back up client credentials without a private key!"
+
             else:
+                email = ""
                 config = Config('1',
                     client_info['client_id'], \
                     client_info['api_key_id'], \
                     client_info['api_secret'], \
-                    '', \
+                    email, \
                     public_key, \
                     private_key, \
                     api_url=api_url \

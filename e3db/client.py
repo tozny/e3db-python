@@ -248,7 +248,7 @@ class Client:
     def read(self, record_id):
         return self.__decrypt_record(self.__read_raw(record_id))
 
-    def write(self, record_type, data, plain):
+    def write(self, record_type, data, plain={}):
         url = self.__get_url("v1", "storage", "records")
         meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
@@ -257,8 +257,7 @@ class Client:
         resp_json = resp.json()
         meta.update(resp_json['meta']) # should be same
         decrypted = self.__decrypt_record(Record(meta, resp_json['data']))
-        # return record id
-        return resp_json['meta']['record_id']
+        return decrypted
 
     def update(self, record):
         record_serialized = record.to_json()

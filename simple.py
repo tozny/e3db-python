@@ -1,4 +1,8 @@
-import e3db
+# This program provides a few simple examples of reading, writing, and
+# querying e3db records. For more detailed information, please see the
+# documentation home page: https://tozny.com/documentation/e3db/
+#
+# Copyright: Copyright (c) 2017 Tozny, LLC
 
 # Example function to give us back a 5 digit "combination lock" code,
 # padded with zeros as needed, just for our tools example.
@@ -12,75 +16,121 @@ def generate_unlock_code():
     random_combo = csprng.randint(0, 99999)
     return '{:05d}'.format(random_combo)
 
+# ---------------------------------------------------------
+# Initialization
+# ---------------------------------------------------------
+import e3db
 
-conf = e3db.Config.load('dev-python')
+# Configuration files live in ~/.tozny and you can have several
+# different "profiles" like *dev* and *production*.
+
+# Load ~/.tozny/dev/e3db.json profile
+
+conf = e3db.Config.load('dev-python-test-3')
+
+# Load default config in ~/.tozny/e3db.json
+#conf = e3db.Config.load()
+
+# Now create a client using that configuration.
 client = e3db.Client(conf)
 
-record_type = 'Tools'
+# ---------------------------------------------------------
+# Writing a record
+# ---------------------------------------------------------
 
-# Shovel
+record_type = 'Tool'
+
+# Create a record by first creating a local version as a dictionary:
+data = {
+    'Storage': 'Blue Locked Tool Chest',
+    'Unlock Code': generate_unlock_code()
+}
+
+# Now encrypt the *value* part of the record, write it to the server and
+# the server returns the newly created record:
+
+record = client.write(record_type, data)
+record_id = record.to_json()['meta']['record_id']
+print "Wrote: {0}".format(record_id)
+
+# ---------------------------------------------------------
+# Simple reading and queries
+# ---------------------------------------------------------
+
+# Use the new record's unique ID to read the same record again from E3DB:
+new_record = client.read(record_id)
+print "Record: {0} {1}".format(new_record.to_json()['data']['Storage'], new_record.to_json()['data']['Unlock Code'])
+
+# Query for all records of type 'test-contact' and print out
+# a little bit of data and metadata.
+
+for record in client.query(record_type=[record_type]):
+    print "Data: {0} {1}".format(record.to_json()['data']['Storage'], record.to_json()['data']['Unlock Code'])
+    print "Metadata: {0} {1}".format(record.to_json()['meta']['record_id'], record.to_json()['meta']['type'])
+
+# ---------------------------------------------------------
+# Simple sharing by record type
+# ---------------------------------------------------------
+
+# Share all of the records of type 'test-contact' with Isaac's client ID:
+#isaac_client_id = 'db1744b9-3fb6-4458-a291-0bc677dba08b'
+isaac_client_id = 'fb0bb5b1-4d12-4b19-8171-a82255229494'
+
+client.share(record_type, isaac_client_id)
+
+# ---------------------------------------------------------
+# More complex queries
+# ---------------------------------------------------------
+
+# Create some new records of the same type (note that they are also shared
+# automatically since they are a type that we have shared above. We
+# will also add some "plain" fields that are not secret but can be used
+# for efficient querying:
+
 shovel_plain = {
     "Location": "Shed",
-    "Storage": "Green Locked Tool Chest",
     "Tool": "Shovel"
 }
-shovel_secret = {"Unlock Code": generate_unlock_code()}
-client.write(record_type, shovel_secret, shovel_plain)
+shovel_data = {
+    "Storage": "Green Locked Tool Chest",
+    "Unlock Code": generate_unlock_code()
+}
+client.write(record_type, shovel_data, shovel_plain)
 
-# Hammer
 hammer_plain = {
     "Location": "Shed",
-    "Storage": "Red Locked Tool Chest",
     "Tool": "Hammer"
 }
-hammer_secret = {"Unlock Code": generate_unlock_code()}
-client.write(record_type, hammer_secret, hammer_plain)
+hammer_data = {
+    "Storage": "Red Locked Tool Chest",
+    "Unlock Code": generate_unlock_code()
+}
+client.write(record_type, hammer_data, hammer_plain)
 
-# Drill
 drill_plain = {
     "Location": "Garage",
-    "Storage": "Black Locked Storage Box",
     "Tool": "Drill"
 }
+drill_data = {
+    "Storage": "Black Locked Storage Box",
+    "Unlock Code": generate_unlock_code()
+}
+client.write(record_type, drill_data, drill_plain)
 
-drill_secret = {"Unlock Code": generate_unlock_code()}
-client.write(record_type, drill_secret, drill_plain)
-
-# get all records of above type
-print "Listing all records of type: {0}".format(record_type)
-for record in client.query(record_type=[record_type]):
-    record_json = record.to_json()
-    tool_type = record_json['meta']['plain']['Tool']
-    location = record_json['meta']['plain']['Location']
-    storage = record_json['meta']['plain']['Storage']
-    unlock_code = record_json['data']['Unlock Code']
-
-    print "Tool: {0}, Location: {1}, Storage: {2}, Unlock Code: {3}".format(
-        tool_type, location, storage, unlock_code)
-
-
-print "\nListing all records that list the tool: Hammer"
-basic_query = {
+# Create a query that finds all tool storage locations that are Hammers, but not others:
+hammer_query = {
     'eq': {
         'name': 'Tool',
         'value': 'Hammer'
     }
 }
 
-hammer_query = client.query(plain=basic_query)
-for record in hammer_query:
-    record_json = record.to_json()
-    tool_type = record_json['meta']['plain']['Tool']
-    location = record_json['meta']['plain']['Location']
-    storage = record_json['meta']['plain']['Storage']
-    unlock_code = record_json['data']['Unlock Code']
+# Execute that query:
+for record in client.query(plain=hammer_query):
+    print "Data: {0} {1}".format(record.to_json()['data']['Storage'], record.to_json()['data']['Unlock Code'])
 
-    print "Tool: {0}, Location: {1}, Storage: {2}, Unlock Code: {3}".format(
-        tool_type, location, storage, unlock_code)
-
-
-print "\nListing all tools that are Shovels, and are also in the Shed:"
-advanced_query = {
+# Now create a more complex query with only the Hammers that are in the Shed
+drill_query = {
     'and': [
         {
             'eq': {
@@ -91,18 +141,37 @@ advanced_query = {
         {
             'eq': {
                 'name': 'Tool',
-                'value': 'Shovel'
+                'value': 'Hammer'
                 },
         },
     ]
 }
 
-for record in client.query(plain=advanced_query):
-    record_json = record.to_json()
-    tool_type = record_json['meta']['plain']['Tool']
-    location = record_json['meta']['plain']['Location']
-    storage = record_json['meta']['plain']['Storage']
-    unlock_code = record_json['data']['Unlock Code']
+# Execute that query:
+for record in client.query(plain=drill_query):
+    print "Data: {0} {1}".format(record.to_json()['data']['Storage'], record.to_json()['data']['Unlock Code'])
 
-    print "Tool: {0}, Location: {1}, Storage: {2}, Unlock Code: {3}".format(
-        tool_type, location, storage, unlock_code)
+# ---------------------------------------------------------
+# Learning about other clients
+# ---------------------------------------------------------
+
+isaac_client_info = client.client_info(isaac_client_id)
+print isaac_client_info.to_json()
+
+# Get the public key:
+isaac_pub_key = client.client_info(isaac_client_id)
+print isaac_client_info.public_key()
+
+# ---------------------------------------------------------
+# Clean up - Comment these out if you want to experiment
+# ---------------------------------------------------------
+
+# Revoke the sharing created by the client.share
+client.revoke(record_type, isaac_client_id)
+
+# Delete the record we created above
+client.delete(record_id)
+
+# Delete all of the records of type Tool from previous runs:
+for record in client.query(record_type=[record_type]):
+    client.delete(record.to_json()['meta']['record_id'])

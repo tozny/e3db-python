@@ -73,6 +73,7 @@ class Meta():
             'last_modified': self.last_modified,
             'version': self.version
         }
+
     def update(self, json):
         self.record_id = json['record_id']
         self.writer_id = json['writer_id']
@@ -85,16 +86,19 @@ class Meta():
 
 class ClientInfo():
     def __init__(self, client_id, public_key, validated):
-        self.client_id = str(client_id)
-        self.public_key = public_key
-        self.validated = validated
+        self.__client_id = str(client_id)
+        self.__public_key = public_key
+        self.__validated = validated
 
     def to_json(self):
         return {
-            'client_id': self.client_id,
-            'public_key': self.public_key,
-            'validated': self.validated
+            'client_id': self.__client_id,
+            'public_key': self.__public_key,
+            'validated': self.__validated
         }
+
+    def public_key(self):
+        return self.__public_key['curve25519']
 
 class ClientDetails():
     def __init__(self, json):

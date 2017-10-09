@@ -25,11 +25,10 @@ import e3db
 # different "profiles" like *dev* and *production*.
 
 # Load ~/.tozny/dev/e3db.json profile
-
-conf = e3db.Config.load('dev-python-test-3')
+# conf = e3db.Config.load('dev')
 
 # Load default config in ~/.tozny/e3db.json
-#conf = e3db.Config.load()
+conf = e3db.Config.load()
 
 # Now create a client using that configuration.
 client = e3db.Client(conf)
@@ -72,9 +71,8 @@ for record in client.query(record_type=[record_type]):
 # Simple sharing by record type
 # ---------------------------------------------------------
 
-# Share all of the records of type 'test-contact' with Isaac's client ID:
-#isaac_client_id = 'db1744b9-3fb6-4458-a291-0bc677dba08b'
-isaac_client_id = 'fb0bb5b1-4d12-4b19-8171-a82255229494'
+# Share all of the records of type 'Tool' with Isaac's client ID:
+isaac_client_id = 'db1744b9-3fb6-4458-a291-0bc677dba08b'
 
 client.share(record_type, isaac_client_id)
 

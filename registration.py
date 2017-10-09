@@ -25,7 +25,7 @@ api_url = os.environ["DEFAULT_API_URL"] # TODO REMOVE
 
 print "Using Registration Token: {0}".format(token)
 
-private_key, public_key = e3db.Client.generate_keypair()
+public_key, private_key = e3db.Client.generate_keypair()
 
 print "Public Key: {0}".format(public_key)
 print "Private Key: {0}".format(private_key)

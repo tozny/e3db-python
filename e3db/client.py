@@ -156,7 +156,7 @@ class Client:
         return self.api_url + '/' + '/'.join(args)
 
     @classmethod
-    def register(self, registration_token, client_name, public_key, api_url=DEFAULT_API_URL, private_key=None, backup=False):
+    def register(self, registration_token, client_name, public_key, private_key=None, backup=False, api_url=DEFAULT_API_URL):
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
         wrapped_public_key = {
             'curve25519': public_key
@@ -198,8 +198,8 @@ class Client:
 
     @classmethod
     def generate_keypair(self):
-        private_key, public_key = Crypto.generate_keypair()
-        return Crypto.encode_private_key(private_key), Crypto.encode_public_key(public_key)
+        public_key, private_key = Crypto.generate_keypair()
+        return Crypto.encode_public_key(public_key), Crypto.encode_private_key(private_key)
 
     def client_info(self, client_id):
         if self.__is_email(client_id):

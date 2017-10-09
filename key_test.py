@@ -6,7 +6,7 @@ import e3db
 # based on https://pynacl.readthedocs.io/en/latest/public/, but with e3db wrappers
 
 # create bob keys
-skbob, pkbob = e3db.Crypto.generate_keypair()
+pkbob, skbob = e3db.Crypto.generate_keypair()
 
 skbob_encoded = e3db.Crypto.encode_private_key(skbob)
 skbob_decoded = e3db.Crypto.decode_private_key(skbob_encoded)
@@ -16,7 +16,7 @@ pkbob_decoded = e3db.Crypto.decode_public_key(pkbob_encoded)
 
 
 # create alice keys
-skalice, pkalice = e3db.Crypto.generate_keypair()
+pkalice, skalice = e3db.Crypto.generate_keypair()
 
 skalice_encoded = e3db.Crypto.encode_private_key(skalice)
 skalice_decoded = e3db.Crypto.decode_private_key(skalice_encoded)

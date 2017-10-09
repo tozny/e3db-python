@@ -52,4 +52,4 @@ class Crypto:
     def generate_keypair(self):
         # return public, private
         key = nacl.public.PrivateKey.generate()
-        return key, key.public_key
+        return key.public_key, key

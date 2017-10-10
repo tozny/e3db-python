@@ -23,12 +23,6 @@ class Client:
     def debug(self):
         import pdb; pdb.set_trace()
 
-    def __is_email(self, id):
-        if "@" in id:
-            return True
-        else:
-            return False
-
     def __decrypt_record(self, record):
         meta = record.to_json()['meta']
         writer_id = meta['writer_id']
@@ -202,15 +196,12 @@ class Client:
         return Crypto.encode_public_key(public_key), Crypto.encode_private_key(private_key)
 
     def client_info(self, client_id):
-        if self.__is_email(client_id):
-            # is email address, so get client id based on email
-            base_url = self.__get_url("v1", "storage", "clients", "find")
-            url = "{0}?email={1}".format(base_url, urllib.quote_plus(client_id))
-            response = requests.get(url=url, auth=self.e3db_auth)
-        else:
-            url = self.__get_url("v1", "storage", "clients", client_id)
-            response = requests.get(url=url, auth=self.e3db_auth)
+        url = self.__get_url("v1", "storage", "clients", client_id)
+        response = requests.get(url=url, auth=self.e3db_auth)
         json = response.json()
+
+        if response.status_code == 404:
+            raise LookupError('Client ID not found: {0}'.format(client_id))
 
         client_id = json['client_id']
         public_key = json['public_key']
@@ -248,7 +239,7 @@ class Client:
     def read(self, record_id):
         return self.__decrypt_record(self.__read_raw(record_id))
 
-    def write(self, record_type, data, plain={}):
+    def write(self, record_type, data, plain=None):
         url = self.__get_url("v1", "storage", "records")
         meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
@@ -271,8 +262,8 @@ class Client:
         new_meta = json['meta']
         record.get_meta().update(new_meta)
 
-    def delete(self, record_id):
-        url = self.__get_url("v1", "storage", "records", record_id)
+    def delete(self, record_id, version):
+        url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
         resp = requests.delete(url=url, auth=self.e3db_auth)
 
     def backup(self, client_id, registration_token):
@@ -361,8 +352,6 @@ class Client:
     def share(self, record_type, reader_id):
         if reader_id == self.client_id:
             return
-        elif self.__is_email(reader_id):
-            reader_id = self.client_info(reader_id).to_json()['client_id']
 
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
@@ -380,8 +369,6 @@ class Client:
     def revoke(self, record_type, reader_id):
         if reader_id == self.client_id:
             return
-        elif self.__is_email(reader_id):
-            reader_id = self.client_info(reader_id).to_json()['client_id']
 
         url = self.__get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
         json = {

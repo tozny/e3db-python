@@ -50,6 +50,7 @@ data = {
 
 record = client.write(record_type, data)
 record_id = record.to_json()['meta']['record_id']
+record_version = record.to_json()['meta']['version']
 print "Wrote: {0}".format(record_id)
 
 # ---------------------------------------------------------
@@ -73,7 +74,6 @@ for record in client.query(record_type=[record_type]):
 
 # Share all of the records of type 'Tool' with Isaac's client ID:
 isaac_client_id = 'db1744b9-3fb6-4458-a291-0bc677dba08b'
-
 client.share(record_type, isaac_client_id)
 
 # ---------------------------------------------------------
@@ -168,8 +168,8 @@ print isaac_client_info.public_key()
 client.revoke(record_type, isaac_client_id)
 
 # Delete the record we created above
-client.delete(record_id)
+client.delete(record_id, record_version)
 
 # Delete all of the records of type Tool from previous runs:
 for record in client.query(record_type=[record_type]):
-    client.delete(record.to_json()['meta']['record_id'])
+    client.delete(record.to_json()['meta']['record_id'], record.to_json()['meta']['version'])

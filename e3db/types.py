@@ -57,11 +57,13 @@ class Meta():
         self.record_id = record_id
         self.writer_id = writer_id
         self.user_id = user_id
-        self.record_type = record_type
+        self.record_type = str(record_type)
         self.plain = plain
+        # datetime.strptime(created, '%Y-%m-%dT%H:%M:%S.%fZ')
         self.created = created
         self.last_modified = last_modified
         self.version = version
+
     def to_json(self):
         return {
             'record_id': self.record_id,

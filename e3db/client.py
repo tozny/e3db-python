@@ -23,6 +23,25 @@ class Client:
     def debug(self):
         import pdb; pdb.set_trace()
 
+    @classmethod
+    def __response_check(self, response):
+        '''
+        Takes in requests.models.Response object, and determines if there was
+        and error with the request. If there was an error, we raise an error
+        with the APIError exception and a message detailing the error.
+        Does not return anything.
+        '''
+        # Map of HTTP error codes to exception messages
+        errors = {
+            401: 'Unauthenticated: HTTP 401',
+            403: 'Unauthorized: HTTP 403',
+            404: 'Requested item not found: HTTP 404',
+            409: 'Existing item cannot be modified: HTTP 409'
+        }
+
+        if response.status_code in errors:
+            raise APIError(errors[response.status_code])
+
     def __decrypt_record(self, record):
         meta = record.to_json()['meta']
         writer_id = meta['writer_id']
@@ -100,6 +119,7 @@ class Client:
         if response.status_code == 404:
             return None
         else:
+            self.__response_check(response)
             json = response.json()
             return self.__decrypt_eak(json)
 
@@ -114,7 +134,8 @@ class Client:
         json = {
             'eak': encoded_eak
         }
-        requests.put(url=url, json=json, auth=self.e3db_auth)
+        response = requests.put(url=url, json=json, auth=self.e3db_auth)
+        self.__response_check(response)
 
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
@@ -122,23 +143,25 @@ class Client:
 
     def __outgoing_sharing(self):
         url = self.__get_url("v1", "storage", "policy", "outgoing")
-        resp = requests.get(url=url, auth=self.e3db_auth)
+        response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
         # create list of policy objects, and return them
         policies = []
         # check if there are no policies
-        if resp.json():
-            for policy in resp.json():
+        if response.json():
+            for policy in response.json():
                 policies.append(IncomingSharingPolicy(policy))
         return policies
 
     def __incoming_sharing(self):
         url = self.__get_url("v1", "storage", "policy", "incoming")
-        resp = requests.get(url=url, auth=self.e3db_auth)
+        response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
         # create list of policy objects, and return them
         policies = []
         # check if there are no policies
-        if resp.json():
-            for policy in resp.json():
+        if response.json():
+            for policy in response.json():
                 policies.append(IncomingSharingPolicy(policy))
         return policies
 
@@ -162,6 +185,7 @@ class Client:
             }
         }
         response = requests.post(url=url, json=payload)
+        self.__response_check(response)
         client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
 
@@ -194,6 +218,7 @@ class Client:
     def client_info(self, client_id):
         url = self.__get_url("v1", "storage", "clients", client_id)
         response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
         json = response.json()
 
         if response.status_code == 404:
@@ -213,8 +238,9 @@ class Client:
 
     def __read_raw(self, record_id):
         url = self.__get_url("v1", "storage", "records", record_id)
-        resp = requests.get(url=url, auth=self.e3db_auth)
-        json = resp.json()
+        response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
+        json = response.json()
         # craft meta object
         # craft record object
         meta_json = json['meta']
@@ -240,10 +266,11 @@ class Client:
         meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
-        resp = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
-        resp_json = resp.json()
-        meta.update(resp_json['meta']) # should be same
-        decrypted = self.__decrypt_record(Record(meta, resp_json['data']))
+        response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
+        self.__response_check(response)
+        response_json = response.json()
+        meta.update(response_json['meta']) # should be same
+        decrypted = self.__decrypt_record(Record(meta, response_json['data']))
         return decrypted
 
     def update(self, record):
@@ -251,16 +278,16 @@ class Client:
         record_id = record_serialized['meta']['record_id']
         version = record_serialized['meta']['version']
         url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
-        resp = requests.put(url=url, json=record.to_json(), auth=self.e3db_auth)
-        if resp.status_code == 409:
-            raise ConflictError(record_id)
-        json = resp.json()
+        response = requests.put(url=url, json=record.to_json(), auth=self.e3db_auth)
+        self.__response_check(response)
+        json = response.json()
         new_meta = json['meta']
         record.get_meta().update(new_meta)
 
     def delete(self, record_id, version):
         url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
-        resp = requests.delete(url=url, auth=self.e3db_auth)
+        response = requests.delete(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
 
     def backup(self, client_id, registration_token):
         # credentials must be json encoded in order to decode
@@ -281,7 +308,8 @@ class Client:
         self.share('tozny.key_backup', client_id)
 
         url = self.__get_url('v1', 'account', 'backup', registration_token, self.client_id)
-        requests.post(url=url, auth=self.e3db_auth)
+        response = requests.post(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
 
     def query(self, data=True, raw=False, writer=[], record=[], record_type=[], plain=None, page_size=DEFAULT_QUERY_COUNT):
         all_writers = False
@@ -294,15 +322,15 @@ class Client:
                 user_ids=None, count=page_size, \
                 include_all_writers=all_writers)
 
-        resp = self.__query(q)
+        response = self.__query(q)
 
-        if 'error' in resp:
+        if 'error' in response:
             # we had an error, return this to user
-            raise QueryError(resp['error'])
+            raise QueryError(response['error'])
 
         # take this apart
-        last_index = resp['last_index']
-        results = resp['results']
+        last_index = response['last_index']
+        results = response['results']
         records = []
 
         for result in results:
@@ -336,8 +364,9 @@ class Client:
     # Fetch a single page of query results. Used internally by Client.query.
     def __query(self, query):
       url = self.__get_url('v1', 'storage', 'search')
-      resp = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
-      return resp.json()
+      response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+      self.__response_check(response)
+      return response.json()
 
     def share(self, record_type, reader_id):
         if reader_id == self.client_id:
@@ -354,7 +383,8 @@ class Client:
             ]
         }
 
-        requests.put(url=url, json=json, auth=self.e3db_auth)
+        response = requests.put(url=url, json=json, auth=self.e3db_auth)
+        self.__response_check(response)
 
     def revoke(self, record_type, reader_id):
         if reader_id == self.client_id:
@@ -368,5 +398,6 @@ class Client:
                 }
             ]
         }
-        requests.put(url=url, json=json, auth=self.e3db_auth)
+        response = requests.put(url=url, json=json, auth=self.e3db_auth)
+        self.__response_check(response)
         self.__delete_access_key(self.client_id, self.client_id, reader_id, record_type)

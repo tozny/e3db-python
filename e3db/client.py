@@ -20,9 +20,6 @@ class Client:
         self.private_key = config['private_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
 
-    def debug(self):
-        import pdb; pdb.set_trace()
-
     @classmethod
     def __response_check(self, response):
         '''
@@ -57,7 +54,7 @@ class Client:
             fields = value.split(".")
 
             if len(fields) != 4:
-                raise CryptoError("Fields in encrypted record were more than 4: {0}".format(value))
+                raise CryptoError("Invalid Encrypted record fields: {0}".format(value))
 
             edk = Crypto.base64decode(fields[0])
             edkN = Crypto.base64decode(fields[1])
@@ -106,7 +103,7 @@ class Client:
         authorizer_pubkey = Crypto.decode_public_key(k)
         fields = eak_json['eak'].split('.')
         if len(fields) != 2:
-            raise EAKError("More than two fields in EAK: {0}".format(eak_json['eak']))
+            raise CryptoError("Invalid access key format: {0}".format(eak_json['eak']))
         ciphertext = Crypto.base64decode(fields[0])
         nonce = Crypto.base64decode(fields[1])
         return Crypto.decrypt_eak(Crypto.decode_private_key(self.private_key), authorizer_pubkey, ciphertext, nonce)
@@ -307,13 +304,13 @@ class Client:
         response = requests.post(url=url, auth=self.e3db_auth)
         self.__response_check(response)
 
-    def query(self, data=True, writer=[], record=[], record_type=[], plain=None, page_size=DEFAULT_QUERY_COUNT):
+    def query(self, data=True, writer=[], record=[], record_type=[], plain=None, page_size=DEFAULT_QUERY_COUNT, last_index=0):
         all_writers = False
         if writer == "all":
             all_writers = True
             writer = []
 
-        q = Query(after_index=0, include_data=data, writer_ids=writer, \
+        q = Query(after_index=last_index, include_data=data, writer_ids=writer, \
                 record_ids=record, content_types=record_type, plain=plain, \
                 user_ids=None, count=page_size, \
                 include_all_writers=all_writers)

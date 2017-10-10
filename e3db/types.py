@@ -139,6 +139,9 @@ class QueryResult():
         raise StopIteration
         pass
 
+    def get_after_index(self):
+        return self.query.get_after_index()
+
 class Query():
 
     def __init__(self, count, after_index=0, include_data=False, \
@@ -153,6 +156,9 @@ class Query():
         self.content_types = content_types
         self.plain = plain
         self.include_all_writers = include_all_writers
+
+    def get_after_index(self):
+        return self.after_index
 
     def to_json(self):
         return {

@@ -6,10 +6,6 @@ class LookupError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during lookup: {0}".format(text))
 
-class EAKError(Exception):
-    def __init__(self, text):
-        Exception.__init__(self, "Error during EAK operation: {0}".format(text))
-
 class CryptoError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during Crypto operation: {0}".format(text))

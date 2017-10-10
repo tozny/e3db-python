@@ -307,7 +307,7 @@ class Client:
         response = requests.post(url=url, auth=self.e3db_auth)
         self.__response_check(response)
 
-    def query(self, data=True, raw=False, writer=[], record=[], record_type=[], plain=None, page_size=DEFAULT_QUERY_COUNT):
+    def query(self, data=True, writer=[], record=[], record_type=[], plain=None, page_size=DEFAULT_QUERY_COUNT):
         all_writers = False
         if writer == "all":
             all_writers = True
@@ -335,7 +335,7 @@ class Client:
             result_data = result['record_data']
             record = Record(meta=meta, data=result_data)
 
-            if data == True and raw == False:
+            if data:
                 # need to decrypt all the results before returning.
                 access_key = result['access_key']
                 if access_key:

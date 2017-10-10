@@ -51,18 +51,19 @@ class Record():
         self.data = data
 
 class Meta():
-    def __init__(self, record_id=None, writer_id=None, user_id=None, \
-        record_type=None, plain=None, created=None, last_modified=None, \
-        version=None):
-        self.record_id = record_id
-        self.writer_id = writer_id
-        self.user_id = user_id
-        self.record_type = str(record_type)
-        self.plain = plain
+    def __init__(self, json):
+        # required
+        self.writer_id = json['writer_id']
+        self.user_id = json['user_id']
+        self.record_type = str(json['type'])
+        self.plain = json['plain']
+        # optional, as some get set by the server
+        # set these to None if they are not included when init is called.
+        self.record_id = json['record_id'] if 'record_id' in json else None
         # datetime.strptime(created, '%Y-%m-%dT%H:%M:%S.%fZ')
-        self.created = created
-        self.last_modified = last_modified
-        self.version = version
+        self.created = json['created'] if 'created' in json else None
+        self.last_modified = json['last_modified'] if 'last_modified' in json else None
+        self.version = json['version'] if 'version' in json else None
 
     def to_json(self):
         return {

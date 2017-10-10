@@ -68,9 +68,8 @@ class Client:
             pv = Crypto.decrypt_secret(dk, ef, efN)
 
             encrypted_record['data'][key] = pv
-        # swap encrypted data with plaintext record information
-        record.update(encrypted_record['meta'], encrypted_record['data'])
-        return record
+        # return new Record object data with plaintext data
+        return Record(Meta(encrypted_record['meta']), encrypted_record['data'])
 
     def __encrypt_record(self, plaintext_record):
         record = plaintext_record.to_json()
@@ -87,6 +86,7 @@ class Client:
             ak = Crypto.random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
+        # Loop through the plaintext fields and encrypt them
         for key, value in record['data'].iteritems():
             dk = Crypto.random_key()
             efN = Crypto.random_nonce()
@@ -98,9 +98,8 @@ class Client:
 
             record['data'][key] = ".".join([Crypto.base64encode(c) for c in [edk, edkN, ef, efN]])
 
-        # swap plaintext data with encrypted record information
-        plaintext_record.update(record['meta'], record['data'])
-        return plaintext_record
+        # return new Record object data with encrypted data
+        return Record(Meta(meta), record['data'])
 
     def __decrypt_eak(self, eak_json):
         k = eak_json['authorizer_public_key']['curve25519']
@@ -245,16 +244,7 @@ class Client:
         # craft record object
         meta_json = json['meta']
         data_json = json['data']
-        meta = Meta(
-                record_id=meta_json['record_id'],
-                writer_id=meta_json['writer_id'],
-                user_id=meta_json['user_id'],
-                record_type=meta_json['type'],
-                plain=meta_json['plain'],
-                created=meta_json['created'],
-                last_modified=meta_json['last_modified'],
-                version=meta_json['version']
-            )
+        meta = Meta(meta_json)
         record = Record(meta, data_json)
         return record
 
@@ -263,7 +253,13 @@ class Client:
 
     def write(self, record_type, data, plain=None):
         url = self.__get_url("v1", "storage", "records")
-        meta = Meta(writer_id=self.client_id, user_id=self.client_id, record_type=record_type, plain=plain)
+        meta_data = {
+            'writer_id': self.client_id,
+            'user_id': self.client_id,
+            'type': record_type,
+            'plain': plain
+        }
+        meta = Meta(meta_data)
         record = Record(meta, data)
         encrypted_record = self.__encrypt_record(record)
         response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
@@ -335,16 +331,7 @@ class Client:
 
         for result in results:
             result_meta = result['meta']
-            meta = Meta(
-                record_id=result_meta['record_id'],
-                writer_id=result_meta['writer_id'],
-                user_id=result_meta['user_id'],
-                record_type=result_meta['type'],
-                plain=result_meta['plain'],
-                created=result_meta['created'],
-                last_modified=result_meta['last_modified'],
-                version=result_meta['version']
-            )
+            meta = Meta(result_meta)
             result_data = result['record_data']
             record = Record(meta=meta, data=result_data)
 

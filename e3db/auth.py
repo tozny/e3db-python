@@ -2,6 +2,7 @@ import requests
 from requests.auth import AuthBase
 from requests.auth import HTTPBasicAuth
 import datetime
+from exceptions import *
 
 class E3DBAuth(AuthBase):
     DEFAULT_API_URL = "https://api.e3db.com"
@@ -26,6 +27,12 @@ class E3DBAuth(AuthBase):
                 expire_time = refresh_json['expires_at']
                 # now save that as a datetime object so we can do later comparison
                 self.expires_at = datetime.datetime.strptime(expire_time, "%Y-%m-%dT%H:%M:%S.%fZ" )
-            # TODO throw error if auth failed
+            # we need to make sure if an error happened we raise the proper exception
+            elif refresh_request.status_code == 401:
+                raise APIError("Unauthorized. Check your API key pair to ensure it is valid.")
+            else:
+                raise APIError("Authentication failure: HTTP Status: {0}".format(refresh_request.status_code))
+
+        # Add the bearer token to the request we want to send
         r.headers['Authorization'] = 'Bearer ' + str(self.token)
         return r

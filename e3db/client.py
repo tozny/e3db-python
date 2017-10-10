@@ -45,8 +45,8 @@ class Client:
             ef = Crypto.base64decode(fields[2])
             efN = Crypto.base64decode(fields[3])
 
-            dk = Crypto.secret_box(ak).decrypt(edk, edkN)
-            pv = Crypto.secret_box(dk).decrypt(ef, efN)
+            dk = Crypto.decrypt_secret(ak, edk, edkN)
+            pv = Crypto.decrypt_secret(dk, ef, efN)
 
             encrypted_record['data'][key] = pv
         # swap encrypted data with plaintext record information
@@ -65,16 +65,16 @@ class Client:
 
         # if the ak is missing, we need to create and push one to the server.=
         if ak == None:
-            ak = Crypto.secret_box_random_key()
+            ak = Crypto.random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
         for key, value in record['data'].iteritems():
-            dk = Crypto.secret_box_random_key()
-            efN = Crypto.secret_box_random_nonce()
-            ef = Crypto.secret_box(dk).encrypt(str(value), efN)
+            dk = Crypto.random_key()
+            efN = Crypto.random_nonce()
+            ef = Crypto.encrypt_secret(dk, str(value), efN)
             ef = ef[len(efN):] # remove nonce from ciphertext
-            edkN = Crypto.secret_box_random_nonce()
-            edk = Crypto.secret_box(ak).encrypt(dk, edkN)
+            edkN = Crypto.random_nonce()
+            edk = Crypto.encrypt_secret(ak, dk, edkN)
             edk = edk[len(edkN):] # remove nonce from ciphertext
 
             record['data'][key] = ".".join([Crypto.base64encode(c) for c in [edk, edkN, ef, efN]])
@@ -87,12 +87,11 @@ class Client:
         k = eak_json['authorizer_public_key']['curve25519']
         authorizer_pubkey = Crypto.decode_public_key(k)
         fields = eak_json['eak'].split('.')
-        if len(fields) != 2
-            raise EAKError("More than two fields in EAK: {0}".format(eak_json['eak'])
+        if len(fields) != 2:
+            raise EAKError("More than two fields in EAK: {0}".format(eak_json['eak']))
         ciphertext = Crypto.base64decode(fields[0])
         nonce = Crypto.base64decode(fields[1])
-        box = Crypto.box(Crypto.decode_private_key(self.private_key), authorizer_pubkey)
-        return box.decrypt(ciphertext, nonce)
+        return Crypto.decrypt_eak(Crypto.decode_private_key(self.private_key), authorizer_pubkey, ciphertext, nonce)
 
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
@@ -106,8 +105,8 @@ class Client:
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
         reader_key = self.__client_key(reader_id)
-        nonce = Crypto.secret_box_random_nonce()
-        eak = Crypto.box(Crypto.decode_private_key(self.private_key), reader_key).encrypt(ak, nonce)
+        nonce = Crypto.random_nonce()
+        eak = Crypto.encrypt_ak(Crypto.decode_private_key(self.private_key), reader_key, ak, nonce)
         # Need to strip the nonce off the front of the eak
         eak = eak[len(nonce):]
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))

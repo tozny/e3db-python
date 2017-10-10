@@ -4,6 +4,23 @@ import nacl.secret
 import nacl.public
 
 class Crypto:
+
+    @classmethod
+    def encrypt_secret(self, ak, plain, nonce):
+        return Crypto.secret_box(ak).encrypt(plain, nonce)
+
+    @classmethod
+    def decrypt_secret(self, ak, ciphertext, nonce):
+        return Crypto.secret_box(ak).decrypt(ciphertext, nonce)
+
+    @classmethod
+    def encrypt_ak(self, private_key, public_key, ak, nonce):
+        return Crypto.box(private_key, public_key).encrypt(ak, nonce)
+
+    @classmethod
+    def decrypt_eak(self, private_key, public_key, eak, nonce):
+        return Crypto.box(private_key, public_key).decrypt(eak, nonce)
+
     @classmethod
     def box(self, private_key, public_key):
         return nacl.public.Box(private_key, public_key)
@@ -29,11 +46,11 @@ class Crypto:
         return Crypto.base64encode(key)
 
     @classmethod
-    def secret_box_random_key(self):
+    def random_key(self):
         return nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
 
     @classmethod
-    def secret_box_random_nonce(self):
+    def random_nonce(self):
         return nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
 
     @classmethod

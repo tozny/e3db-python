@@ -17,3 +17,7 @@ class EAKError(Exception):
 class CryptoError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during Crypto operation: {0}".format(text))
+
+class APIError(Exception):
+    def __init__(self, text):
+        Exception.__init__(self, "Error during API operation: {0}".format(text))

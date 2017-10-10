@@ -26,7 +26,7 @@ pkalice_decoded = e3db.Crypto.decode_public_key(pkalice_encoded)
 
 bob_box = e3db.Crypto.box(skbob_decoded, pkalice_decoded)
 
-message = "Kill all humanz"
+message = "Tozny is awesome."
 
 nonce = e3db.Crypto.secret_box_random_nonce()
 

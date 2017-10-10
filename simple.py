@@ -157,7 +157,6 @@ isaac_client_info = client.client_info(isaac_client_id)
 print isaac_client_info.to_json()
 
 # Get the public key:
-isaac_pub_key = client.client_info(isaac_client_id)
 print isaac_client_info.public_key()
 
 # ---------------------------------------------------------

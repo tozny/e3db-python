@@ -37,6 +37,9 @@ class Client:
         for key,value in encrypted_record['data'].iteritems():
             fields = value.split(".")
 
+            if len(fields) != 4:
+                raise CryptoError("Fields in encrypted record were more than 4: {0}".format(value))
+
             edk = Crypto.base64decode(fields[0])
             edkN = Crypto.base64decode(fields[1])
             ef = Crypto.base64decode(fields[2])
@@ -74,19 +77,18 @@ class Client:
             edk = Crypto.secret_box(ak).encrypt(dk, edkN)
             edk = edk[len(edkN):] # remove nonce from ciphertext
 
-            record['data'][key] = "{0}.{1}.{2}.{3}".format(Crypto.base64encode(edk), \
-                Crypto.base64encode(edkN), \
-                Crypto.base64encode(ef), \
-                Crypto.base64encode(efN))
+            record['data'][key] = ".".join([Crypto.base64encode(c) for c in [edk, edkN, ef, efN]])
 
         # swap plaintext data with encrypted record information
         plaintext_record.update(record['meta'], record['data'])
         return plaintext_record
 
-    def __decrypt_eak(self, json):
-        k = json['authorizer_public_key']['curve25519']
+    def __decrypt_eak(self, eak_json):
+        k = eak_json['authorizer_public_key']['curve25519']
         authorizer_pubkey = Crypto.decode_public_key(k)
-        fields = json['eak'].split('.')
+        fields = eak_json['eak'].split('.')
+        if len(fields) != 2
+            raise EAKError("More than two fields in EAK: {0}".format(eak_json['eak'])
         ciphertext = Crypto.base64decode(fields[0])
         nonce = Crypto.base64decode(fields[1])
         box = Crypto.box(Crypto.decode_private_key(self.private_key), authorizer_pubkey)
@@ -103,7 +105,7 @@ class Client:
             return self.__decrypt_eak(json)
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
-        reader_key = self.client_key(reader_id)
+        reader_key = self.__client_key(reader_id)
         nonce = Crypto.secret_box_random_nonce()
         eak = Crypto.box(Crypto.decode_private_key(self.private_key), reader_key).encrypt(ak, nonce)
         # Need to strip the nonce off the front of the eak
@@ -113,7 +115,7 @@ class Client:
         json = {
             'eak': encoded_eak
         }
-        response = requests.put(url=url, json=json, auth=self.e3db_auth)
+        requests.put(url=url, json=json, auth=self.e3db_auth)
 
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
@@ -125,9 +127,7 @@ class Client:
         # create list of policy objects, and return them
         policies = []
         # check if there are no policies
-        if resp.json() == []:
-            policies = resp.json()
-        else:
+        if resp.json():
             for policy in resp.json():
                 policies.append(IncomingSharingPolicy(policy))
         return policies
@@ -138,9 +138,7 @@ class Client:
         # create list of policy objects, and return them
         policies = []
         # check if there are no policies
-        if resp.json() == []:
-            policies = resp.json()
-        else:
+        if resp.json():
             for policy in resp.json():
                 policies.append(IncomingSharingPolicy(policy))
         return policies
@@ -168,24 +166,23 @@ class Client:
         client_info = response.json()
         backup_client_id = response.headers['x-backup-client']
 
-        if backup == True:
+        if backup:
             if private_key == None:
                 raise RuntimeError, "Cannot back up client credentials without a private key!"
 
-            else:
-                email = ""
-                config = Config('1',
-                    client_info['client_id'], \
-                    client_info['api_key_id'], \
-                    client_info['api_secret'], \
-                    email, \
-                    public_key, \
-                    private_key, \
-                    api_url=api_url \
-                    )
+            email = ""
+            config = Config('1',
+                client_info['client_id'], \
+                client_info['api_key_id'], \
+                client_info['api_secret'], \
+                email, \
+                public_key, \
+                private_key, \
+                api_url=api_url \
+                )
 
-                client = Client(config())
-                client.backup(backup_client_id, registration_token)
+            client = Client(config())
+            client.backup(backup_client_id, registration_token)
 
         # make ClientDetails object
         return ClientDetails(client_info)
@@ -208,7 +205,7 @@ class Client:
         validated = json['validated']
         return ClientInfo(client_id, public_key, validated)
 
-    def client_key(self, client_id):
+    def __client_key(self, client_id):
         if client_id == self.client_id:
             return Crypto.decode_public_key(self.public_key)
         else:
@@ -297,12 +294,6 @@ class Client:
                 record_ids=record, content_types=record_type, plain=plain, \
                 user_ids=None, count=page_size, \
                 include_all_writers=all_writers)
-
-
-        # we need a client function to requests the query results from e3db server
-        # and that is then fed back into queryResult object that is iterable
-        # need to separate code + api calls from the data container that allows
-        # iteration
 
         resp = self.__query(q)
 

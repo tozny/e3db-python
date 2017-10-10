@@ -29,9 +29,6 @@ class Config:
             'logging': self.logging
         }
 
-    def write(self, profile="Default"):
-        pass
-
     @classmethod
     def __load_file(self, filename):
         '''

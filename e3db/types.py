@@ -1,4 +1,5 @@
 # types.py
+import copy
 
 class IncomingSharingPolicy():
     def __init__(self, json):
@@ -29,7 +30,8 @@ class OutgoingSharingPolicy():
 class Record():
     def __init__(self, meta=None, data=None):
         self.meta = meta
-        self.data = data
+        # make copy of the data so we dont modify the original object passed in
+        self.data = copy.deepcopy(data)
 
     def to_json(self):
         return {
@@ -41,13 +43,13 @@ class Record():
         return self.meta
 
     def get_data(self):
-        return self.get_data
+        return self.data
 
     def update_meta(self, meta):
         self.meta = meta
 
     def update(self, meta, data):
-        self.meta.update(meta)
+        self.meta.update(meta.to_json())
         self.data = data
 
 class Meta():

@@ -66,6 +66,7 @@ class Client:
 
             encrypted_record['data'][key] = pv
         # return new Record object data with plaintext data
+        print encrypted_record['data']
         return Record(Meta(encrypted_record['meta']), encrypted_record['data'])
 
     def __encrypt_record(self, plaintext_record):
@@ -78,7 +79,7 @@ class Client:
 
         ak = self.__get_access_key(writer_id, user_id, self.client_id, record_type)
 
-        # if the ak is missing, we need to create and push one to the server.=
+        # if the ak is missing, we need to create and push one to the server.
         if ak == None:
             ak = Crypto.random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
@@ -168,9 +169,6 @@ class Client:
     @classmethod
     def register(self, registration_token, client_name, public_key, private_key=None, backup=False, api_url=DEFAULT_API_URL):
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
-        wrapped_public_key = {
-            'curve25519': public_key
-        }
         payload = {
             'token': registration_token,
             'client': {
@@ -180,6 +178,7 @@ class Client:
                 }
             }
         }
+        print payload
         response = requests.post(url=url, json=payload)
         self.__response_check(response)
         client_info = response.json()
@@ -269,7 +268,8 @@ class Client:
         record_id = record_serialized['meta']['record_id']
         version = record_serialized['meta']['version']
         url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
-        response = requests.put(url=url, json=record.to_json(), auth=self.e3db_auth)
+        encrypted_record = self.__encrypt_record(record)
+        response = requests.put(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         json = response.json()
         new_meta = json['meta']

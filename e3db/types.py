@@ -126,6 +126,12 @@ class ClientDetails():
     def get_client_id(self):
         return self.client_id
 
+    def get_public_key(self):
+        return self.public_key['curve25519']
+
+    def get_name(self):
+        return self.name
+
 class QueryResult():
 
     def __init__(self, query, records):

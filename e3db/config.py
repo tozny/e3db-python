@@ -4,7 +4,7 @@ import os
 class Config:
 
     DEFAULT_API_URL = "https://api.e3db.com"
-    def __init__(self, version, client_id, api_key_id, api_secret, client_email, public_key, private_key, api_url=DEFAULT_API_URL, logging=False):
+    def __init__(self, client_id, api_key_id, api_secret, public_key, private_key, client_email="", version="1", api_url=DEFAULT_API_URL, logging=False):
         self.version = version
         self.client_id = client_id
         self.api_key_id = api_key_id

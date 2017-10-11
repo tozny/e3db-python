@@ -66,15 +66,10 @@ print "API Secret: {0}".format(api_secret)
 # configuration used to instantiate a Client that can communicate with
 # e3db directly.
 
-email = ""
-version = "1"
-
 config = e3db.Config(
-    version, \
     client_id, \
     api_key_id, \
     api_secret, \
-    email, \
     public_key, \
     private_key, \
     api_url=api_url \

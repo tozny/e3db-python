@@ -189,12 +189,10 @@ class Client:
             if private_key == None:
                 raise RuntimeError, "Cannot back up client credentials without a private key!"
 
-            email = ""
-            config = Config('1',
+            config = Config(
                 client_info['client_id'], \
                 client_info['api_key_id'], \
                 client_info['api_secret'], \
-                email, \
                 public_key, \
                 private_key, \
                 api_url=api_url \

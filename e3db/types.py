@@ -143,6 +143,9 @@ class QueryResult():
     def __iter__(self):
         return iter(self.records)
 
+    def __len__(self):
+        return len(self.records)
+
     def next(self):
         raise StopIteration
         pass

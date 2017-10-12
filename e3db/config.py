@@ -41,6 +41,7 @@ class Config:
         except ValueError as error:
             print "Loading E3DB json file failed. Perhaps the JSON is malformed?"
             print "Error: " + str(error)
+            
     @classmethod
     def load(self, profile=''):
         # if profile is empty we read the default ~/.tozny/e3db.json file

@@ -66,7 +66,6 @@ class Client:
 
             encrypted_record['data'][key] = pv
         # return new Record object data with plaintext data
-        print encrypted_record['data']
         return Record(Meta(encrypted_record['meta']), encrypted_record['data'])
 
     def __encrypt_record(self, plaintext_record):
@@ -178,7 +177,6 @@ class Client:
                 }
             }
         }
-        print payload
         response = requests.post(url=url, json=payload)
         self.__response_check(response)
         client_info = response.json()

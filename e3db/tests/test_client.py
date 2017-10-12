@@ -3,6 +3,7 @@ import os
 import binascii
 import pytest
 import time
+import e3db.types
 
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
@@ -155,3 +156,114 @@ class TestClient():
         assert(starting_time != updated_time)
         assert(old_version != new_version)
         assert(read_record1.to_json()['data']['time'] == updated_time)
+
+    def test_conflicting_updates(self):
+        '''
+        Test to check that an exception is raised when doing conflicting
+        updates on a record.
+        '''
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+
+        record = self.client1.write('test_result', data)
+        updated_time = str(time.time())
+
+        record_data = record.get_data()
+        record_meta = record.get_meta()
+        record_data['time'] = updated_time
+
+        record1 = e3db.types.Record(record_meta, record_data)
+        record2 = e3db.types.Record(record_meta, record_data)
+
+        assert(record1.to_json() == record2.to_json())
+        self.client1.update(record1)
+
+        with pytest.raises(e3db.APIError):
+            self.client1.update(record2)
+
+
+    def test_query_by_type(self):
+        '''
+        Test we can get query results when looking for a specific record type,
+        only including that record type.
+        '''
+        record_type = "test_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+
+        results = self.client1.query(record_type=[record_type])
+        assert(len(results) >= 1)
+
+        for record in results:
+            assert(record.to_json()['data'] == data)
+
+    def test_query_and_delete(self):
+        '''
+        Test to query records by record id, and delete them.
+        '''
+        record_type = "test_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        record1 = self.client1.write(record_type, {'time': str(time.time())})
+        record1_id = record1.to_json()['meta']['record_id']
+        record1_version = record1.to_json()['meta']['version']
+
+        record2 = self.client1.write(record_type, {'time': str(time.time())})
+        record2_id = record2.to_json()['meta']['record_id']
+        record2_version = record2.to_json()['meta']['version']
+
+        results = self.client1.query(record=[record1_id, record2_id], data=False)
+        assert(len(results) == 2)
+
+        for record in results:
+            assert(record.to_json()['meta']['type'] == record_type)
+
+        self.client1.delete(record1_id, record1_version)
+        self.client1.delete(record2_id, record2_version)
+
+        after_delete_results = self.client1.query(record=[record1_id, record2_id], data=False)
+
+        assert(len(after_delete_results) == 0)
+
+    def test_query_writer_id(self):
+        '''
+        Test to query records by writer id.
+        '''
+        writer_id = self.test_client1.get_client_id()
+        for record in self.client1.query(writer=[writer_id], data=False):
+            assert(record.to_json()['meta']['writer_id'] == writer_id)
+
+    def test_query_plain(self):
+        '''
+        Test we can do a basic query by matching plaintext meta.
+        '''
+        plain_id = "id_{0}".format(binascii.hexlify(os.urandom(16)))
+
+        plain_data = {
+            'id': plain_id
+        }
+
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write('test-plain', data, plain=plain_data)
+
+        query = {
+                'eq': {
+                    'name': 'id',
+                    'value': plain_id
+                }
+            }
+
+        results = self.client1.query(plain=query)
+        assert(len(results) >= 1)
+
+        for record in results:
+            assert(record.to_json()['meta']['record_id'] == record1.to_json()['meta']['record_id'])
+
+    # basic plaintext query
+    # complex plaintext query

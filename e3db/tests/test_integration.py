@@ -365,6 +365,10 @@ class TestIntegrationClient():
         assert(found == True)
 
     def test_list_incoming_sharing(self):
+        '''
+        Test we can write a record, switch to another client, and see that
+        record as being shared with the second client.
+        '''
         record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
         starting_time = str(time.time())
         data = {
@@ -382,3 +386,30 @@ class TestIntegrationClient():
                 found = True
 
         assert(found == True)
+
+    def test_revoke(self):
+        '''
+        Write a record, share that record with another client, have the other
+        client read the record, revoke the record, and show that the client
+        no longer has access to that record.
+        '''
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        record_id = record1.to_json()['meta']['record_id']
+        client2_id = self.test_client2.get_client_id()
+
+        self.client1.share(record_type, client2_id)
+
+        record2 = self.client2.read(record_id)
+        assert(record2.to_json() == record1.to_json())
+
+        # now revoke client2's access to that record.
+        self.client1.revoke(record_type, client2_id)
+
+        # returns 404 record not found when trying to access again.
+        with pytest.raises(e3db.APIError):
+            self.client2.read(record_id)

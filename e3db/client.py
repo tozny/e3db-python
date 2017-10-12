@@ -71,10 +71,17 @@ class Client:
     def __encrypt_record(self, plaintext_record):
         record = plaintext_record.to_json()
 
+
+        data = record['data']
         meta = record['meta']
         writer_id = meta['writer_id']
         user_id = meta['user_id']
         record_type = meta['type']
+
+        # make copy of original record so we can modify it without altering
+        # the original record
+        new_meta = Meta(meta)
+        record = Record(meta=new_meta, data=data).to_json()
 
         ak = self.__get_access_key(writer_id, user_id, self.client_id, record_type)
 
@@ -270,8 +277,10 @@ class Client:
         response = requests.put(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         json = response.json()
-        new_meta = json['meta']
-        record.get_meta().update(new_meta)
+        new_meta = Meta(json['meta'])
+        new_data = json['data']
+        new_record = Record(meta=new_meta, data=new_data)
+        return self.__decrypt_record(new_record)
 
     def delete(self, record_id, version):
         url = self.__get_url("v1", "storage", "records", "safe", record_id, version)

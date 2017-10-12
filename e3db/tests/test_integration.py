@@ -8,7 +8,7 @@ import e3db.types
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
 
-class IntegrationClient():
+class TestIntegrationClient():
     @classmethod
     def setup_class(self):
         '''
@@ -148,9 +148,13 @@ class IntegrationClient():
         record_data = record1.get_data()
         record_meta = record1.get_meta()
         record_data['time'] = updated_time
+        # update the local plaintext record with the new time
         record1.update(record_meta, record_data)
-        self.client1.update(record1)
+        # take the plaintext record, encrypt it, and replace the old version on
+        # the server
+        updated = self.client1.update(record1)
 
+        # read the record back and compare to the original before doing update
         read_record1 = self.client1.read(record_id)
         new_version = read_record1.to_json()['meta']['version']
         assert(starting_time != updated_time)
@@ -170,19 +174,29 @@ class IntegrationClient():
         record = self.client1.write('test_result', data)
         updated_time = str(time.time())
 
-        record_data = record.get_data()
         record_meta = record.get_meta()
-        record_data['time'] = updated_time
+        record_data = {
+            'time': updated_time,
+        }
 
-        record1 = e3db.types.Record(record_meta, record_data)
-        record2 = e3db.types.Record(record_meta, record_data)
+        record1 = e3db.types.Record(meta=record_meta, data=record_data)
+        updated = self.client1.update(record1)
 
-        assert(record1.to_json() == record2.to_json())
-        self.client1.update(record1)
+        updated_data = updated.get_data()
+        updated_meta = updated.get_meta()
+
+        assert(updated_data != record.to_json()['data'])
+        assert(record_meta.to_json()['version'] != updated_meta.to_json()['version'])
 
         with pytest.raises(e3db.APIError):
-            self.client1.update(record2)
+            self.client1.update(record1)
 
+    def test_conflicting_delete(self):
+        '''
+        Test to check that an exception is raised when trying to delete
+        a record with the wrong record version.
+        '''
+        pass
 
     def test_query_by_type(self):
         '''

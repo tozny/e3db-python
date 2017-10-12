@@ -137,7 +137,7 @@ class Client:
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         requests.delete(url=url, auth=self.e3db_auth)
 
-    def __outgoing_sharing(self):
+    def outgoing_sharing(self):
         url = self.__get_url("v1", "storage", "policy", "outgoing")
         response = requests.get(url=url, auth=self.e3db_auth)
         self.__response_check(response)
@@ -146,10 +146,10 @@ class Client:
         # check if there are no policies
         if response.json():
             for policy in response.json():
-                policies.append(IncomingSharingPolicy(policy))
+                policies.append(OutgoingSharingPolicy(policy))
         return policies
 
-    def __incoming_sharing(self):
+    def incoming_sharing(self):
         url = self.__get_url("v1", "storage", "policy", "incoming")
         response = requests.get(url=url, auth=self.e3db_auth)
         self.__response_check(response)

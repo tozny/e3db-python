@@ -8,7 +8,7 @@ import e3db.types
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
 
-class TestClient():
+class IntegrationClient():
     @classmethod
     def setup_class(self):
         '''
@@ -260,10 +260,111 @@ class TestClient():
             }
 
         results = self.client1.query(plain=query)
+        assert(len(results) == 1)
+
+        for record in results:
+            assert(record.to_json()['meta']['record_id'] == record1.to_json()['meta']['record_id'])
+            assert(record.to_json()['data'] == data)
+            assert(record.to_json()['meta']['plain'] == plain_data)
+
+    def test_advanced_query_plain(self):
+        '''
+        Test we can do a advanced query by matching plaintext meta.
+        '''
+        plain_id = "id_{0}".format(binascii.hexlify(os.urandom(16)))
+
+        plain_data = {
+            'id': plain_id,
+            'location': 'Portland'
+        }
+
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write('test-plain', data, plain=plain_data)
+
+        advanced_query = {
+            'and': [
+                {
+                    'eq': {
+                        'name': 'id',
+                        'value': plain_id
+                        },
+                },
+                {
+                    'eq': {
+                        'name': 'location',
+                        'value': 'Portland'
+                        },
+                },
+            ]
+        }
+
+        results = self.client1.query(plain=advanced_query)
         assert(len(results) >= 1)
 
         for record in results:
             assert(record.to_json()['meta']['record_id'] == record1.to_json()['meta']['record_id'])
+            assert(record.to_json()['data'] == data)
+            assert(record.to_json()['meta']['plain'] == plain_data)
 
-    # basic plaintext query
-    # complex plaintext query
+    def test_share(self):
+        '''
+        Test we can write a record, share that record_type, and read from
+        another client.
+        '''
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        record_id = record1.to_json()['meta']['record_id']
+        client2_id = self.test_client2.get_client_id()
+
+        self.client1.share(record_type, client2_id)
+
+        record2 = self.client2.read(record_id)
+        assert(record2.to_json() == record1.to_json())
+
+    def test_list_outgoing_sharing(self):
+        '''
+        Test we can write a record, share that record type, and then see the
+        record listed in our outgoing sharing policy documents.
+        '''
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        client2_id = self.test_client2.get_client_id()
+
+        self.client1.share(record_type, client2_id)
+
+        found = False
+        for policy in self.client1.outgoing_sharing():
+            if policy.to_json()['reader_id'] == client2_id and policy.to_json()['record_type'] == record_type:
+                found = True
+
+        assert(found == True)
+
+    def test_list_incoming_sharing(self):
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        client2_id = self.test_client2.get_client_id()
+        client1_id = self.test_client1.get_client_id()
+
+        self.client1.share(record_type, client2_id)
+
+        found = False
+        for policy in self.client2.incoming_sharing():
+            if policy.to_json()['writer_id'] == client1_id and policy.to_json()['record_type'] == record_type:
+                found = True
+
+        assert(found == True)

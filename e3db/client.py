@@ -19,6 +19,7 @@ class Client:
         self.public_key = config['public_key']
         self.private_key = config['private_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
+        self.ak_cache = {}
 
     @classmethod
     def __response_check(self, response):
@@ -70,8 +71,6 @@ class Client:
 
     def __encrypt_record(self, plaintext_record):
         record = plaintext_record.to_json()
-
-
         data = record['data']
         meta = record['meta']
         writer_id = meta['writer_id']
@@ -116,6 +115,10 @@ class Client:
         return Crypto.decrypt_eak(Crypto.decode_private_key(self.private_key), authorizer_pubkey, ciphertext, nonce)
 
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
+        ak_cache_key = (writer_id, user_id, record_type)
+        if ak_cache_key in self.ak_cache:
+            return self.ak_cache[ak_cache_key]
+
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         response = requests.get(url=url, auth=self.e3db_auth)
         # return None if eak not found, otherwise return eak
@@ -124,9 +127,14 @@ class Client:
         else:
             self.__response_check(response)
             json = response.json()
-            return self.__decrypt_eak(json)
+            ak = self.__decrypt_eak(json)
+            self.ak_cache[ak_cache_key] = ak
+            return ak
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
+        ak_cache_key = (writer_id, user_id, record_type)
+        self.ak_cache[ak_cache_key] = ak
+
         reader_key = self.__client_key(reader_id)
         nonce = Crypto.random_nonce()
         eak = Crypto.encrypt_ak(Crypto.decode_private_key(self.private_key), reader_key, ak, nonce)
@@ -143,6 +151,9 @@ class Client:
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         requests.delete(url=url, auth=self.e3db_auth)
+
+        ak_cache_key = (writer_id, user_id, record_type)
+        del self.ak_cache[ak_cache_key]
 
     def outgoing_sharing(self):
         url = self.__get_url("v1", "storage", "policy", "outgoing")

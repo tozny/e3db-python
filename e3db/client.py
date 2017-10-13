@@ -23,12 +23,18 @@ class Client:
 
     @classmethod
     def __response_check(self, response):
-        '''
-        Takes in requests.models.Response object, and determines if there was
-        and error with the request. If there was an error, we raise an error
-        with the APIError exception and a message detailing the error.
-        Does not return anything.
-        '''
+        """
+        Raises errors based on response HTTP status code.
+
+        Parameters
+        ----------
+        response : requests.models.Response
+            Response object to get status code from.
+
+        Returns
+        -------
+        None
+        """
         # Map of HTTP error codes to exception messages
         errors = {
             401: 'Unauthenticated: HTTP 401',
@@ -41,6 +47,22 @@ class Client:
             raise APIError(errors[response.status_code])
 
     def __decrypt_record(self, record):
+        """
+        Internal method for record decryption setup.
+
+        Obtains the ak needed to decrypt the data, as well as calling
+        `__decrypt_record_with_key` to decrypt each individual field.
+
+        Parameters
+        ----------
+        record : e3db.Record
+            Encrypted record
+
+        Returns
+        -------
+        e3db.Record
+            Decrypted record
+        """
         meta = record.to_json()['meta']
         writer_id = meta['writer_id']
         user_id = meta['user_id']
@@ -49,6 +71,22 @@ class Client:
         return self.__decrypt_record_with_key(record, ak)
 
     def __decrypt_record_with_key(self, record, ak):
+        """
+        Internal method for decryption of record fields.
+
+        Parameters
+        ----------
+        record : e3db.Record
+            Encrypted record
+
+        ak : str
+            Access Key
+
+        Returns
+        -------
+        e3db.Record
+            Decrypted record
+        """
         encrypted_record = record.to_json()
 
         for key,value in encrypted_record['data'].iteritems():
@@ -70,6 +108,19 @@ class Client:
         return Record(Meta(encrypted_record['meta']), encrypted_record['data'])
 
     def __encrypt_record(self, plaintext_record):
+        """
+        Internal method for encryption of record fields.
+
+        Parameters
+        ----------
+        plaintext_record : e3db.Record
+            Plaintext record
+
+        Returns
+        -------
+        e3db.Record
+            Encrypted record
+        """
         record = plaintext_record.to_json()
         data = record['data']
         meta = record['meta']
@@ -105,6 +156,19 @@ class Client:
         return Record(Meta(meta), record['data'])
 
     def __decrypt_eak(self, eak_json):
+        """
+        Internal method for decryption of an encrypted access key.
+
+        Parameters
+        ----------
+        eak_json : dict
+            json-style body returned from the API
+
+        Returns
+        -------
+        str
+            ak
+        """
         k = eak_json['authorizer_public_key']['curve25519']
         authorizer_pubkey = Crypto.decode_public_key(k)
         fields = eak_json['eak'].split('.')
@@ -115,6 +179,28 @@ class Client:
         return Crypto.decrypt_eak(Crypto.decode_private_key(self.private_key), authorizer_pubkey, ciphertext, nonce)
 
     def __get_access_key(self, writer_id, user_id, reader_id, record_type):
+        """
+        Internal method to obtain an access key.
+
+        Parameters
+        ----------
+        writer_id : str
+            uuid of the writer
+
+        user_id : str
+            uuid of the user
+
+        reader_id : str
+            uuid of the reader
+
+        record_type: str
+            type of the record to be stored
+
+        Returns
+        -------
+        str
+            ak
+        """
         ak_cache_key = (writer_id, user_id, record_type)
         if ak_cache_key in self.ak_cache:
             return self.ak_cache[ak_cache_key]
@@ -132,6 +218,30 @@ class Client:
             return ak
 
     def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
+        """
+        Internal method to put an access key on the server.
+
+        Parameters
+        ----------
+        writer_id : str
+            uuid of the writer
+
+        user_id : str
+            uuid of the user
+
+        reader_id : str
+            uuid of the reader
+
+        record_type: str
+            type of the record to be stored
+
+        ak: str
+            access key
+
+        Returns
+        -------
+        None
+        """
         ak_cache_key = (writer_id, user_id, record_type)
         self.ak_cache[ak_cache_key] = ak
 
@@ -149,6 +259,27 @@ class Client:
         self.__response_check(response)
 
     def __delete_access_key(self, writer_id, user_id, reader_id, record_type):
+        """
+        Internal method to delete an access key on the server.
+
+        Parameters
+        ----------
+        writer_id : str
+            uuid of the writer
+
+        user_id : str
+            uuid of the user
+
+        reader_id : str
+            uuid of the reader
+
+        record_type: str
+            type of the record to be stored
+
+        Returns
+        -------
+        None
+        """
         url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
         requests.delete(url=url, auth=self.e3db_auth)
 
@@ -156,6 +287,20 @@ class Client:
         del self.ak_cache[ak_cache_key]
 
     def outgoing_sharing(self):
+        """
+        Method to obtain outgoing sharing policies.
+
+        This shows records, and clients that you have shared record types with.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
+            List of e3db.OutgoingSharingPolicy documents
+        """
         url = self.__get_url("v1", "storage", "policy", "outgoing")
         response = requests.get(url=url, auth=self.e3db_auth)
         self.__response_check(response)
@@ -168,6 +313,20 @@ class Client:
         return policies
 
     def incoming_sharing(self):
+        """
+        Method to obtain incoming sharing policies.
+
+        This shows records, and clients that have shared record types with you.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
+            List of e3db.IncomingSharingPolicy documents
+        """
         url = self.__get_url("v1", "storage", "policy", "incoming")
         response = requests.get(url=url, auth=self.e3db_auth)
         self.__response_check(response)
@@ -180,11 +339,62 @@ class Client:
         return policies
 
     def __get_url(self, *args):
+        """
+        Internal method to build an api url path.
+
+        Parameters
+        ----------
+        *args : list
+            list of url path strings
+
+        Returns
+        -------
+        str
+            Full api url with path
+        """
         # list of paths that we make a nice url from
         return self.api_url + '/' + '/'.join(args)
 
     @classmethod
     def register(self, registration_token, client_name, public_key, private_key=None, backup=False, api_url=DEFAULT_API_URL):
+        """
+        Method to register a client with the server.
+
+        The server will return api key credentials, and a client id for the
+        newly created client.
+
+        Parameters
+        ----------
+        registration_token : str
+            Token obtained from InnoVault console used for dynamic registration
+
+        client_name : str
+            Name of client to be registered with teh InnoVault console
+
+        public_key : str
+            base64urlencoded public_key object obtained from
+            e3db.Client.generate_keypair()
+
+        private_key : str
+            base64urlencoded public_key object obtained from
+            e3db.Client.generate_keypair(). Optional. Included in client
+            backup record for later key recovery in the InnoVault console,
+            if desired.
+
+        backup : bool
+            Whether to backup client credentials to the InnoVault console.
+            Optional.
+
+        api_url : str
+            API url useful for testing against different e3db instances.
+            Optional.
+
+        Returns
+        -------
+        e3db.ClientDetails
+            Contains API credentials, a unique client_id generated by the
+            server, client name, and client public key.
+        """
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
         payload = {
             'token': registration_token,

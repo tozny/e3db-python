@@ -413,3 +413,37 @@ class TestIntegrationClient():
         # returns 404 record not found when trying to access again.
         with pytest.raises(e3db.APIError):
             self.client2.read(record_id)
+
+    def test_large_record(self):
+        """
+        Write a record slightly smaller than the record size limit imposed by
+        to check we can write larger records to E3DB.
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        # 32 chars * 32 = 1KB
+        large_data = str(binascii.hexlify(os.urandom(16))) * 32 * 2048
+        data = {
+            'just_right': large_data
+        }
+
+        record1 = self.client1.write(record_type, data)
+        record_id = record1.to_json()['meta']['record_id']
+
+        record2 = self.client1.read(record_id)
+
+        assert(record2.to_json()['data']['just_right'] == large_data)
+
+    def test_record_too_large(self):
+        """
+        Write a record larger than the record size limit imposed by E3DB.
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        # 32 chars * 32 = 1KB
+        large_data = str(binascii.hexlify(os.urandom(16))) * 32 * 4096
+        data = {
+            'too_much': large_data
+        }
+
+        # returns 400 invalid request body
+        with pytest.raises(e3db.APIError):
+            record1 = self.client1.write(record_type, data)

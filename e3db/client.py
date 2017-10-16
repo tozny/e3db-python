@@ -56,6 +56,7 @@ class Client:
 
         # Map of HTTP error codes to exception messages
         errors = {
+            400: 'Invalid request: HTTP 400',
             401: 'Unauthenticated: HTTP 401',
             403: 'Unauthorized: HTTP 403',
             404: 'Requested item not found: HTTP 404',

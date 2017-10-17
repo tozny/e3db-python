@@ -18,7 +18,7 @@ class Client:
 
     def __init__(self, config):
         """
-        Raises errors based on response HTTP status code.
+        Initialize the Client class.
 
         Parameters
         ----------

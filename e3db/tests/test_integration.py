@@ -476,12 +476,12 @@ class TestIntegrationClient():
         """
 
         record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
-        starting_time = str(time.time())
         data = {
-            'time': starting_time
+            'supersecret': "for_my_eyes_only"
         }
         record1 = self.client1.write(record_type, data)
 
         record2 = self.client1.write(record_type, data)
 
         assert(record1.meta.created < record2.meta.created)
+        assert(record1.meta.last_modified < record2.meta.last_modified)

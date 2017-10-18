@@ -230,7 +230,7 @@ class Client:
         if ak_cache_key in self.ak_cache:
             return self.ak_cache[ak_cache_key]
 
-        url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
         response = requests.get(url=url, auth=self.e3db_auth)
         # return None if eak not found, otherwise return eak
         if response.status_code == 404:
@@ -277,7 +277,7 @@ class Client:
         # Need to strip the nonce off the front of the eak
         eak = eak[len(nonce):]
         encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
-        url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
         json = {
             'eak': encoded_eak
         }
@@ -307,7 +307,7 @@ class Client:
         None
         """
 
-        url = self.__get_url("v1", "storage", "access_keys", writer_id, user_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
         requests.delete(url=url, auth=self.e3db_auth)
 
         ak_cache_key = (writer_id, user_id, record_type)
@@ -497,7 +497,7 @@ class Client:
             Contains client_id and client public key.
         """
 
-        url = self.__get_url("v1", "storage", "clients", client_id)
+        url = self.__get_url("v1", "storage", "clients", str(client_id))
         response = requests.get(url=url, auth=self.e3db_auth)
         self.__response_check(response)
         json = response.json()
@@ -547,7 +547,7 @@ class Client:
             Encrypted E3DB record
         """
 
-        url = self.__get_url("v1", "storage", "records", record_id)
+        url = self.__get_url("v1", "storage", "records", str(record_id))
         response = requests.get(url=url, auth=self.e3db_auth)
         self.__response_check(response)
         json = response.json()
@@ -638,7 +638,7 @@ class Client:
         record_serialized = record.to_json()
         record_id = record_serialized['meta']['record_id']
         version = record_serialized['meta']['version']
-        url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
+        url = self.__get_url("v1", "storage", "records", "safe", str(record_id), version)
         encrypted_record = self.__encrypt_record(record)
         # We don't want to post datetime objects to the server, so we remove
         # them as they are unnecessary
@@ -672,7 +672,7 @@ class Client:
         -------
         None
         """
-        url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
+        url = self.__get_url("v1", "storage", "records", "safe", str(record_id), version)
         response = requests.delete(url=url, auth=self.e3db_auth)
         self.__response_check(response)
 
@@ -710,7 +710,7 @@ class Client:
         # share this record type with the backup client
         self.share('tozny.key_backup', client_id)
 
-        url = self.__get_url('v1', 'account', 'backup', registration_token, self.client_id)
+        url = self.__get_url('v1', 'account', 'backup', registration_token, str(self.client_id))
         response = requests.post(url=url, auth=self.e3db_auth)
         self.__response_check(response)
 
@@ -767,6 +767,10 @@ class Client:
         if writer == "all":
             all_writers = True
             writer = []
+
+        # convert all possible UUID types back to strings
+        writer = [str(i) for i in writer]
+        record = [str(i) for i in record]
 
         q = Query(after_index=last_index, include_data=data, writer_ids=writer, \
                 record_ids=record, content_types=record_type, plain=plain, \
@@ -848,7 +852,7 @@ class Client:
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
-        url = self.__get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "policy", str(self.client_id), str(self.client_id), str(reader_id), record_type)
 
         json = {
             'allow': [
@@ -882,7 +886,7 @@ class Client:
         if reader_id == self.client_id:
             return
 
-        url = self.__get_url("v1", "storage", "policy", self.client_id, self.client_id, reader_id, record_type)
+        url = self.__get_url("v1", "storage", "policy", str(self.client_id), str(self.client_id), str(reader_id), record_type)
         json = {
             'deny': [
                 {

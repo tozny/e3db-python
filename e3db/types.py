@@ -1,7 +1,9 @@
 # types.py
 import copy
+import uuid
+from datetime import datetime
 
-class IncomingSharingPolicy():
+class IncomingSharingPolicy(object):
     """
     Class to create Incoming Sharing policy object.
 
@@ -21,9 +23,38 @@ class IncomingSharingPolicy():
         -------
         None
         """
-        self.writer_id = json['writer_id']
-        self.writer_name = json['writer_name']
-        self.record_type = json['record_type']
+
+        # Will throw exception if UUID is malformed
+        self.__writer_id = uuid.UUID(json['writer_id'])
+        self.__writer_name = str(json['writer_name'])
+        self.__record_type = str(json['record_type'])
+
+    # writer_id getters and setters
+    @property
+    def writer_id(self):
+        return self.__writer_id
+
+    @writer_id.setter
+    def writer_id(self, value):
+        self.__writer_id = value
+
+    # writer_name getters and setters
+    @property
+    def writer_name(self):
+        return self.__writer_name
+
+    @writer_name.setter
+    def writer_name(self, value):
+        self.__writer_name = value
+
+    # record_type getters and setters
+    @property
+    def record_type(self):
+        return self.__record_type
+
+    @record_type.setter
+    def record_type(self, value):
+        self.__record_type = value
 
     def to_json(self):
         """
@@ -39,9 +70,9 @@ class IncomingSharingPolicy():
             JSON-style document containing the Policy elements.
         """
         return {
-            'writer_id': self.writer_id,
-            'writer_name': self.writer_name,
-            'record_type': self.record_type
+            'writer_id': str(self.writer_id),
+            'writer_name': str(self.writer_name),
+            'record_type': str(self.record_type)
         }
 
 class OutgoingSharingPolicy():
@@ -58,9 +89,36 @@ class OutgoingSharingPolicy():
         -------
         None
         """
-        self.reader_id = json['reader_id']
-        self.reader_name = json['reader_name']
-        self.record_type = json['record_type']
+        self.__reader_id = uuid.UUID(json['reader_id'])
+        self.__reader_name = str(json['reader_name'])
+        self.__record_type = str(json['record_type'])
+
+    # reader_id getters and setters
+    @property
+    def reader_id(self):
+      return self.__reader_id
+
+    @reader_id.setter
+    def reader_id(self, value):
+      self.__reader_id = value
+
+    # reader_name getters and setters
+    @property
+    def reader_name(self):
+      return self.__reader_name
+
+    @reader_name.setter
+    def reader_name(self, value):
+      self.__reader_name = value
+
+    # record_type getters and setters
+    @property
+    def record_type(self):
+        return self.__record_type
+
+    @record_type.setter
+    def record_type(self, value):
+        self.__record_type = value
 
     def to_json(self):
         """
@@ -77,9 +135,9 @@ class OutgoingSharingPolicy():
         """
 
         return {
-            'reader_id': self.reader_id,
-            'reader_name': self.reader_name,
-            'record_type': self.record_type
+            'reader_id': str(self.__reader_id),
+            'reader_name': str(self.__reader_name),
+            'record_type': str(self.__record_type)
         }
 
 class Record():
@@ -216,14 +274,30 @@ class Meta():
         self.writer_id = json['writer_id']
         self.user_id = json['user_id']
         self.record_type = str(json['type'])
-        self.plain = json['plain']
+        self.plain = json['plain'] if 'plain' in json else None
         # optional, as some get set by the server
         # set these to None if they are not included when init is called.
-        self.record_id = json['record_id'] if 'record_id' in json else None
-        # datetime.strptime(created, '%Y-%m-%dT%H:%M:%S.%fZ')
-        self.created = json['created'] if 'created' in json else None
-        self.last_modified = json['last_modified'] if 'last_modified' in json else None
+        #self.record_id = json['record_id'] if 'record_id' in json else None
+        if 'record_id' in json:
+            if json['record_id'] != None and json['record_id'] != str(None):
+                self.record_id = uuid.UUID(json['record_id'])
+            else:
+                self.record_id = json['record_id']
+        else:
+            self.record_id = str(None)
+
+        try:
+            self.created = datetime.strptime(json['created'], '%Y-%m-%dT%H:%M:%S.%fZ') if 'created' in json else None
+        except ValueError:
+            self.created = datetime.strptime(json['created'], '%Y-%m-%d %H:%M:%S.%f') if 'created' in json else None
+        try:
+            self.last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%dT%H:%M:%S.%fZ') if 'last_modified' in json else None
+        except ValueError:
+            self.last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%d %H:%M:%S.%f') if 'last_modified' in json else None
+
         self.version = json['version'] if 'version' in json else None
+
+        
 
     def to_json(self):
         """
@@ -239,16 +313,23 @@ class Meta():
             JSON-style document containing the Meta elements.
         """
 
-        return {
-            'record_id': self.record_id,
-            'writer_id': self.writer_id,
-            'user_id': self.user_id,
-            'type': self.record_type,
+        to_serialize = {
+            'record_id': str(self.record_id),
+            'writer_id': str(self.writer_id),
+            'user_id': str(self.user_id),
+            'type': str(self.record_type),
             'plain': self.plain,
-            'created': self.created,
-            'last_modified': self.last_modified,
-            'version': self.version
+            'created': str(self.created),
+            'last_modified': str(self.last_modified),
+            'version': str(self.version)
         }
+
+        # remove None (JSON null) objects
+        for key,value in to_serialize.items():
+            if value == None or value == 'None':
+                del to_serialize[key]
+
+        return to_serialize
 
     def update(self, json):
         """
@@ -265,7 +346,6 @@ class Meta():
         -------
         None
         """
-
         self.record_id = json['record_id']
         self.writer_id = json['writer_id']
         self.user_id = json['user_id']

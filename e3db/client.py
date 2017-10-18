@@ -613,7 +613,7 @@ class Client:
         response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         response_json = response.json()
-        meta.update(response_json['meta']) # should be same
+        meta.update(response_json['meta'])
         decrypted = self.__decrypt_record(Record(meta, response_json['data']))
         return decrypted
 
@@ -640,7 +640,12 @@ class Client:
         version = record_serialized['meta']['version']
         url = self.__get_url("v1", "storage", "records", "safe", record_id, version)
         encrypted_record = self.__encrypt_record(record)
-        response = requests.put(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
+        # We don't want to post datetime objects to the server, so we remove
+        # them as they are unnecessary
+        encrypted_record_json = encrypted_record.to_json()
+        del encrypted_record_json['meta']['created']
+        del encrypted_record_json['meta']['last_modified']
+        response = requests.put(url=url, json=encrypted_record_json, auth=self.e3db_auth)
         self.__response_check(response)
         json = response.json()
         new_meta = Meta(json['meta'])

@@ -159,9 +159,9 @@ class Record():
         None
         """
 
-        self.meta = meta
+        self.__meta = meta
         # make copy of the data so we dont modify the original object passed in
-        self.data = copy.deepcopy(data)
+        self.__data = copy.deepcopy(data)
 
     def to_json(self):
         """
@@ -178,9 +178,27 @@ class Record():
         """
 
         return {
-            'meta': self.meta.to_json(),
-            'data': self.data
+            'meta': self.__meta.to_json(),
+            'data': self.__data
         }
+
+    # meta getters and setters
+    @property
+    def meta(self):
+        return self.__meta
+
+    @meta.setter
+    def meta(self, value):
+        self.__meta = value
+
+    # data getters and setters
+    @property
+    def data(self):
+        return self.__data
+
+    @data.setter
+    def data(self, value):
+        self.__data = value
 
     def get_meta(self):
         """
@@ -196,7 +214,7 @@ class Record():
             Meta from the Record.
         """
 
-        return self.meta
+        return self.__meta
 
     def get_data(self):
         """
@@ -212,7 +230,7 @@ class Record():
             JSON-style key-value pairs of the plaintext data
         """
 
-        return self.data
+        return self.__data
 
     def update_meta(self, meta):
         """
@@ -228,7 +246,7 @@ class Record():
         None
         """
 
-        self.meta = meta
+        self.__meta = meta
 
     def update(self, meta, data):
         """
@@ -249,8 +267,8 @@ class Record():
         None
         """
 
-        self.meta.update(meta.to_json())
-        self.data = data
+        self.__meta.update(meta.to_json())
+        self.__data = data
 
 class Meta():
     def __init__(self, json):
@@ -674,13 +692,13 @@ class QueryResult():
         None
         """
 
-        self.query = query
-        self.records = records
+        self.__query = query
+        self.__records = records
 
     # after_index getters and setters
     @property
     def after_index(self):
-        return self.query.after_index
+        return self.__query.after_index
 
     def __iter__(self):
         """
@@ -696,7 +714,7 @@ class QueryResult():
             Iterator over record objects returned from the Query.
         """
 
-        return iter(self.records)
+        return iter(self.__records)
 
     def __len__(self):
         """
@@ -712,7 +730,7 @@ class QueryResult():
             Amount of records returned from the Query.
         """
 
-        return len(self.records)
+        return len(self.__records)
 
     def get_after_index(self):
         """
@@ -728,7 +746,7 @@ class QueryResult():
             After index returned from the Query after running against the
             E3DB server.
         """
-        return self.query.get_after_index()
+        return self.__query.get_after_index()
 
 class Query():
 
@@ -786,15 +804,15 @@ class Query():
         -------
         None
         """
-        self.count = count
-        self.after_index = after_index
-        self.include_data = include_data
-        self.writer_ids = writer_ids
-        self.user_ids = user_ids
-        self.record_ids = record_ids
-        self.content_types = content_types
-        self.plain = plain
-        self.include_all_writers = include_all_writers
+        self.__count = count
+        self.__after_index = after_index
+        self.__include_data = include_data
+        self.__writer_ids = writer_ids
+        self.__user_ids = user_ids
+        self.__record_ids = record_ids
+        self.__content_types = content_types
+        self.__plain = plain
+        self.__include_all_writers = include_all_writers
 
     # count getters and setters
     @property
@@ -891,7 +909,7 @@ class Query():
             After index returned from the Query after running against the
             E3DB server.
         """
-        return self.after_index
+        return self.__after_index
 
     def to_json(self):
         """
@@ -907,13 +925,13 @@ class Query():
             JSON-style document containing the Query elements.
         """
         return {
-            'count': self.count,
-            'after_index': self.after_index,
-            'include_data': self.include_data,
-            'writer_ids': self.writer_ids,
-            'user_ids': self.user_ids,
-            'record_ids': self.record_ids,
-            'content_types': self.content_types,
-            'plain': self.plain,
-            'include_all_writers': self.include_all_writers
+            'count': self.__count,
+            'after_index': self.__after_index,
+            'include_data': self.__include_data,
+            'writer_ids': self.__writer_ids,
+            'user_ids': self.__user_ids,
+            'record_ids': self.__record_ids,
+            'content_types': self.__content_types,
+            'plain': self.__plain,
+            'include_all_writers': self.__include_all_writers
         }

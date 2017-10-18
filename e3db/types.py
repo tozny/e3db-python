@@ -571,7 +571,7 @@ class ClientDetails():
     # public_key getters and setters
     @property
     def public_key(self):
-        return self.__public_key
+        return self.__public_key['curve25519']
 
     @public_key.setter
     def public_key(self, value):

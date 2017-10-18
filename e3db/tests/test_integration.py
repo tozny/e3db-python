@@ -21,8 +21,9 @@ class TestIntegrationClient():
         client1_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client1 = e3db.Client.register(token, client1_name, client1_public_key, api_url=api_url)
         self.test_client1 = test_client1
-        client1_api_key_id, client1_api_secret = test_client1.get_api_credentials()
-        client1_id = test_client1.get_client_id()
+        client1_api_key_id = test_client1.api_key_id
+        client1_api_secret = test_client1.api_secret
+        client1_id = test_client1.client_id
 
         client1_config = e3db.Config(
             client1_id, \
@@ -39,8 +40,9 @@ class TestIntegrationClient():
         client2_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client2 = e3db.Client.register(token, client2_name, client2_public_key, api_url=api_url)
         self.test_client2 = test_client2
-        client2_api_key_id, client2_api_secret = test_client2.get_api_credentials()
-        client2_id = test_client2.get_client_id()
+        client2_api_key_id = test_client2.api_key_id
+        client2_api_secret = test_client2.api_secret
+        client2_id = test_client2.client_id
 
         client2_config = e3db.Config(
             client2_id, \
@@ -62,10 +64,11 @@ class TestIntegrationClient():
         client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client = e3db.Client.register(token, client_name, public_key, api_url=api_url)
 
-        api_key_id, api_secret = test_client.get_api_credentials()
-        test_client_public_key = test_client.get_public_key()
-        test_name = test_client.get_name()
-        client_id = test_client.get_client_id()
+        api_key_id = test_client.api_key_id
+        api_secret = test_client.api_secret
+        test_client_public_key = test_client.public_key
+        test_name = test_client.name
+        client_id = test_client.client_id
 
         assert(api_key_id != "")
         assert(api_secret != "")
@@ -83,10 +86,11 @@ class TestIntegrationClient():
         client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client = e3db.Client.register(token, client_name, public_key, private_key=private_key, backup=True, api_url=api_url)
 
-        api_key_id, api_secret = test_client.get_api_credentials()
-        test_client_public_key = test_client.get_public_key()
-        test_name = test_client.get_name()
-        client_id = test_client.get_client_id()
+        api_key_id = test_client.api_key_id
+        api_secret = test_client.api_secret
+        test_client_public_key = test_client.public_key
+        test_name = test_client.name
+        client_id = test_client.client_id
 
         assert(api_key_id != "")
         assert(api_secret != "")
@@ -99,10 +103,10 @@ class TestIntegrationClient():
         Test we can ask the server for our client info, and client_id matches
         the same that we have locally.
         """
-        client1_id = self.test_client1.get_client_id()
+        client1_id = self.test_client1.client_id
         info = self.client1.client_info(client1_id)
         assert(info.public_key != '')
-        assert(info.to_json()['client_id'] == self.test_client1.get_client_id())
+        assert(str(info.client_id) == str(self.test_client1.client_id))
 
     def test_client_doesnt_exist(self):
         """
@@ -123,7 +127,7 @@ class TestIntegrationClient():
         }
         record1 = self.client1.write('test_result', data)
 
-        record_id = record1.to_json()['meta']['record_id']
+        record_id = record1.meta.record_id
         record2 = self.client1.read(record_id)
 
         assert(record1 != record2)
@@ -141,13 +145,13 @@ class TestIntegrationClient():
         }
 
         record1 = self.client1.write('test_result', data)
-        old_version = record1.to_json()['meta']['version']
-        record_id = record1.to_json()['meta']['record_id']
+        old_version = record1.meta.version
+        record_id = record1.meta.record_id
 
         updated_time = str(time.time())
 
-        record_data = record1.get_data()
-        record_meta = record1.get_meta()
+        record_data = record1.data
+        record_meta = record1.meta
         record_data['time'] = updated_time
         # update the local plaintext record with the new time
         record1.update(record_meta, record_data)
@@ -157,10 +161,10 @@ class TestIntegrationClient():
 
         # read the record back and compare to the original before doing update
         read_record1 = self.client1.read(record_id)
-        new_version = read_record1.to_json()['meta']['version']
+        new_version = read_record1.meta.version
         assert(starting_time != updated_time)
         assert(old_version != new_version)
-        assert(read_record1.to_json()['data']['time'] == updated_time)
+        assert(read_record1.data['time'] == updated_time)
 
     def test_conflicting_updates(self):
         """
@@ -175,19 +179,15 @@ class TestIntegrationClient():
         record = self.client1.write('test_result', data)
         updated_time = str(time.time())
 
-        record_meta = record.get_meta()
         record_data = {
             'time': updated_time,
         }
 
-        record1 = e3db.types.Record(meta=record_meta, data=record_data)
+        record1 = e3db.types.Record(meta=record.meta, data=record_data)
         updated = self.client1.update(record1)
 
-        updated_data = updated.get_data()
-        updated_meta = updated.get_meta()
-
-        assert(updated_data != record.to_json()['data'])
-        assert(record_meta.to_json()['version'] != updated_meta.to_json()['version'])
+        assert(updated.data != record.data)
+        assert(record.meta.version != updated.meta.version)
 
         with pytest.raises(e3db.APIError):
             self.client1.update(record1)
@@ -197,7 +197,26 @@ class TestIntegrationClient():
         Test to check that an exception is raised when trying to delete
         a record with the wrong record version.
         """
-        pass
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+
+        record = self.client1.write('test_result', data)
+        updated_time = str(time.time())
+
+        record_data = {
+            'time': updated_time,
+        }
+
+        record1 = e3db.types.Record(meta=record.meta, data=record_data)
+        updated = self.client1.update(record1)
+
+        assert(updated.data != record.data)
+        assert(record.meta.version != updated.meta.version)
+
+        with pytest.raises(e3db.APIError):
+            self.client1.delete(record1.meta.record_id, record1.meta.version)
 
     def test_query_by_type(self):
         """
@@ -215,7 +234,7 @@ class TestIntegrationClient():
         assert(len(results) >= 1)
 
         for record in results:
-            assert(record.to_json()['data'] == data)
+            assert(record.data == data)
 
     def test_query_and_delete(self):
         """
@@ -223,18 +242,18 @@ class TestIntegrationClient():
         """
         record_type = "test_type_{0}".format(binascii.hexlify(os.urandom(16)))
         record1 = self.client1.write(record_type, {'time': str(time.time())})
-        record1_id = record1.to_json()['meta']['record_id']
-        record1_version = record1.to_json()['meta']['version']
+        record1_id = record1.meta.record_id
+        record1_version = record1.meta.version
 
         record2 = self.client1.write(record_type, {'time': str(time.time())})
-        record2_id = record2.to_json()['meta']['record_id']
-        record2_version = record2.to_json()['meta']['version']
+        record2_id = record2.meta.record_id
+        record2_version = record2.meta.version
 
         results = self.client1.query(record=[record1_id, record2_id], data=False)
         assert(len(results) == 2)
 
         for record in results:
-            assert(record.to_json()['meta']['type'] == record_type)
+            assert(record.meta.record_type == record_type)
 
         self.client1.delete(record1_id, record1_version)
         self.client1.delete(record2_id, record2_version)
@@ -247,9 +266,9 @@ class TestIntegrationClient():
         """
         Test to query records by writer id.
         """
-        writer_id = self.test_client1.get_client_id()
+        writer_id = self.test_client1.client_id
         for record in self.client1.query(writer=[writer_id], data=False):
-            assert(record.to_json()['meta']['writer_id'] == writer_id)
+            assert(str(record.meta.writer_id) == str(writer_id))
 
     def test_query_plain(self):
         """
@@ -278,9 +297,9 @@ class TestIntegrationClient():
         assert(len(results) == 1)
 
         for record in results:
-            assert(record.to_json()['meta']['record_id'] == record1.to_json()['meta']['record_id'])
-            assert(record.to_json()['data'] == data)
-            assert(record.to_json()['meta']['plain'] == plain_data)
+            assert(str(record.meta.record_id) == str(record1.meta.record_id))
+            assert(record.data == data)
+            assert(record.meta.plain == plain_data)
 
     def test_advanced_query_plain(self):
         """
@@ -320,9 +339,9 @@ class TestIntegrationClient():
         assert(len(results) >= 1)
 
         for record in results:
-            assert(record.to_json()['meta']['record_id'] == record1.to_json()['meta']['record_id'])
-            assert(record.to_json()['data'] == data)
-            assert(record.to_json()['meta']['plain'] == plain_data)
+            assert(record.meta.record_id == record1.meta.record_id)
+            assert(record.data == data)
+            assert(record.meta.plain == plain_data)
 
     def test_share(self):
         """
@@ -335,12 +354,13 @@ class TestIntegrationClient():
             'time': starting_time
         }
         record1 = self.client1.write(record_type, data)
-        record_id = record1.to_json()['meta']['record_id']
-        client2_id = self.test_client2.get_client_id()
+        record_id = record1.meta.record_id
+        client2_id = self.test_client2.client_id
 
         self.client1.share(record_type, client2_id)
 
         record2 = self.client2.read(record_id)
+        # check serialized records are the exact same
         assert(record2.to_json() == record1.to_json())
 
     def test_list_outgoing_sharing(self):
@@ -354,13 +374,13 @@ class TestIntegrationClient():
             'time': starting_time
         }
         record1 = self.client1.write(record_type, data)
-        client2_id = self.test_client2.get_client_id()
+        client2_id = self.test_client2.client_id
 
         self.client1.share(record_type, client2_id)
 
         found = False
         for policy in self.client1.outgoing_sharing():
-            if policy.to_json()['reader_id'] == client2_id and policy.to_json()['record_type'] == record_type:
+            if policy.reader_id == client2_id and policy.record_type == record_type:
                 found = True
 
         assert(found == True)
@@ -376,14 +396,14 @@ class TestIntegrationClient():
             'time': starting_time
         }
         record1 = self.client1.write(record_type, data)
-        client2_id = self.test_client2.get_client_id()
-        client1_id = self.test_client1.get_client_id()
+        client2_id = self.test_client2.client_id
+        client1_id = self.test_client1.client_id
 
         self.client1.share(record_type, client2_id)
 
         found = False
         for policy in self.client2.incoming_sharing():
-            if policy.to_json()['writer_id'] == client1_id and policy.to_json()['record_type'] == record_type:
+            if policy.writer_id == client1_id and policy.record_type == record_type:
                 found = True
 
         assert(found == True)
@@ -400,8 +420,8 @@ class TestIntegrationClient():
             'time': starting_time
         }
         record1 = self.client1.write(record_type, data)
-        record_id = record1.to_json()['meta']['record_id']
-        client2_id = self.test_client2.get_client_id()
+        record_id = record1.meta.record_id
+        client2_id = self.test_client2.client_id
 
         self.client1.share(record_type, client2_id)
 
@@ -428,11 +448,11 @@ class TestIntegrationClient():
         }
 
         record1 = self.client1.write(record_type, data)
-        record_id = record1.to_json()['meta']['record_id']
+        record_id = record1.meta.record_id
 
         record2 = self.client1.read(record_id)
 
-        assert(record2.to_json()['data']['just_right'] == large_data)
+        assert(record2.data['just_right'] == large_data)
 
     def test_record_too_large(self):
         """

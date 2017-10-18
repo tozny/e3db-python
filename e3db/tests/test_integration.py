@@ -468,3 +468,20 @@ class TestIntegrationClient():
         # returns 400 invalid request body
         with pytest.raises(e3db.APIError):
             record1 = self.client1.write(record_type, data)
+
+    def test_datetime_comparison(self):
+        """
+        Write two records, and compare the created times to verify datetime
+        comparisons are working properly.
+        """
+
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+
+        record2 = self.client1.write(record_type, data)
+
+        assert(record1.meta.created < record2.meta.created)

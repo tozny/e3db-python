@@ -101,6 +101,7 @@ class TestIntegrationClient():
         """
         client1_id = self.test_client1.get_client_id()
         info = self.client1.client_info(client1_id)
+        assert(info.public_key != '')
         assert(info.to_json()['client_id'] == self.test_client1.get_client_id())
 
     def test_client_doesnt_exist(self):

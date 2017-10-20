@@ -75,8 +75,8 @@ provided that the Licensed Software so included shall in any case
 remain subject to the terms of this License.
 
 1.15. "Original Source Code" means the Source Code for the
-_E3DB Java SDK_ as made available for
-download by TOZNY from [https://github.com/tozny/e3db-java/](https://github.com/tozny/e3db-java/).
+_E3DB Python SDK_ as made available for
+download by TOZNY from [https://github.com/tozny/e3db-python/](https://github.com/tozny/e3db-python/).
 
 1.16. "Source Code" means the preferred form of software for
 making modifications to it, including all modules it contains,
@@ -180,7 +180,7 @@ INITIAL DEVELOPER OR ANY CONTRIBUTOR) ASSUME THE COST OF ANY NECESSARY
 SERVICING, REPAIR OR CORRECTION. THIS DISCLAIMER OF WARRANTY
 CONSTITUTES AN ESSENTIAL PART OF THIS LICENSE. NO USE OF ANY LICENSED
 SOFTWARE IS AUTHORIZED HEREUNDER EXCEPT UNDER THIS DISCLAIMER.
- 
+
 5. LIMITATION OF LIABILITY
 
 UNDER NO CIRCUMSTANCES AND UNDER NO LEGAL THEORY, WHETHER TORT
@@ -242,11 +242,9 @@ EXHIBIT A
 The contents of this file are subject to the TOZNY NON-COMMERCIAL
 LICENSE (the "License"); you may not use this file except in
 compliance with the License. You may obtain a copy of the License at
-[https://github.com/tozny/e3db-java/](https://github.com/tozny/e3db-java/). Software distributed under the
+[https://github.com/tozny/e3db-python/](https://github.com/tozny/e3db-python/). Software distributed under the
 License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 KIND, either express or implied. See the License for the specific
 language governing rights and limitations under the License. Portions
 of the software are Copyright (c) TOZNY LLC, 2017. All rights
 reserved.
-
-

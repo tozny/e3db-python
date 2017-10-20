@@ -56,15 +56,16 @@ class Client:
 
         # Map of HTTP error codes to exception messages
         errors = {
-            400: 'Invalid request: HTTP 400',
-            401: 'Unauthenticated: HTTP 401',
-            403: 'Unauthorized: HTTP 403',
-            404: 'Requested item not found: HTTP 404',
-            409: 'Existing item cannot be modified: HTTP 409'
+            400: APIError('Invalid request: HTTP 400'),
+            401: APIError('Unauthenticated: HTTP 401'),
+            403: APIError('Unauthorized: HTTP 403'),
+            404: APIError('Requested item not found: HTTP 404'),
+            409: ConflictError('Existing item cannot be modified: HTTP 409')
         }
 
+        # Lookup type of error we should throw, and do so if needed.
         if response.status_code in errors:
-            raise APIError(errors[response.status_code])
+            raise errors[response.status_code]
 
     def __decrypt_record(self, record):
         """

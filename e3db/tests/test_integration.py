@@ -189,7 +189,7 @@ class TestIntegrationClient():
         assert(updated.data != record.data)
         assert(record.meta.version != updated.meta.version)
 
-        with pytest.raises(e3db.APIError):
+        with pytest.raises(e3db.ConflictError):
             self.client1.update(record1)
 
     def test_conflicting_delete(self):
@@ -215,7 +215,7 @@ class TestIntegrationClient():
         assert(updated.data != record.data)
         assert(record.meta.version != updated.meta.version)
 
-        with pytest.raises(e3db.APIError):
+        with pytest.raises(e3db.ConflictError):
             self.client1.delete(record1.meta.record_id, record1.meta.version)
 
     def test_query_by_type(self):

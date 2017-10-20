@@ -6,6 +6,10 @@ class LookupError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during lookup: {0}".format(text))
 
+class ConflictError(Exception):
+    def __init__(self, text):
+        Exception.__init__(self, "Conflict error: {0}".format(text))
+
 class CryptoError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during Crypto operation: {0}".format(text))

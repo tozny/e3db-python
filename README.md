@@ -99,7 +99,9 @@ To write new records to the database, call the `e3db.Client.write` method with a
 ```python
 import e3db
 
-client = e3db.Client(' config ')
+client = e3db.Client(
+  # config
+)
 
 record_type = 'contact'
 data = {

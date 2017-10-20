@@ -16,6 +16,17 @@ Tests for the e3db-python SDK use pytest. This can be installed by running the f
 pip install pytest pytest-cov
 ```
 
+## Setup environment variables
+
+We need to set a few environment variables that the integration tests require.
+The tests will dynamically generate a few clients, and use the server specified
+in `DEFAULT_API_URL`. 
+
+```bash
+export REGISTRATION_TOKEN=<TOKEN>
+export DEFAULT_API_URL=<https://api.url>
+```
+
 ## Run tests and generate a verbose report output
 
 ```bash

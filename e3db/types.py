@@ -159,7 +159,16 @@ class Record():
         None
         """
 
-        self.__meta = meta
+        # Check that meta being passed in is of e3db.Meta type.
+        if meta and (not isinstance(meta, Meta)):
+            raise TypeError("Meta object is not e3db.Meta type. Given type: {0}".format(type(meta)))
+        else:
+            self.__meta = meta
+
+        # Check that data passed in is a dictionary
+        if data and (not isinstance(data, dict)):
+            raise TypeError("Data object is not dict. Given type: {0}".format(type(data)))
+
         # make copy of the data so we dont modify the original object passed in
         self.__data = copy.deepcopy(data)
 

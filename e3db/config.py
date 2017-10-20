@@ -10,7 +10,7 @@ class Config:
     """
 
     DEFAULT_API_URL = "https://api.e3db.com"
-    def __init__(self, client_id, api_key_id, api_secret, public_key, private_key, client_email="", version="1", api_url=DEFAULT_API_URL, logging=False):
+    def __init__(self, client_id, api_key_id, api_secret, public_key, private_key, client_email="", version="1", api_url=DEFAULT_API_URL):
         """
         Initialize the Config class.
 
@@ -45,10 +45,6 @@ class Config:
             Manually specified API url. Defaults to DEFAULT_API_URL.
             Optional.
 
-        logging : bool
-            Turn on optional logging in the SDK. Defaults to False.
-            Optional.
-
         Returns
         -------
         None
@@ -62,7 +58,6 @@ class Config:
         self.public_key = public_key
         self.private_key = private_key
         self.api_url = api_url
-        self.logging = logging
 
     def __call__(self):
         """
@@ -87,7 +82,6 @@ class Config:
             'public_key': self.public_key,
             'private_key': self.private_key,
             'api_url': self.api_url,
-            'logging': self.logging
         }
 
     @classmethod

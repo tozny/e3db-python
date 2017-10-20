@@ -456,7 +456,7 @@ class Client:
                 )
 
             client = Client(config())
-            client.__backup(backup_client_id, registration_token)
+            client.backup(backup_client_id, registration_token)
 
         # make ClientDetails object
         return ClientDetails(client_info)
@@ -677,9 +677,9 @@ class Client:
         response = requests.delete(url=url, auth=self.e3db_auth)
         self.__response_check(response)
 
-    def __backup(self, client_id, registration_token):
+    def backup(self, client_id, registration_token):
         """
-        Private Method to write backup credentials to InnoVault console
+        Public Method to write backup credentials to InnoVault console
         for recovery, if desired during registration.
 
         Parameters

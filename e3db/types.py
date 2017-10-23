@@ -276,7 +276,7 @@ class Record():
         None
         """
 
-        self.__meta.update(meta.to_json())
+        self.__meta = meta
         self.__data = data
 
 class Meta():
@@ -298,8 +298,8 @@ class Meta():
         None
         """
         # required
-        self.__writer_id = json['writer_id']
-        self.__user_id = json['user_id']
+        self.__writer_id = uuid.UUID(json['writer_id'])
+        self.__user_id = uuid.UUID(json['user_id'])
         self.__record_type = str(json['type'])
         self.__plain = json['plain'] if 'plain' in json else None
         # optional, as some get set by the server
@@ -313,6 +313,8 @@ class Meta():
         else:
             self.__record_id = str(None)
 
+        # When "printing" the timestamp (or converting to str), the T and Z characters are removed
+        # Therefore, we need to parse both formats.
         try:
             self.__created = datetime.strptime(json['created'], '%Y-%m-%dT%H:%M:%S.%fZ') if 'created' in json else None
         except ValueError:
@@ -427,7 +429,7 @@ class Meta():
                 del to_serialize[key]
 
         return to_serialize
-
+'''
     def update(self, json):
         """
         Update the Meta object with new configuration.
@@ -451,6 +453,7 @@ class Meta():
         self.__created = json['created']
         self.__last_modified = json['last_modified']
         self.__version = json['version']
+'''
 
 class ClientInfo():
     def __init__(self, client_id, public_key, validated):
@@ -477,7 +480,7 @@ class ClientInfo():
         -------
         None
         """
-        self.__client_id = str(client_id)
+        self.__client_id = uuid.UUID(client_id)
         self.__public_key = dict(public_key)
         self.__validated = bool(validated)
 
@@ -523,9 +526,9 @@ class ClientInfo():
         """
 
         return {
-            'client_id': self.__client_id,
-            'public_key': self.__public_key,
-            'validated': self.__validated
+            'client_id': str(self.__client_id),
+            'public_key': dict(self.__public_key),
+            'validated': bool(self.__validated)
         }
 
 class ClientDetails():
@@ -612,7 +615,7 @@ class ClientDetails():
             'client_id': str(self.__client_id),
             'api_key_id': str(self.__api_key_id),
             'api_secret': str(self.__api_secret),
-            'public_key': self.__public_key,
+            'public_key': dict(self.__public_key),
             'name': str(self.__name)
         }
 
@@ -701,8 +704,16 @@ class QueryResult():
         None
         """
 
-        self.__query = query
-        self.__records = records
+        if query and (not isinstance(query, Query)):
+            raise TypeError("Query object is not e3db.Query type. Given type: {0}".format(type(query)))
+        else:
+            self.__query = query
+
+        # Check that all records in this list are of type e3db.Record
+        if records and (not all(isinstance(x, Record) for x in records)):
+            raise TypeError("Records should be a list of e3db.Record types. Given type: {0}".format(type(records)))
+        else:
+            self.__records = records
 
     # after_index getters and setters
     @property
@@ -813,15 +824,15 @@ class Query():
         -------
         None
         """
-        self.__count = count
-        self.__after_index = after_index
-        self.__include_data = include_data
-        self.__writer_ids = writer_ids
-        self.__user_ids = user_ids
-        self.__record_ids = record_ids
-        self.__content_types = content_types
-        self.__plain = plain
-        self.__include_all_writers = include_all_writers
+        self.__count = int(count)
+        self.__after_index = int(after_index)
+        self.__include_data = bool(include_data)
+        self.__writer_ids = [uuid.UUID(i) for i in writer_ids]
+        self.__user_ids = [uuid.UUID(i) for i in user_ids]
+        self.__record_ids = [uuid.UUID(i) for i in record_ids]
+        self.__content_types = [str(i) for i in content_types]
+        self.__plain = dict(plain) if plain != None else None
+        self.__include_all_writers = bool(include_all_writers)
 
     # count getters and setters
     @property
@@ -934,13 +945,13 @@ class Query():
             JSON-style document containing the Query elements.
         """
         return {
-            'count': self.__count,
-            'after_index': self.__after_index,
-            'include_data': self.__include_data,
-            'writer_ids': self.__writer_ids,
-            'user_ids': self.__user_ids,
-            'record_ids': self.__record_ids,
-            'content_types': self.__content_types,
+            'count': int(self.__count),
+            'after_index': int(self.__after_index),
+            'include_data': bool(self.__include_data),
+            'writer_ids': [str(i) for i in self.__writer_ids],
+            'user_ids': [str(i) for i in self.__user_ids],
+            'record_ids': [str(i) for i in self.__record_ids],
+            'content_types': [str(i) for i in self.__content_types],
             'plain': self.__plain,
-            'include_all_writers': self.__include_all_writers
+            'include_all_writers': bool(self.__include_all_writers)
         }

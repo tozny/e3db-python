@@ -603,8 +603,8 @@ class Client:
 
         url = self.__get_url("v1", "storage", "records")
         meta_data = {
-            'writer_id': self.client_id,
-            'user_id': self.client_id,
+            'writer_id': str(self.client_id),
+            'user_id': str(self.client_id),
             'type': record_type,
             'plain': plain
         }
@@ -614,8 +614,9 @@ class Client:
         response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         response_json = response.json()
-        meta.update(response_json['meta'])
-        decrypted = self.__decrypt_record(Record(meta, response_json['data']))
+        # TODO don't update, but instead create new Record object?
+        response_meta = Meta(response_json['meta'])
+        decrypted = self.__decrypt_record(Record(response_meta, response_json['data']))
         return decrypted
 
     def update(self, record):
@@ -775,7 +776,7 @@ class Client:
 
         q = Query(after_index=last_index, include_data=data, writer_ids=writer, \
                 record_ids=record, content_types=record_type, plain=plain, \
-                user_ids=None, count=page_size, \
+                user_ids=[], count=page_size, \
                 include_all_writers=all_writers)
 
         response = self.__query(q)

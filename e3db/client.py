@@ -5,6 +5,7 @@ from types import *
 from exceptions import *
 import requests
 import urllib
+import uuid
 
 class Client:
     """
@@ -500,11 +501,11 @@ class Client:
 
         url = self.__get_url("v1", "storage", "clients", str(client_id))
         response = requests.get(url=url, auth=self.e3db_auth)
-        self.__response_check(response)
-        json = response.json()
-
         if response.status_code == 404:
             raise LookupError('Client ID not found: {0}'.format(client_id))
+
+        self.__response_check(response)
+        json = response.json()
 
         client_id = json['client_id']
         public_key = json['public_key']
@@ -781,10 +782,6 @@ class Client:
 
         response = self.__query(q)
 
-        if 'error' in response:
-            # we had an error, return this to user
-            raise QueryError(response['error'])
-
         # take this apart
         last_index = response['last_index']
         results = response['results']
@@ -825,6 +822,9 @@ class Client:
         """
         url = self.__get_url('v1', 'storage', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        if 'error' in response.text:
+            # we had an error, return this to user
+            raise QueryError(response.json()['error'])
         self.__response_check(response)
         return response.json()
 

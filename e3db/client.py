@@ -615,7 +615,6 @@ class Client:
         response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         response_json = response.json()
-        # TODO don't update, but instead create new Record object?
         response_meta = Meta(response_json['meta'])
         decrypted = self.__decrypt_record(Record(response_meta, response_json['data']))
         return decrypted

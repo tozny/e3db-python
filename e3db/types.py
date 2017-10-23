@@ -29,32 +29,20 @@ class IncomingSharingPolicy(object):
         self.__writer_name = str(json['writer_name'])
         self.__record_type = str(json['record_type'])
 
-    # writer_id getters and setters
+    # writer_id getters
     @property
     def writer_id(self):
         return self.__writer_id
 
-    @writer_id.setter
-    def writer_id(self, value):
-        self.__writer_id = value
-
-    # writer_name getters and setters
+    # writer_name getters
     @property
     def writer_name(self):
         return self.__writer_name
 
-    @writer_name.setter
-    def writer_name(self, value):
-        self.__writer_name = value
-
-    # record_type getters and setters
+    # record_type getters
     @property
     def record_type(self):
         return self.__record_type
-
-    @record_type.setter
-    def record_type(self, value):
-        self.__record_type = value
 
     def to_json(self):
         """
@@ -93,32 +81,20 @@ class OutgoingSharingPolicy():
         self.__reader_name = str(json['reader_name'])
         self.__record_type = str(json['record_type'])
 
-    # reader_id getters and setters
+    # reader_id getters
     @property
     def reader_id(self):
       return self.__reader_id
 
-    @reader_id.setter
-    def reader_id(self, value):
-      self.__reader_id = value
-
-    # reader_name getters and setters
+    # reader_name getters
     @property
     def reader_name(self):
       return self.__reader_name
 
-    @reader_name.setter
-    def reader_name(self, value):
-      self.__reader_name = value
-
-    # record_type getters and setters
+    # record_type getters
     @property
     def record_type(self):
         return self.__record_type
-
-    @record_type.setter
-    def record_type(self, value):
-        self.__record_type = value
 
     def to_json(self):
         """
@@ -362,41 +338,25 @@ class Meta():
     def plain(self, value):
         self.__plain = value
 
-    # record_id getters and setters
+    # record_id getters
     @property
     def record_id(self):
         return self.__record_id
 
-    @record_id.setter
-    def record_id(self, value):
-        self.__record_id = value
-
-    # created getters and setters
+    # created getters
     @property
     def created(self):
         return self.__created
 
-    @created.setter
-    def created(self, value):
-        self.__created = value
-
-    # last_modified getters and setters
+    # last_modified getters
     @property
     def last_modified(self):
         return self.__last_modified
 
-    @last_modified.setter
-    def last_modified(self, value):
-        self.__last_modified = value
-
-    # version getters and setters
+    # version getters
     @property
     def version(self):
         return self.__version
-
-    @version.setter
-    def version(self, value):
-        self.__version = value
 
     def to_json(self):
         """
@@ -429,31 +389,6 @@ class Meta():
                 del to_serialize[key]
 
         return to_serialize
-'''
-    def update(self, json):
-        """
-        Update the Meta object with new configuration.
-
-        Configuration is taken in as a JSON-style dictionary object.
-
-        Parameters
-        ----------
-        json : dict
-            JSON key-value store of Meta data configuration.
-
-        Returns
-        -------
-        None
-        """
-        self.__record_id = json['record_id']
-        self.__writer_id = json['writer_id']
-        self.__user_id = json['user_id']
-        self.__record_type = json['type']
-        self.__plain = json['plain']
-        self.__created = json['created']
-        self.__last_modified = json['last_modified']
-        self.__version = json['version']
-'''
 
 class ClientInfo():
     def __init__(self, client_id, public_key, validated):
@@ -484,32 +419,20 @@ class ClientInfo():
         self.__public_key = dict(public_key)
         self.__validated = bool(validated)
 
-    # client_id getters and setters
+    # client_id getters
     @property
     def client_id(self):
         return self.__client_id
 
-    @client_id.setter
-    def client_id(self, value):
-        self.__client_id = value
-
-    # public_key getters and setters
+    # public_key getters
     @property
     def public_key(self):
         return self.__public_key['curve25519']
 
-    @public_key.setter
-    def public_key(self, value):
-        self.__public_key = value
-
-    # validated getters and setters
+    # validated getters
     @property
     def validated(self):
         return self.__validated
-
-    @validated.setter
-    def validated(self, value):
-        self.__validated = value
 
     def to_json(self):
         """
@@ -553,50 +476,30 @@ class ClientDetails():
         self.__public_key = dict(json['public_key'])
         self.__name = str(json['name'])
 
-    # client_id getters and setters
+    # client_id getters
     @property
     def client_id(self):
         return self.__client_id
 
-    @client_id.setter
-    def client_id(self, value):
-        self.__client_id = value
-
-    # api_key_id getters and setters
+    # api_key_id getters
     @property
     def api_key_id(self):
         return self.__api_key_id
 
-    @api_key_id.setter
-    def api_key_id(self, value):
-        self.__api_key_id = value
-
-    # api_secret getters and setters
+    # api_secret getters
     @property
     def api_secret(self):
         return self.__api_secret
 
-    @api_secret.setter
-    def api_secret(self, value):
-        self.__api_secret = value
-
-    # public_key getters and setters
+    # public_key getters
     @property
     def public_key(self):
         return self.__public_key['curve25519']
-
-    @public_key.setter
-    def public_key(self, value):
-        self.__public_key = value
 
     # name getters and setters
     @property
     def name(self):
         return self.__name
-
-    @name.setter
-    def name(self, value):
-        self.__name = value
 
     def to_json(self):
         """
@@ -834,86 +737,50 @@ class Query():
         self.__plain = dict(plain) if plain != None else None
         self.__include_all_writers = bool(include_all_writers)
 
-    # count getters and setters
+    # count getters
     @property
     def count(self):
         return self.__count
 
-    @count.setter
-    def count(self, value):
-        self.__count = value
-
-    # after_index getters and setters
+    # after_index getters
     @property
     def after_index(self):
         return self.__after_index
 
-    @after_index.setter
-    def after_index(self, value):
-        self.__after_index = value
-
-    # include_data getters and setters
+    # include_data getters
     @property
     def include_data(self):
         return self.__include_data
 
-    @include_data.setter
-    def include_data(self, value):
-        self.__include_data = value
-
-    # writer_ids getters and setters
+    # writer_ids getters
     @property
     def writer_ids(self):
         return self.__writer_ids
 
-    @writer_ids.setter
-    def writer_ids(self, value):
-        self.__writer_ids = value
-
-    # user_ids getters and setters
+    # user_ids getters
     @property
     def user_ids(self):
         return self.__user_ids
 
-    @user_ids.setter
-    def user_ids(self, value):
-        self.__user_ids = value
-
-    # record_ids getters and setters
+    # record_ids getters
     @property
     def record_ids(self):
         return self.__record_ids
 
-    @record_ids.setter
-    def record_ids(self, value):
-        self.__record_ids = value
-
-    # content_types getters and setters
+    # content_types getters
     @property
     def content_types(self):
         return self.__content_types
 
-    @content_types.setter
-    def content_types(self, value):
-        self.__content_types = value
-
-    # plain getters and setters
+    # plain getters
     @property
     def plain(self):
         return self.__plain
 
-    @plain.setter
-    def plain(self, value):
-        self.__plain = value
-
-    # include_all_writers getters and setters
+    # include_all_writers getters
     @property
     def include_all_writers(self):
         return self.__include_all_writers
-
-    @include_all_writers.setter
-    def include_all_writers(self, value):
-        self.__include_all_writers = value
 
     def get_after_index(self):
         """

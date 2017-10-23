@@ -6,8 +6,19 @@ Subpackages
 
 .. toctree::
 
+    e3db.tests
+    e3db.types
+
 Submodules
 ----------
+
+e3db\.auth module
+-----------------
+
+.. automodule:: e3db.auth
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 e3db\.client module
 -------------------
@@ -25,18 +36,18 @@ e3db\.config module
     :undoc-members:
     :show-inheritance:
 
-e3db\.exceptions module
------------------------
+e3db\.crypto module
+-------------------
 
-.. automodule:: e3db.exceptions
+.. automodule:: e3db.crypto
     :members:
     :undoc-members:
     :show-inheritance:
 
-e3db\.types module
-------------------
+e3db\.exceptions module
+-----------------------
 
-.. automodule:: e3db.types
+.. automodule:: e3db.exceptions
     :members:
     :undoc-members:
     :show-inheritance:

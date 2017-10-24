@@ -1,3 +1,8 @@
 [flake8]
+# ignore 
+# E501: line-length 
+# E402: import not top of file
+# F401: unused imports 
+# E128: line under-indented 
 ignore = E501,E402,F401,E128
 exclude = .git,__pycache__,docs/source/conf.py,old,build,dist

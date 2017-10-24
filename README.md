@@ -78,12 +78,12 @@ import os
 # follows:
 
 config = e3db.Config(
-    os.environ["client_id"], \
-    os.environ["api_key_id"], \
-    os.environ["api_secret"], \
-    os.environ["public_key"], \
+    os.environ["client_id"],
+    os.environ["api_key_id"],
+    os.environ["api_secret"],
+    os.environ["public_key"],
     os.environ["private_key"]
-    )
+)
 
 # Pass the configuration when building a new client instance.
 
@@ -129,7 +129,7 @@ client = e3db.Client(' config ')
 record_type = 'contact'
 
 for record in client.query(record=[record_type]):
-    full_name = record.data['first_name'] + ' ' + record.data['last_name']
+    full_name = "{0} --- {1}".format(record.data['first_name'], record.data['last_name'])
     print "{0} --- {1}".format(full_name, record.data['phone'])
 ```
 

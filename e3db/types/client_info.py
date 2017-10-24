@@ -1,6 +1,8 @@
 import uuid
 
+
 class ClientInfo():
+
     def __init__(self, client_id, public_key, validated):
         """
         Initialize the ClientInfo class.

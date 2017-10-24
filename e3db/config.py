@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class Config:
     """
     Class to create E3DB configuration, or load from a file.
@@ -10,6 +11,7 @@ class Config:
     """
 
     DEFAULT_API_URL = "https://api.e3db.com"
+
     def __init__(self, client_id, api_key_id, api_secret, public_key, private_key, client_email="", version="1", api_url=DEFAULT_API_URL):
         """
         Initialize the Config class.
@@ -126,4 +128,4 @@ class Config:
         """
         # if profile is empty we read the default ~/.tozny/e3db.json file
         home = os.path.expanduser('~')
-        return Config.__load_file(os.path.join(home, '.tozny',  profile, 'e3db.json'))
+        return Config.__load_file(os.path.join(home, '.tozny', profile, 'e3db.json'))

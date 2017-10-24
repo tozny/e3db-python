@@ -1,7 +1,9 @@
 import copy
 from meta import Meta
 
+
 class Record():
+
     def __init__(self, meta=None, data=None):
         """
         Initialize the Record class.

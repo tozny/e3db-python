@@ -1,6 +1,8 @@
 import uuid
 
+
 class OutgoingSharingPolicy():
+
     def __init__(self, json):
         """
         Initialize the OutgoingSharingPolicy class.

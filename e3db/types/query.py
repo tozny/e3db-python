@@ -1,10 +1,11 @@
 import uuid
 
+
 class Query():
 
-    def __init__(self, count, after_index=0, include_data=False, \
-        writer_ids=None, user_ids=None, record_ids=None, content_types=None, \
-        plain={}, include_all_writers=False):
+    def __init__(self, count, after_index=0, include_data=False,
+            writer_ids=None, user_ids=None, record_ids=None, content_types=None,
+            plain={}, include_all_writers=False):
         """
         Initialize the Query class.
 
@@ -63,7 +64,7 @@ class Query():
         self.__user_ids = [uuid.UUID(i) for i in user_ids]
         self.__record_ids = [uuid.UUID(i) for i in record_ids]
         self.__content_types = [str(i) for i in content_types]
-        self.__plain = dict(plain) if plain != None else None
+        self.__plain = dict(plain) if plain is not None else None
         self.__include_all_writers = bool(include_all_writers)
 
     # count getters

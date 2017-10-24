@@ -3,6 +3,13 @@
 ## Build HTML documentation
 
 The following will run on OSX, Linux, and Windows. There is a Unix style `Makefile`, as well as `make.bat` for Windows users.
+
+### Install dependencies
+```
+pip install sphinx
+```
+
+### Generate documentation
 ```
 sphinx-apidoc -f -o docs/source e3db
 make html

@@ -5,6 +5,7 @@ from types import *
 from exceptions import *
 import requests
 import urllib
+import uuid
 
 class Client:
     """
@@ -500,11 +501,11 @@ class Client:
 
         url = self.__get_url("v1", "storage", "clients", str(client_id))
         response = requests.get(url=url, auth=self.e3db_auth)
-        self.__response_check(response)
-        json = response.json()
-
         if response.status_code == 404:
             raise LookupError('Client ID not found: {0}'.format(client_id))
+
+        self.__response_check(response)
+        json = response.json()
 
         client_id = json['client_id']
         public_key = json['public_key']
@@ -603,8 +604,8 @@ class Client:
 
         url = self.__get_url("v1", "storage", "records")
         meta_data = {
-            'writer_id': self.client_id,
-            'user_id': self.client_id,
+            'writer_id': str(self.client_id),
+            'user_id': str(self.client_id),
             'type': record_type,
             'plain': plain
         }
@@ -614,8 +615,8 @@ class Client:
         response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         response_json = response.json()
-        meta.update(response_json['meta'])
-        decrypted = self.__decrypt_record(Record(meta, response_json['data']))
+        response_meta = Meta(response_json['meta'])
+        decrypted = self.__decrypt_record(Record(response_meta, response_json['data']))
         return decrypted
 
     def update(self, record):
@@ -775,14 +776,10 @@ class Client:
 
         q = Query(after_index=last_index, include_data=data, writer_ids=writer, \
                 record_ids=record, content_types=record_type, plain=plain, \
-                user_ids=None, count=page_size, \
+                user_ids=[], count=page_size, \
                 include_all_writers=all_writers)
 
         response = self.__query(q)
-
-        if 'error' in response:
-            # we had an error, return this to user
-            raise QueryError(response['error'])
 
         # take this apart
         last_index = response['last_index']
@@ -824,6 +821,9 @@ class Client:
         """
         url = self.__get_url('v1', 'storage', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        if 'error' in response.text:
+            # we had an error, return this to user
+            raise QueryError(response.json()['error'])
         self.__response_check(response)
         return response.json()
 

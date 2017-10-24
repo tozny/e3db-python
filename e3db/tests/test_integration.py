@@ -112,7 +112,7 @@ class TestIntegrationClient():
         """
         Test we raise an exception for client that doesn't exist.
         """
-        with pytest.raises(e3db.APIError):
+        with pytest.raises(e3db.LookupError):
             self.client1.client_info('doesnt exist')
 
     def test_write_then_read_record(self):
@@ -485,3 +485,13 @@ class TestIntegrationClient():
 
         assert(record1.meta.created < record2.meta.created)
         assert(record1.meta.last_modified < record2.meta.last_modified)
+
+    def test_query_server_error(self):
+        """
+        Write a query against the server, such that the server responds
+        with an error. We do this by using a negative last index.
+        """
+        writer_id = self.test_client1.client_id
+        with pytest.raises(e3db.QueryError):
+            for record in self.client1.query(writer=[writer_id], last_index=-99, data=False):
+                test = record

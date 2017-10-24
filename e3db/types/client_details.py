@@ -1,6 +1,8 @@
 import uuid
 
+
 class ClientDetails():
+
     def __init__(self, json):
         """
         Initialize the ClientDetails class.

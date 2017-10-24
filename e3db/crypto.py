@@ -3,6 +3,7 @@ import nacl.utils
 import nacl.secret
 import nacl.public
 
+
 class Crypto:
 
     @classmethod

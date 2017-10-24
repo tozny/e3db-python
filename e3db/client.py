@@ -1,11 +1,11 @@
 from auth import E3DBAuth
 from crypto import Crypto
 from config import Config
-from types import *
-from exceptions import *
+from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record
+from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
-import urllib
 import uuid
+
 
 class Client:
     """
@@ -113,7 +113,7 @@ class Client:
 
         encrypted_record = record.to_json()
 
-        for key,value in encrypted_record['data'].iteritems():
+        for key, value in encrypted_record['data'].iteritems():
             fields = value.split(".")
 
             if len(fields) != 4:
@@ -161,7 +161,7 @@ class Client:
         ak = self.__get_access_key(writer_id, user_id, self.client_id, record_type)
 
         # if the ak is missing, we need to create and push one to the server.
-        if ak == None:
+        if ak is None:
             ak = Crypto.random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
@@ -170,10 +170,12 @@ class Client:
             dk = Crypto.random_key()
             efN = Crypto.random_nonce()
             ef = Crypto.encrypt_secret(dk, str(value), efN)
-            ef = ef[len(efN):] # remove nonce from ciphertext
+            # remove nonce from ciphertext
+            ef = ef[len(efN):]
             edkN = Crypto.random_nonce()
             edk = Crypto.encrypt_secret(ak, dk, edkN)
-            edk = edk[len(edkN):] # remove nonce from ciphertext
+            # remove nonce from ciphertext
+            edk = edk[len(edkN):]
 
             record['data'][key] = ".".join([Crypto.base64encode(c) for c in [edk, edkN, ef, efN]])
 
@@ -444,17 +446,17 @@ class Client:
         backup_client_id = response.headers['x-backup-client']
 
         if backup:
-            if private_key == None:
-                raise RuntimeError, "Cannot back up client credentials without a private key!"
+            if private_key is None:
+                raise RuntimeError("Cannot back up client credentials without a private key!")
 
             config = Config(
-                client_info['client_id'], \
-                client_info['api_key_id'], \
-                client_info['api_secret'], \
-                public_key, \
-                private_key, \
-                api_url=api_url \
-                )
+                client_info['client_id'],
+                client_info['api_key_id'],
+                client_info['api_secret'],
+                public_key,
+                private_key,
+                api_url=api_url
+            )
 
             client = Client(config())
             client.backup(backup_client_id, registration_token)
@@ -774,9 +776,9 @@ class Client:
         writer = [str(i) for i in writer]
         record = [str(i) for i in record]
 
-        q = Query(after_index=last_index, include_data=data, writer_ids=writer, \
-                record_ids=record, content_types=record_type, plain=plain, \
-                user_ids=[], count=page_size, \
+        q = Query(after_index=last_index, include_data=data, writer_ids=writer,
+                record_ids=record, content_types=record_type, plain=plain,
+                user_ids=[], count=page_size,
                 include_all_writers=all_writers)
 
         response = self.__query(q)
@@ -799,7 +801,7 @@ class Client:
                     ak = self.__decrypt_eak(access_key)
                     record = self.__decrypt_record_with_key(record, ak)
                 else:
-                    record = __decrypt_record(record)
+                    record = self.__decrypt_record(record)
 
             records.append(record)
 

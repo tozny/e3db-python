@@ -68,12 +68,12 @@ print "API Secret: {0}".format(api_secret)
 # e3db directly.
 
 config = e3db.Config(
-    client_id, \
-    api_key_id, \
-    api_secret, \
-    public_key, \
+    client_id,
+    api_key_id,
+    api_secret,
+    public_key,
     private_key
-    )
+)
 
 # Now create a client using that configuration.
 client = e3db.Client(config())

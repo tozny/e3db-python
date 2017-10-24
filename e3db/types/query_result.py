@@ -1,6 +1,7 @@
 from query import Query
 from record import Record
 
+
 class QueryResult():
 
     def __init__(self, query, records):

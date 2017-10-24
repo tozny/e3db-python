@@ -1,5 +1,6 @@
 import uuid
 
+
 class IncomingSharingPolicy(object):
     """
     Class to create Incoming Sharing policy object.

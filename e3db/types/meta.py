@@ -1,7 +1,9 @@
 from datetime import datetime
 import uuid
 
+
 class Meta():
+
     def __init__(self, json):
         """
         Initialize the Meta class.
@@ -26,9 +28,9 @@ class Meta():
         self.__plain = json['plain'] if 'plain' in json else None
         # optional, as some get set by the server
         # set these to None if they are not included when init is called.
-        #self.record_id = json['record_id'] if 'record_id' in json else None
+        # self.record_id = json['record_id'] if 'record_id' in json else None
         if 'record_id' in json:
-            if json['record_id'] != None and json['record_id'] != str(None):
+            if json['record_id'] is not None and json['record_id'] != str(None):
                 self.__record_id = uuid.UUID(json['record_id'])
             else:
                 self.__record_id = json['record_id']
@@ -276,8 +278,8 @@ class Meta():
         }
 
         # remove None (JSON null) objects
-        for key,value in to_serialize.items():
-            if value == None or value == 'None':
+        for key, value in to_serialize.items():
+            if value is None or value == 'None':
                 del to_serialize[key]
 
         return to_serialize

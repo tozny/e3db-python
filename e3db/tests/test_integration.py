@@ -8,6 +8,7 @@ import e3db.types
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
 
+
 class TestIntegrationClient():
     @classmethod
     def setup_class(self):
@@ -26,13 +27,13 @@ class TestIntegrationClient():
         client1_id = test_client1.client_id
 
         client1_config = e3db.Config(
-            client1_id, \
-            client1_api_key_id, \
-            client1_api_secret, \
-            client1_public_key, \
-            client1_private_key, \
-            api_url=api_url \
-            )
+            client1_id,
+            client1_api_key_id,
+            client1_api_secret,
+            client1_public_key,
+            client1_private_key,
+            api_url=api_url
+        )
 
         self.client1 = e3db.Client(client1_config())
 
@@ -45,13 +46,13 @@ class TestIntegrationClient():
         client2_id = test_client2.client_id
 
         client2_config = e3db.Config(
-            client2_id, \
-            client2_api_key_id, \
-            client2_api_secret, \
-            client2_public_key, \
-            client2_private_key, \
-            api_url=api_url \
-            )
+            client2_id,
+            client2_api_key_id,
+            client2_api_secret,
+            client2_public_key,
+            client2_private_key,
+            api_url=api_url
+        )
 
         self.client2 = e3db.Client(client2_config())
 
@@ -112,7 +113,7 @@ class TestIntegrationClient():
         """
         Test we raise an exception for client that doesn't exist.
         """
-        with pytest.raises(e3db.APIError):
+        with pytest.raises(e3db.LookupError):
             self.client1.client_info('doesnt exist')
 
     def test_write_then_read_record(self):
@@ -157,7 +158,7 @@ class TestIntegrationClient():
         record1.update(record_meta, record_data)
         # take the plaintext record, encrypt it, and replace the old version on
         # the server
-        updated = self.client1.update(record1)
+        self.client1.update(record1)
 
         # read the record back and compare to the original before doing update
         read_record1 = self.client1.read(record_id)
@@ -228,7 +229,7 @@ class TestIntegrationClient():
         data = {
             'time': starting_time
         }
-        record1 = self.client1.write(record_type, data)
+        self.client1.write(record_type, data)
 
         results = self.client1.query(record_type=[record_type])
         assert(len(results) >= 1)
@@ -287,11 +288,11 @@ class TestIntegrationClient():
         record1 = self.client1.write('test-plain', data, plain=plain_data)
 
         query = {
-                'eq': {
-                    'name': 'id',
-                    'value': plain_id
-                }
+            'eq': {
+                'name': 'id',
+                'value': plain_id
             }
+        }
 
         results = self.client1.query(plain=query)
         assert(len(results) == 1)
@@ -324,13 +325,13 @@ class TestIntegrationClient():
                     'eq': {
                         'name': 'id',
                         'value': plain_id
-                        },
+                    },
                 },
                 {
                     'eq': {
                         'name': 'location',
                         'value': 'Portland'
-                        },
+                    },
                 },
             ]
         }
@@ -373,7 +374,7 @@ class TestIntegrationClient():
         data = {
             'time': starting_time
         }
-        record1 = self.client1.write(record_type, data)
+        self.client1.write(record_type, data)
         client2_id = self.test_client2.client_id
 
         self.client1.share(record_type, client2_id)
@@ -383,7 +384,7 @@ class TestIntegrationClient():
             if policy.reader_id == client2_id and policy.record_type == record_type:
                 found = True
 
-        assert(found == True)
+        assert(found is True)
 
     def test_list_incoming_sharing(self):
         """
@@ -395,7 +396,7 @@ class TestIntegrationClient():
         data = {
             'time': starting_time
         }
-        record1 = self.client1.write(record_type, data)
+        self.client1.write(record_type, data)
         client2_id = self.test_client2.client_id
         client1_id = self.test_client1.client_id
 
@@ -406,7 +407,7 @@ class TestIntegrationClient():
             if policy.writer_id == client1_id and policy.record_type == record_type:
                 found = True
 
-        assert(found == True)
+        assert(found is True)
 
     def test_revoke(self):
         """
@@ -467,7 +468,7 @@ class TestIntegrationClient():
 
         # returns 400 invalid request body
         with pytest.raises(e3db.APIError):
-            record1 = self.client1.write(record_type, data)
+            self.client1.write(record_type, data)
 
     def test_datetime_comparison(self):
         """
@@ -485,3 +486,13 @@ class TestIntegrationClient():
 
         assert(record1.meta.created < record2.meta.created)
         assert(record1.meta.last_modified < record2.meta.last_modified)
+
+    def test_query_server_error(self):
+        """
+        Write a query against the server, such that the server responds
+        with an error. We do this by using a negative last index.
+        """
+        writer_id = self.test_client1.client_id
+        with pytest.raises(e3db.QueryError):
+            for record in self.client1.query(writer=[writer_id], last_index=-99, data=False):
+                continue

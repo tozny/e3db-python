@@ -3,9 +3,31 @@
 ## Build HTML documentation
 
 The following will run on OSX, Linux, and Windows. There is a Unix style `Makefile`, as well as `make.bat` for Windows users.
+
+### Install dependencies
+```
+pip install sphinx
+```
+
+### Generate documentation
 ```
 sphinx-apidoc -f -o docs/source e3db
 make html
+```
+
+# Formatting
+
+The e3db-python SDK uses flake8 for style enforcement against the pep8 standard, as well as programming standards. Flake8 configuration is stored in `.flake8`
+
+## Install Flake8
+
+```
+pip install flake8
+```
+
+## Use Flake8
+```
+flake8 e3db/
 ```
 
 # Tests
@@ -20,7 +42,7 @@ pip install pytest pytest-cov
 
 We need to set a few environment variables that the integration tests require.
 The tests will dynamically generate a few clients, and use the server specified
-in `DEFAULT_API_URL`. 
+in `DEFAULT_API_URL`.
 
 ```bash
 export REGISTRATION_TOKEN=<TOKEN>

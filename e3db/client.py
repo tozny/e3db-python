@@ -1,10 +1,11 @@
 from auth import E3DBAuth
 from crypto import Crypto
 from config import Config
-from types import *
-from exceptions import *
+from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record
+from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
-import urllib
+import uuid
+
 
 class Client:
     """
@@ -112,7 +113,7 @@ class Client:
 
         encrypted_record = record.to_json()
 
-        for key,value in encrypted_record['data'].iteritems():
+        for key, value in encrypted_record['data'].iteritems():
             fields = value.split(".")
 
             if len(fields) != 4:
@@ -160,7 +161,7 @@ class Client:
         ak = self.__get_access_key(writer_id, user_id, self.client_id, record_type)
 
         # if the ak is missing, we need to create and push one to the server.
-        if ak == None:
+        if ak is None:
             ak = Crypto.random_key()
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
@@ -169,10 +170,12 @@ class Client:
             dk = Crypto.random_key()
             efN = Crypto.random_nonce()
             ef = Crypto.encrypt_secret(dk, str(value), efN)
-            ef = ef[len(efN):] # remove nonce from ciphertext
+            # remove nonce from ciphertext
+            ef = ef[len(efN):]
             edkN = Crypto.random_nonce()
             edk = Crypto.encrypt_secret(ak, dk, edkN)
-            edk = edk[len(edkN):] # remove nonce from ciphertext
+            # remove nonce from ciphertext
+            edk = edk[len(edkN):]
 
             record['data'][key] = ".".join([Crypto.base64encode(c) for c in [edk, edkN, ef, efN]])
 
@@ -443,17 +446,17 @@ class Client:
         backup_client_id = response.headers['x-backup-client']
 
         if backup:
-            if private_key == None:
-                raise RuntimeError, "Cannot back up client credentials without a private key!"
+            if private_key is None:
+                raise RuntimeError("Cannot back up client credentials without a private key!")
 
             config = Config(
-                client_info['client_id'], \
-                client_info['api_key_id'], \
-                client_info['api_secret'], \
-                public_key, \
-                private_key, \
-                api_url=api_url \
-                )
+                client_info['client_id'],
+                client_info['api_key_id'],
+                client_info['api_secret'],
+                public_key,
+                private_key,
+                api_url=api_url
+            )
 
             client = Client(config())
             client.backup(backup_client_id, registration_token)
@@ -500,11 +503,11 @@ class Client:
 
         url = self.__get_url("v1", "storage", "clients", str(client_id))
         response = requests.get(url=url, auth=self.e3db_auth)
-        self.__response_check(response)
-        json = response.json()
-
         if response.status_code == 404:
             raise LookupError('Client ID not found: {0}'.format(client_id))
+
+        self.__response_check(response)
+        json = response.json()
 
         client_id = json['client_id']
         public_key = json['public_key']
@@ -603,8 +606,8 @@ class Client:
 
         url = self.__get_url("v1", "storage", "records")
         meta_data = {
-            'writer_id': self.client_id,
-            'user_id': self.client_id,
+            'writer_id': str(self.client_id),
+            'user_id': str(self.client_id),
             'type': record_type,
             'plain': plain
         }
@@ -614,8 +617,8 @@ class Client:
         response = requests.post(url=url, json=encrypted_record.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         response_json = response.json()
-        meta.update(response_json['meta'])
-        decrypted = self.__decrypt_record(Record(meta, response_json['data']))
+        response_meta = Meta(response_json['meta'])
+        decrypted = self.__decrypt_record(Record(response_meta, response_json['data']))
         return decrypted
 
     def update(self, record):
@@ -773,16 +776,12 @@ class Client:
         writer = [str(i) for i in writer]
         record = [str(i) for i in record]
 
-        q = Query(after_index=last_index, include_data=data, writer_ids=writer, \
-                record_ids=record, content_types=record_type, plain=plain, \
-                user_ids=None, count=page_size, \
+        q = Query(after_index=last_index, include_data=data, writer_ids=writer,
+                record_ids=record, content_types=record_type, plain=plain,
+                user_ids=[], count=page_size,
                 include_all_writers=all_writers)
 
         response = self.__query(q)
-
-        if 'error' in response:
-            # we had an error, return this to user
-            raise QueryError(response['error'])
 
         # take this apart
         last_index = response['last_index']
@@ -802,7 +801,7 @@ class Client:
                     ak = self.__decrypt_eak(access_key)
                     record = self.__decrypt_record_with_key(record, ak)
                 else:
-                    record = __decrypt_record(record)
+                    record = self.__decrypt_record(record)
 
             records.append(record)
 
@@ -824,6 +823,9 @@ class Client:
         """
         url = self.__get_url('v1', 'storage', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        if 'error' in response.text:
+            # we had an error, return this to user
+            raise QueryError(response.json()['error'])
         self.__response_check(response)
         return response.json()
 

@@ -4,17 +4,17 @@
 #
 # Copyright: Copyright (c) 2017 Tozny, LLC
 
-# Example function to give us back a 5 digit "combination lock" code,
-# padded with zeros as needed, just for our tools example.
+
 def generate_unlock_code():
+    # Example function to give us back a 5 digit "combination lock" code,
+    # padded with zeros as needed, just for our tools example.
     # generate a secure random number for our tools combination lock.
-    import os
     import random
-    import sys
     csprng = random.SystemRandom()
     # 5 digit combo
     random_combo = csprng.randint(0, 99999)
     return '{:05d}'.format(random_combo)
+
 
 # ---------------------------------------------------------
 # Initialization
@@ -134,13 +134,13 @@ drill_query = {
             'eq': {
                 'name': 'Location',
                 'value': 'Shed'
-                },
+            },
         },
         {
             'eq': {
                 'name': 'Tool',
                 'value': 'Hammer'
-                },
+            },
         },
     ]
 }

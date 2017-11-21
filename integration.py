@@ -31,11 +31,6 @@ def write(record_type):
     record = client.write(record_type, record_data)
     print ("Wrote %s (%s)." % (record.meta.record_id, record.meta.record_type))
 
-def delete(record_types):
-    for record in client.query(record_type=record_types):
-        print "Deleting %s/%s (%s)" % (record.meta.record_id, record.meta.version, record.meta.record_type)
-        client.delete(record.meta.record_id, record.meta.version)
-    
 
 def usage(err):
     if err:
@@ -56,9 +51,6 @@ where <command> is one of:
 
   write  
     Write a test record with the type 'python'.
-
-  delete
-    Delete all records of type 'python'.
     '''
 
     sys.exit(1)
@@ -85,7 +77,5 @@ if __name__ == '__main__':
             usage("Please provide some record types to read.")
 
         read(reader_record_types)
-    elif method == 'delete':
-        delete(writer_record_type)
 
     sys.exit(0)

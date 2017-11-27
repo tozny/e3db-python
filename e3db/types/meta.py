@@ -25,7 +25,7 @@ class Meta():
         self.__writer_id = uuid.UUID(json['writer_id'])
         self.__user_id = uuid.UUID(json['user_id'])
         self.__record_type = str(json['type'])
-        self.__plain = json['plain'] if 'plain' in json else None
+        self.__plain = json['plain'] if 'plain' in json else {}
         # optional, as some get set by the server
         # set these to None if they are not included when init is called.
         # self.record_id = json['record_id'] if 'record_id' in json else None

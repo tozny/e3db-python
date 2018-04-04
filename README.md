@@ -5,6 +5,10 @@ The Tozny End-to-End Encrypted Database (E3DB) is a storage platform with powerf
 
 E3DB provides a familiar JSON-based NoSQL-style API for reading, writing, and querying data stored securely in the cloud.
 
+# Requirements
+
+* Python 2.7 environment
+
 # Installation
 
 ## Build

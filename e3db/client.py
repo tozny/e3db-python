@@ -853,6 +853,8 @@ class Client:
             return
 
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
+        if ak is None:
+            ak = Crypto.random_key()
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
         url = self.__get_url("v1", "storage", "policy", str(self.client_id), str(self.client_id), str(reader_id), record_type)

@@ -11,15 +11,21 @@ E3DB provides a familiar JSON-based NoSQL-style API for reading, writing, and qu
 
 # Installation
 
-## Build
+## With Pip
 
-To build the package:
+`pip install e3db`
+
+## Local build
+
+### Build
+
+To build the package locally:
 
 ```bash
 python setup.py bdist_wheel
 ```
 
-## Install
+### Install
 
 That produces a `.whl` file in the `dist` directory that you can install. This can be installed with:
 

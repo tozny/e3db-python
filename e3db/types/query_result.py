@@ -54,6 +54,22 @@ class QueryResult():
         """
         return self.__query.after_index
 
+    @after_index.setter
+    def after_index(self, value):
+        """
+        Set after_index of QueryResult
+
+        Parameters
+        ----------
+        value: int
+            Set after_index from server result
+
+        Returns
+        -------
+        None
+        """
+        self.__query.after_index = int(value)
+
     def __iter__(self):
         """
         Iterate over record objects.

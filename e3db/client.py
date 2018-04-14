@@ -805,7 +805,9 @@ class Client:
 
             records.append(record)
 
-        return QueryResult(q, records)
+        qr = QueryResult(q, records)
+        qr.after_index = last_index
+        return qr
 
     def __query(self, query):
         """

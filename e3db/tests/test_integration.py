@@ -496,3 +496,35 @@ class TestIntegrationClient():
         with pytest.raises(e3db.QueryError):
             for record in self.client1.query(writer=[writer_id], last_index=-99, data=False):
                 continue
+
+    def test_pagination(self):
+        """
+        Test that we can actually page through results of the query
+        """
+        record_type = "test_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+
+        records = [
+            self.client1.write(record_type, data),
+            self.client1.write(record_type, data),
+            self.client1.write(record_type, data),
+            self.client1.write(record_type, data),
+            self.client1.write(record_type, data),
+            self.client1.write(record_type, data)
+        ]
+
+        results = self.client1.query(record_type=[record_type], page_size=5, last_index=0)
+        assert(len(results) == 5)
+        assert(results.after_index != 0)
+
+        next_page = self.client1.query(record_type=[record_type], page_size=5, last_index=results.after_index)
+
+        assert(len(next_page) == 1)
+        assert(next_page.after_index != results.after_index)
+
+        # Clean up by deleting these records
+        for record in records:
+            self.client1.delete(record.meta.record_id, record.meta.version)

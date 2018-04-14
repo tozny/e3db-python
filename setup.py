@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-version = "1.0.0"
+version = "1.0.1"
 setup(
   name="e3db",
   version=version,

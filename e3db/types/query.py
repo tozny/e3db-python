@@ -101,6 +101,22 @@ class Query():
         """
         return self.__after_index
 
+    @after_index.setter
+    def after_index(self, value):
+        """
+        Set after_index of QueryResult
+
+        Parameters
+        ----------
+        value: int
+            Set after_index from server result
+
+        Returns
+        -------
+        None
+        """
+        self.__after_index = int(value)
+
     # include_data getters
     @property
     def include_data(self):

@@ -10,7 +10,7 @@ COPY e3db/ /src/e3db/
 COPY ["README.md", "LICENSE.md", "setup.py", "/src/"]
 
 RUN python setup.py bdist_wheel && \
-  pip install --use-wheel --find-links=./dist/ e3db
+  pip install --find-links=./dist/ e3db
 
 COPY integration.py /src/integration.py
 

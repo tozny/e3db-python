@@ -2,5 +2,13 @@ FROM python:2.7-alpine
 
 RUN apk add --no-cache gcc musl-dev libffi-dev make
 
-RUN pip install pynacl requests
+RUN mkdir -p /src/
+
+COPY . /src/
+
+WORKDIR /src/
+
+RUN python setup.py bdist_wheel && \
+  pip install --use-wheel --find-links=dist e3db
+
 RUN pip install -U pytest pytest-cov

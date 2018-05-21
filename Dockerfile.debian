@@ -1,4 +1,0 @@
-FROM python:2.7-wheezy
-
-RUN pip install pynacl 
-RUN pip install -U pytest

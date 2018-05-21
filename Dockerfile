@@ -4,6 +4,8 @@ RUN apk add --no-cache gcc musl-dev libffi-dev make
 RUN mkdir -p /src
 WORKDIR /src/
 
+RUN pip install -U pytest pytest-cov sphinx flake8
+
 COPY e3db/ /src/e3db/
 COPY ["README.md", "LICENSE.md", "setup.py", "/src/"]
 

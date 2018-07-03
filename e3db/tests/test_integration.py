@@ -455,21 +455,6 @@ class TestIntegrationClient():
 
         assert(record2.data['just_right'] == large_data)
 
-    def test_record_too_large(self):
-        """
-        Write a record larger than the record size limit imposed by E3DB.
-        """
-        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
-        # 32 chars * 32 = 1KB
-        large_data = str(binascii.hexlify(os.urandom(16))) * 32 * 4096
-        data = {
-            'too_much': large_data
-        }
-
-        # returns 400 invalid request body
-        with pytest.raises(e3db.APIError):
-            self.client1.write(record_type, data)
-
     def test_datetime_comparison(self):
         """
         Write two records, and compare the created times to verify datetime

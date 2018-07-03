@@ -92,7 +92,7 @@ class IncomingSharingPolicy(object):
             JSON-style document containing the Policy elements.
         """
         return {
-            'writer_id': str(self.writer_id),
-            'writer_name': str(self.writer_name),
-            'record_type': str(self.record_type)
+            'writer_id': str(self.__writer_id),
+            'writer_name': str(self.__writer_name),
+            'record_type': str(self.__record_type)
         }

@@ -56,6 +56,25 @@ class TestIntegrationClient():
 
         self.client2 = e3db.Client(client2_config())
 
+        client3_public_key, client3_private_key = e3db.Client.generate_keypair()
+        client3_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_client3 = e3db.Client.register(token, client3_name, client3_public_key, api_url=api_url)
+        self.test_client3 = test_client3
+        client3_api_key_id = test_client3.api_key_id
+        client3_api_secret = test_client3.api_secret
+        client3_id = test_client3.client_id
+
+        client3_config = e3db.Config(
+            client3_id,
+            client3_api_key_id,
+            client3_api_secret,
+            client3_public_key,
+            client3_private_key,
+            api_url=api_url
+        )
+
+        self.client3 = e3db.Client(client3_config())
+
     def test_can_register_client(self):
         """
         Create and register a client using registration token to associate it
@@ -455,21 +474,6 @@ class TestIntegrationClient():
 
         assert(record2.data['just_right'] == large_data)
 
-    def test_record_too_large(self):
-        """
-        Write a record larger than the record size limit imposed by E3DB.
-        """
-        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
-        # 32 chars * 32 = 1KB
-        large_data = str(binascii.hexlify(os.urandom(16))) * 32 * 4096
-        data = {
-            'too_much': large_data
-        }
-
-        # returns 400 invalid request body
-        with pytest.raises(e3db.APIError):
-            self.client1.write(record_type, data)
-
     def test_datetime_comparison(self):
         """
         Write two records, and compare the created times to verify datetime
@@ -528,3 +532,92 @@ class TestIntegrationClient():
         # Clean up by deleting these records
         for record in records:
             self.client1.delete(record.meta.record_id, record.meta.version)
+
+    def test_authorizer(self):
+        """
+        Test that Client 1 can authorize Client 2 and Client 2 can share with
+        Client 3, then cleanup
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+        self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+        record2 = self.client3.read(record1.meta.record_id)
+        assert(record2.data['time'] == starting_time)
+
+        client1_authorizer_policies = self.client1.get_authorizers()
+
+        assert(client1_authorizer_policies is not None)
+        for policy in client1_authorizer_policies:
+            if policy.authorizer_id == self.client2.client_id and policy.record_type == record_type:
+                assert(policy.authorized_by == self.client1.client_id)
+                found = True
+        assert(found is True)
+
+    def test_authorizer_revoke(self):
+        """
+        Test that Client 1 can write a record type, authorize Client 2, then
+        revoke authorization of Client 2, and verify that Client 2 can no longer
+        share the record type with Client 3.
+        """
+
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        self.client1.write(record_type, data)
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+
+        # check that client2 has the authorization from client1 for record_type
+        found = False
+        # Loop through authorizer policies to see that Client 2 can see that
+        # it has been authorized by Client 1
+        client2_authorized_by = self.client2.get_authorized_by()
+        assert(client2_authorized_by is not None)
+        for policy in client2_authorized_by:
+            if policy.authorized_by == self.client1.client_id and policy.record_type == record_type:
+                assert(policy.authorizer_id == self.client2.client_id)
+                found = True
+        assert(found is True)
+
+        self.client1.remove_authorizer(record_type, self.client2.client_id)
+
+        # should get http 404 because Client 2 cannot read the EAK anymore
+        with pytest.raises(e3db.APIError):
+            self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+
+    def test_authorizer_listing(self):
+        """
+        Test that Client 1 can authorize Client 2, and confirm they can see the
+        authorization relationship. Client 2 should confirm they can see their
+        side of the authorization relationship.
+        """
+
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+        client1_authorizer_policies = self.client1.get_authorizers()
+        # Loop through authorizer policies to see that that Client 1 has
+        # authorized Client 2 and the policy exists for the correct record id
+        found = False
+        assert(client1_authorizer_policies is not None)
+        for policy in client1_authorizer_policies:
+            if policy.authorizer_id == self.client2.client_id and policy.record_type == record_type:
+                assert(policy.authorized_by == self.client1.client_id)
+                found = True
+        assert(found is True)
+
+        found = False
+        # Loop through authorizer policies to see that Client 2 can see that
+        # it has been authorized by Client 1
+        client2_authorized_by = self.client2.get_authorized_by()
+        assert(client2_authorized_by is not None)
+        for policy in client2_authorized_by:
+            if policy.authorized_by == self.client1.client_id and policy.record_type == record_type:
+                assert(policy.authorizer_id == self.client2.client_id)
+                found = True
+        assert(found is True)

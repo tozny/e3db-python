@@ -6,6 +6,7 @@ from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictE
 import requests
 import uuid
 
+
 class Client:
     """
     Client to perform E3DB operations with.

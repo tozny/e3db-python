@@ -12,40 +12,40 @@ Subpackages
 Submodules
 ----------
 
-e3db\.auth module
------------------
+e3db.auth module
+----------------
 
 .. automodule:: e3db.auth
     :members:
     :undoc-members:
     :show-inheritance:
 
-e3db\.client module
--------------------
+e3db.client module
+------------------
 
 .. automodule:: e3db.client
     :members:
     :undoc-members:
     :show-inheritance:
 
-e3db\.config module
--------------------
+e3db.config module
+------------------
 
 .. automodule:: e3db.config
     :members:
     :undoc-members:
     :show-inheritance:
 
-e3db\.crypto module
--------------------
+e3db.crypto module
+------------------
 
 .. automodule:: e3db.crypto
     :members:
     :undoc-members:
     :show-inheritance:
 
-e3db\.exceptions module
------------------------
+e3db.exceptions module
+----------------------
 
 .. automodule:: e3db.exceptions
     :members:

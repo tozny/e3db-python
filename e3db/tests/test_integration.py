@@ -558,6 +558,39 @@ class TestIntegrationClient():
                 found = True
         assert(found is True)
 
+    def test_authorizer_revoke_on_behalf_of(self):
+        """
+        Test that Client 1 can authorize Client 2 and Client 2 can share with
+        Client 3, ensure Client 3 can read data, then have Client 2 revoke on
+        behalf of Client 1, and ensure Client 3 can no longer read data.
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+        self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+        record2 = self.client3.read(record1.meta.record_id)
+        assert(record2.data['time'] == starting_time)
+
+        client1_authorizer_policies = self.client1.get_authorizers()
+
+        assert(client1_authorizer_policies is not None)
+        for policy in client1_authorizer_policies:
+            if policy.authorizer_id == self.client2.client_id and policy.record_type == record_type:
+                assert(policy.authorized_by == self.client1.client_id)
+                found = True
+        assert(found is True)
+
+        # revoke record access from Client 3, from the authorizer level
+        self.client2.revoke_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+        # ensure client 3 cannot read record1
+        # should get http 404 because Client 2 cannot read the EAK anymore
+        with pytest.raises(e3db.APIError):
+            self.client3.read(record1.meta.record_id)
+
     def test_authorizer_revoke(self):
         """
         Test that Client 1 can write a record type, authorize Client 2, then

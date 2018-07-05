@@ -1,7 +1,7 @@
 import uuid
 
 
-class GrantedAuthorizerPolicy(object):
+class AuthorizerPolicy(object):
     """
     Class to create Authorizer policy object.
 
@@ -25,7 +25,6 @@ class GrantedAuthorizerPolicy(object):
 
         # Will throw exception if UUID is malformed
         self.__authorizer_id = uuid.UUID(json['authorizer_id'])
-        self.__authorized_by_name = str(json['authorized_by_name'])
         self.__writer_id = uuid.UUID(json['writer_id'])
         self.__user_id = uuid.UUID(json['user_id'])
         self.__record_type = str(json['record_type'])
@@ -47,23 +46,6 @@ class GrantedAuthorizerPolicy(object):
             authorizer_id
         """
         return self.__authorizer_id
-
-    # authorizer_name getters
-    @property
-    def authorized_by_name(self):
-        """
-        Get authorizer_name
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        str
-            authorizer_name
-        """
-        return self.__authorized_by_name
 
     # writer_id getters
     @property

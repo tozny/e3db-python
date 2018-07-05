@@ -6,5 +6,4 @@ from outgoing_sharing import OutgoingSharingPolicy
 from query_result import QueryResult
 from query import Query
 from record import Record
-from granted_authorizer_policy import GrantedAuthorizerPolicy
-from proxy_authorizer_policy import ProxyAuthorizerPolicy
+from authorizer_policy import AuthorizerPolicy

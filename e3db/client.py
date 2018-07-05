@@ -1,7 +1,7 @@
 from auth import E3DBAuth
 from crypto import Crypto
 from config import Config
-from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, GrantedAuthorizerPolicy, ProxyAuthorizerPolicy
+from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy
 from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import uuid
@@ -952,6 +952,7 @@ class Client:
         ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type)
         if ak is None:
             ak = Crypto.random_key()
+            self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak)
         self.__put_access_key(str(self.client_id), str(self.client_id), str(authorizer_id), record_type, ak)
 
         allow_authorizer = {
@@ -996,10 +997,13 @@ class Client:
         Parameters
         ----------
         writer_id: str
-            type of the record to be stored
+            data producer id
 
         reader_id : str
             The reader's client id (UUID) to share this record type with.
+
+        record_type: str
+            type of the record to be stored
 
         Returns
         -------
@@ -1021,6 +1025,38 @@ class Client:
 
         self.__put_policy(str(writer_id), str(writer_id), str(reader_id), record_type, allow_read)
 
+    def revoke_on_behalf_of(self, writer_id, reader_id, record_type):
+        """
+        Public Method for an authorizer to revoke previously shared data between
+        two clients that it has been previously authorized for.
+
+        Parameters
+        ----------
+        writer_id: str
+            data producer id
+
+        reader_id : str
+            The reader's client id (UUID) to share this record type with.
+
+        record_type: str
+            type of the record to be stored
+
+        Returns
+        -------
+        None
+        """
+
+        deny_read = {
+            'deny': [
+                {
+                    'read': {}
+                }
+            ]
+        }
+
+        self.__put_policy(str(writer_id), str(writer_id), str(reader_id), record_type, deny_read)
+        self.__delete_access_key(str(writer_id), str(writer_id), str(reader_id), record_type)
+
     def get_authorized_by(self):
         """
         Public Method to get a list of all clients (and associated record types) that
@@ -1033,7 +1069,7 @@ class Client:
         Returns
         -------
         list
-            List of e3db.GrantedAuthorizerPolicy documents
+            List of e3db.AuthorizerPolicy documents
         """
 
         url = self.__get_url("v1", "storage", "policy", "granted")
@@ -1044,7 +1080,7 @@ class Client:
         # check if there are no policies
         if response.json():
             for policy in response.json():
-                policies.append(GrantedAuthorizerPolicy(policy))
+                policies.append(AuthorizerPolicy(policy))
         return policies
 
     def get_authorizers(self):
@@ -1059,7 +1095,7 @@ class Client:
         Returns
         -------
         list
-            List of e3db.ProxyAuthorizerPolicy documents
+            List of e3db.AuthorizerPolicy documents
         """
 
         url = self.__get_url("v1", "storage", "policy", "proxies")
@@ -1070,5 +1106,5 @@ class Client:
         # check if there are no policies
         if response.json():
             for policy in response.json():
-                policies.append(ProxyAuthorizerPolicy(policy))
+                policies.append(AuthorizerPolicy(policy))
         return policies

@@ -13,7 +13,8 @@ class NistCrypto(BaseCrypto):
 
     @classmethod
     def encrypt_secret(self, ak, plain, nonce):
-        return AESGCM(ak).encrypt(nonce, plain, None)
+        # Prepend the nonce to the encrypted value for parity with the Sodium implementation
+        return nonce + AESGCM(ak).encrypt(nonce, plain, None)
 
     @classmethod
     def decrypt_secret(self, ak, ciphertext, nonce):
@@ -21,8 +22,8 @@ class NistCrypto(BaseCrypto):
 
     @classmethod
     def encrypt_ak(self, private_key, public_key, ak, nonce):
-        return self.exchange(private_key, public_key).encrypt(nonce, ak, None)
-
+        # Prepend the nonce to the encrypted value for parity with the Sodium implementation
+        return nonce + self.exchange(private_key, public_key).encrypt(nonce, ak, None)
 
     @classmethod
     def decrypt_eak(self, private_key, public_key, eak, nonce):

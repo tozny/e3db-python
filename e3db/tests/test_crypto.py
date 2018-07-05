@@ -7,8 +7,8 @@ import nacl.secret
 import nacl.public
 
 def crypto_mode():
-    if 'FIPS_MODE' in os.environ and bool(os.environ['FIPS_MODE']):
-        return 'fips'
+    if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
+        return 'nist'
 
     return 'sodium'
 
@@ -83,8 +83,8 @@ def test_public_key_sharing():
 
 
 def test_generate_nist_keypair():
-    if crypto_mode() != 'fips':
-        pytest.skip("Skipping FIPS-reliant test")
+    if crypto_mode() != 'nist':
+        pytest.skip("Skipping NIST-specific test")
 
     pubkey, privkey = e3db.Crypto.generate_keypair()
     assert(type(privkey) == cryptography.hazmat.backends.openssl.ec._EllipticCurvePrivateKey)
@@ -92,8 +92,8 @@ def test_generate_nist_keypair():
 
 
 def test_nist_public_key_encoding():
-    if crypto_mode() != 'fips':
-        pytest.skip("Skipping FIPS-reliant test")
+    if crypto_mode() != 'nist':
+        pytest.skip("Skipping NIST-specific test")
 
     pubkey = 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUhZd0VBWUhLb1pJemowQ0FRWUZLNEVFQUNJRFlnQUVka3p1cXFQdWo5TzRUY0xkTzMxNVIvL2NsMXE5c3BtNApuck54UlMrS3R2SzZIdXZkMTBhcUVRZml1V0lFQnJzYkZuRllLaFV2bk9pKzBscVNpd29Wd3AvRTdJOUhyQ2NEClRIbks1RnY1ZEo4aFZBVTdmT3VreFJwOHVULzA1US9hCi0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo'
     decoded = e3db.Crypto.decode_public_key(pubkey)
@@ -102,8 +102,8 @@ def test_nist_public_key_encoding():
     assert(type(decoded) == cryptography.hazmat.backends.openssl.ec._EllipticCurvePublicKey)
 
 def test_nist_private_key_encoding():
-    if crypto_mode() != 'fips':
-        pytest.skip("Skipping FIPS-reliant test")
+    if crypto_mode() != 'nist':
+        pytest.skip("Skipping NIST-specific test")
 
     privkey = 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JRzJBZ0VBTUJBR0J5cUdTTTQ5QWdFR0JTdUJCQUFpQklHZU1JR2JBZ0VCQkRDeDg1L3lENFIrSWFsRUNhbm8KQjBIUVdtWWpxYnNwK3hISEt5U3MrbDBZZ1d2M1BybXBXb0tvRGE1RTRQZDJ2czZoWkFOaUFBUUx0T213eWFVbQpmY25vRGNBQjQ4TC9yc2N4dlJ2a0g3Ri9lcWk1V0E4ZVRJbDAwSlZYNXFyZlR0a3drVTYwM2Q0aHA4R1FrOGlUCjl1RlMvLzhUdXdmVVE2VnJGd3IySThsc2wzUTcyTkhzSFhJQUhJdmgyZUlncXRnTUxtVEZWSEk9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K'
     decoded = e3db.Crypto.decode_private_key(privkey)
@@ -113,8 +113,8 @@ def test_nist_private_key_encoding():
 
 
 def test_nist_public_key_sharing():
-    if crypto_mode() != 'fips':
-        pytest.skip("Skipping FIPS-reliant test")
+    if crypto_mode() != 'nist':
+        pytest.skip("Skipping NIST-specific test")
     # based on https://pynacl.readthedocs.io/en/latest/public/, but with e3db wrappers
 
     # create bob keys

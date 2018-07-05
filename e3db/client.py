@@ -1,5 +1,5 @@
 from auth import E3DBAuth
-if 'FIPS_MODE' in os.environ and bool(os.environ['FIPS_MODE']):
+if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
     from nist_crypto import NistCrypto as Crypto
 else:
     from sodium_crypto import SodiumCrypto as Crypto

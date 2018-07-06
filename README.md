@@ -149,6 +149,22 @@ In this example, the `e3db.Client.query` method returns an iterator that contain
 
 See [the simple example code](https://github.com/tozny/e3db-python/blob/master/examples/simple.py) for runnable detailed examples.
 
+## Cipher Suite Selection
+
+The Python SDK is capable of operating in two different modes - Sodium and NIST. The Sodium mode uses [Libsodium](https://download.libsodium.org/doc/) for all cryptographic primitives. The NIST mode uses NIST-approved primitives via OpenSSL for all cryptographic primitives.
+
+The SDK will operate in Sodium mode by default. To switch operation to NIST mode, export an environment variable before running any reliant applications:
+
+```sh
+export CRYPTO_SUITE=NIST
+``` 
+
+The NIST mode of operations will leverage:
+- ECDH over curve P-384 for public/private key exchange
+- SHA384 for hashing
+- ECDSA over curve P-384 for crypographic signatures
+- AES265GCM for symmetric encryption operations
+
 ## Documentation
 
 General E3DB documentation is [on our web site](https://tozny.com/documentation/e3db/).

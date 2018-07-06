@@ -6,7 +6,8 @@ setup(
   packages=find_packages(),
   install_requires=[
     'PyNaCl >= 1.2.1, < 2',
-    'requests >= 2.19.1, < 3'
+    'requests >= 2.19.1, < 3',
+    'Cryptography >= 2.2',
   ],
   url = "https://github.com/tozny/e3db-python",
   download_url = 'https://github.com/tozny/e3db-python/archive/{0}.tar.gz'.format(version),

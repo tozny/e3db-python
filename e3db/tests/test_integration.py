@@ -9,6 +9,13 @@ token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
 
 
+def crypto_mode():
+    if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
+        return 'nist'
+
+    return 'sodium'
+
+
 class TestIntegrationClient():
     @classmethod
     def setup_class(self):
@@ -97,6 +104,9 @@ class TestIntegrationClient():
         assert(client_name == test_name)
 
     def test_can_register_client_backup(self):
+        if crypto_mode() == 'nist':
+            pytest.skip("Skipping client backup to avoid Sodium/NIST interaction weirdness")
+
         """
         Create and register a client using registration token to associate it
         with our Innovault account. Also backup the client credentials to

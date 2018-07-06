@@ -1,5 +1,9 @@
 from auth import E3DBAuth
-from crypto import Crypto
+import os
+if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
+    from nist_crypto import NistCrypto as Crypto
+else:
+    from sodium_crypto import SodiumCrypto as Crypto
 from config import Config
 from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy
 from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
@@ -197,7 +201,10 @@ class Client:
             ak
         """
 
-        k = eak_json['authorizer_public_key']['curve25519']
+        if Crypto.get_mode() == 'nist':
+            k = eak_json['authorizer_public_key']['p384']
+        else:
+            k = eak_json['authorizer_public_key']['curve25519']
         authorizer_pubkey = Crypto.decode_public_key(k)
         fields = eak_json['eak'].split('.')
         if len(fields) != 2:
@@ -463,15 +470,26 @@ class Client:
         """
 
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
-        payload = {
-            'token': registration_token,
-            'client': {
-                'name': client_name,
-                'public_key': {
-                    'curve25519': public_key
+        if Crypto.get_mode() == 'nist':
+            payload = {
+                'token': registration_token,
+                'client': {
+                    'name': client_name,
+                    'public_key': {
+                        'p384': public_key
+                    }
                 }
             }
-        }
+        else:
+            payload = {
+                'token': registration_token,
+                'client': {
+                    'name': client_name,
+                    'public_key': {
+                        'curve25519': public_key
+                    }
+                }
+            }
         response = requests.post(url=url, json=payload)
         self.__response_check(response)
         client_info = response.json()
@@ -566,7 +584,10 @@ class Client:
             return Crypto.decode_public_key(self.public_key)
         else:
             client_info = self.client_info(client_id).to_json()
-            return Crypto.decode_public_key(client_info['public_key']['curve25519'])
+            if Crypto.get_mode() == 'nist':
+                return Crypto.decode_public_key(client_info['public_key']['p384'])
+            else:
+                return Crypto.decode_public_key(client_info['public_key']['curve25519'])
 
     def __read_raw(self, record_id):
         """

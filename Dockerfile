@@ -1,6 +1,6 @@
 FROM python:2.7-alpine
 
-RUN apk add --no-cache gcc musl-dev libffi-dev make
+RUN apk add --no-cache gcc musl-dev libffi-dev make openssl-dev
 RUN mkdir -p /src
 WORKDIR /src/
 

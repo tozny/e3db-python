@@ -5,6 +5,7 @@ setup(
   version=version,
   packages=find_packages(),
   install_requires=[
+    'Cryptography >= 2.2',
     'PyNaCl >= 1.1, < 2',
     'requests >= 2.18, < 3'
   ],

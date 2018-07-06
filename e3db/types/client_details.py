@@ -1,4 +1,12 @@
 import uuid
+import os
+
+
+def crypto_mode():
+    if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
+        return 'nist'
+
+    return 'sodium'
 
 
 class ClientDetails():
@@ -90,7 +98,10 @@ class ClientDetails():
         str
             Base64 URLencoded public_key of Client.
         """
-        return self.__public_key['curve25519']
+        if crypto_mode() == 'nist':
+            return self.__public_key['p384']
+        else:
+            return self.__public_key['curve25519']
 
     # name getters and setters
     @property
@@ -174,7 +185,10 @@ class ClientDetails():
         str
             client_id (UUID)
         """
-        return self.__public_key['curve25519']
+        if crypto_mode() == 'nist':
+            return self.__public_key['p384']
+        else:
+            return self.__public_key['curve25519']
 
     def get_name(self):
         """

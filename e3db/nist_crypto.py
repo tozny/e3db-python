@@ -12,6 +12,10 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 class NistCrypto(BaseCrypto):
 
     @classmethod
+    def get_mode(self):
+        return 'nist'
+
+    @classmethod
     def encrypt_secret(self, ak, plain, nonce):
         # Prepend the nonce to the encrypted value for parity with the Sodium implementation
         return nonce + AESGCM(ak).encrypt(nonce, plain, None)
@@ -23,14 +27,14 @@ class NistCrypto(BaseCrypto):
     @classmethod
     def encrypt_ak(self, private_key, public_key, ak, nonce):
         # Prepend the nonce to the encrypted value for parity with the Sodium implementation
-        return nonce + self.exchange(private_key, public_key).encrypt(nonce, ak, None)
+        return nonce + self._exchange(private_key, public_key).encrypt(nonce, ak, None)
 
     @classmethod
     def decrypt_eak(self, private_key, public_key, eak, nonce):
-        return self.exchange(private_key, public_key).decrypt(nonce, eak, None)
+        return self._exchange(private_key, public_key).decrypt(nonce, eak, None)
 
     @classmethod
-    def exchange(self, private_key, public_key):
+    def _exchange(self, private_key, public_key):
         shared = private_key.exchange(ec.ECDH(), public_key)
         derived = HKDF(
             algorithm=hashes.SHA384(),

@@ -11,13 +11,6 @@ import requests
 import uuid
 
 
-def crypto_mode():
-    if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
-        return 'nist'
-
-    return 'sodium'
-
-
 class Client:
     """
     Client to perform E3DB operations with.
@@ -208,7 +201,7 @@ class Client:
             ak
         """
 
-        if crypto_mode() == 'nist':
+        if Crypto.get_mode() == 'nist':
             k = eak_json['authorizer_public_key']['p384']
         else:
             k = eak_json['authorizer_public_key']['curve25519']
@@ -445,7 +438,7 @@ class Client:
         """
 
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
-        if crypto_mode() == 'nist':
+        if Crypto.get_mode() == 'nist':
             payload = {
                 'token': registration_token,
                 'client': {
@@ -559,7 +552,7 @@ class Client:
             return Crypto.decode_public_key(self.public_key)
         else:
             client_info = self.client_info(client_id).to_json()
-            if crypto_mode() == 'nist':
+            if Crypto.get_mode() == 'nist':
                 return Crypto.decode_public_key(client_info['public_key']['p384'])
             else:
                 return Crypto.decode_public_key(client_info['public_key']['curve25519'])

@@ -7,6 +7,10 @@ import nacl.public
 class SodiumCrypto(BaseCrypto):
 
     @classmethod
+    def get_mode(self):
+        return 'sodium'
+
+    @classmethod
     def encrypt_secret(self, ak, plain, nonce):
         return self.secret_box(ak).encrypt(plain, nonce)
 

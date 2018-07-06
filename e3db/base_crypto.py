@@ -4,6 +4,10 @@ import base64
 class BaseCrypto:
 
     @classmethod
+    def get_mode(self):
+        pass
+
+    @classmethod
     def encrypt_secret(self, ak, plain, nonce):
         pass
 

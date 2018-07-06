@@ -131,13 +131,13 @@ def test_nist_public_key_sharing():
     pkalice_encoded = e3db.Crypto.encode_public_key(pkalice)
     pkalice_decoded = e3db.Crypto.decode_public_key(pkalice_encoded)
 
-    bob_exchange = e3db.Crypto.exchange(skbob_decoded, pkalice_decoded)
+    bob_exchange = e3db.Crypto._exchange(skbob_decoded, pkalice_decoded)
 
     message = "Tozny is awesome."
 
     nonce = e3db.Crypto.random_nonce()
     encrypted = bob_exchange.encrypt(nonce, message, None)
-    alice_box = e3db.Crypto.exchange(skalice_decoded, pkbob_decoded)
+    alice_box = e3db.Crypto._exchange(skalice_decoded, pkbob_decoded)
     plaintext = alice_box.decrypt(nonce, encrypted, None)
 
     assert(message == plaintext)

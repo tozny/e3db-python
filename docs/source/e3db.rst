@@ -20,7 +20,6 @@ e3db.auth module
     :undoc-members:
     :show-inheritance:
 
-=======
 e3db.base\_crypto module
 ------------------------
 
@@ -45,9 +44,6 @@ e3db.config module
     :undoc-members:
     :show-inheritance:
 
-e3db.crypto module
-------------------
-=======
 e3db.exceptions module
 ----------------------
 
@@ -64,9 +60,6 @@ e3db.nist\_crypto module
     :undoc-members:
     :show-inheritance:
 
-e3db.exceptions module
-----------------------
-=======
 e3db.sodium\_crypto module
 --------------------------
 

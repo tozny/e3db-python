@@ -11,7 +11,12 @@ pip install sphinx
 
 ### Generate documentation
 ```
+# generate RST docs
 sphinx-apidoc -f -o docs/source e3db
+# remove missing environment variable errors
+export REGISTRATION_TOKEN=FOO
+export DEFAULT_API_URL=FOO
+# generate html docs from RST ones
 make html
 ```
 
@@ -58,20 +63,17 @@ pytest --cov-report term-missing --cov -v
 # Build Docker containers
 
 ```bash
-docker build -t e3db-python:debian . -f Dockerfile.debian
-docker build -t e3db-python:alpine . -f Dockerfile.alpine
+docker build -t tozny/e3db-python:debian .
 ```
 
-## Shell into Docker container for testing
+## Run Docker container for testing
 
-This is useful when you want to mount your E3DB configuration files into a
-containerized environment that has required software installed. This will also
-mount the source code inside the container, so any updates to your local git
-checkout will be immediately updated inside the container.
+This container was built in the previous step, and will have the current code base in the repo running inside it. It is currently necessary to re-build the docker container for code changes due to the python `setuptools` configuration. This typically takes 2 to 3 minutes. After the above build step, you can run the container with the following command:
 
 ```bash
 docker run -it --rm \
-  -v "$HOME"/.tozny/:/root/.tozny/ \
-  -v "$PWD":/src -w /src \
-  e3db-python:alpine sh
+  --entrypoint=sh \
+  -e REGISTRATION_TOKEN=<TOKEN> \
+  -e DEFAULT_API_URL=<URL> \
+  tozny/e3db-python sh
 ```

@@ -4,6 +4,14 @@ e3db.types package
 Submodules
 ----------
 
+e3db.types.authorizer\_policy module
+------------------------------------
+
+.. automodule:: e3db.types.authorizer_policy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 e3db.types.client\_details module
 ---------------------------------
 

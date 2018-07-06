@@ -5,7 +5,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from sodium_crypto import SodiumCrypto as Crypto
 from config import Config
-from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record
+from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy
 from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import uuid
@@ -324,6 +324,56 @@ class Client:
         ak_cache_key = (writer_id, user_id, record_type)
         del self.ak_cache[ak_cache_key]
 
+    def __get_url(self, *args):
+        """
+        Private method to build an api url path.
+
+        Parameters
+        ----------
+        *args : list
+            list of url path strings
+
+        Returns
+        -------
+        str
+            Full api url with path
+        """
+
+        # list of paths that we make a nice url from
+        return self.api_url + '/' + '/'.join(args)
+
+    def __put_policy(self, user_id, writer_id, reader_id, record_type, policy):
+        """
+        Private method to delete an access key on the server.
+
+        Parameters
+        ----------
+        user_id : str
+            uuid of the user
+
+        writer_id : str
+            uuid of the writer
+
+        reader_id : str
+            uuid of the reader
+
+        record_type: str
+            type of the record to be stored
+
+        policy: dict
+            policy object to be stored
+
+        Returns
+        -------
+        None
+        """
+
+        policy = dict(policy)
+        url = self.__get_url("v1", "storage", "policy", str(user_id), str(writer_id), str(reader_id), record_type)
+
+        response = requests.put(url=url, json=policy, auth=self.e3db_auth)
+        self.__response_check(response)
+
     def outgoing_sharing(self):
         """
         Public Method to obtain outgoing sharing policies.
@@ -377,24 +427,6 @@ class Client:
             for policy in response.json():
                 policies.append(IncomingSharingPolicy(policy))
         return policies
-
-    def __get_url(self, *args):
-        """
-        Private method to build an api url path.
-
-        Parameters
-        ----------
-        *args : list
-            list of url path strings
-
-        Returns
-        -------
-        str
-            Full api url with path
-        """
-
-        # list of paths that we make a nice url from
-        return self.api_url + '/' + '/'.join(args)
 
     @classmethod
     def register(self, registration_token, client_name, public_key, private_key=None, backup=False, api_url=DEFAULT_API_URL):
@@ -880,16 +912,13 @@ class Client:
             ak = Crypto.random_key()
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
-        url = self.__get_url("v1", "storage", "policy", str(self.client_id), str(self.client_id), str(reader_id), record_type)
-
-        json = {
+        allow_read = {
             'allow': [
                 {'read': {}}
             ]
         }
 
-        response = requests.put(url=url, json=json, auth=self.e3db_auth)
-        self.__response_check(response)
+        self.__put_policy(str(self.client_id), str(self.client_id), str(reader_id), record_type, allow_read)
 
     def revoke(self, record_type, reader_id):
         """
@@ -914,14 +943,190 @@ class Client:
         if reader_id == self.client_id:
             return
 
-        url = self.__get_url("v1", "storage", "policy", str(self.client_id), str(self.client_id), str(reader_id), record_type)
-        json = {
+        deny_read = {
             'deny': [
                 {
                     'read': {}
                 }
             ]
         }
-        response = requests.put(url=url, json=json, auth=self.e3db_auth)
-        self.__response_check(response)
+
+        self.__put_policy(str(self.client_id), str(self.client_id), str(reader_id), record_type, deny_read)
         self.__delete_access_key(self.client_id, self.client_id, reader_id, record_type)
+
+    def add_authorizer(self, record_type, authorizer_id):
+        """
+        Public Method to share a record type with an authorizer.
+
+        Parameters
+        ----------
+        record_type: str
+            type of the record to be stored
+
+        authorizer_id : str
+            The authorizer's client id (UUID) to share this record type with.
+
+        Returns
+        -------
+        None
+        """
+
+        ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type)
+        if ak is None:
+            ak = Crypto.random_key()
+            self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak)
+        self.__put_access_key(str(self.client_id), str(self.client_id), str(authorizer_id), record_type, ak)
+
+        allow_authorizer = {
+            'allow': [
+                {'authorizer': {}}
+            ]
+        }
+
+        self.__put_policy(str(self.client_id), str(self.client_id), str(authorizer_id), record_type, allow_authorizer)
+
+    def remove_authorizer(self, record_type, authorizer_id):
+        """
+        Public Method to revoke access of a record type shared with an authorizer.
+
+        Parameters
+        ----------
+        record_type: str
+            type of the record to be stored
+
+        authorizer_id : str
+            The authorizer's client id (UUID) to share this record type with.
+
+        Returns
+        -------
+        None
+        """
+
+        deny_authorizer = {
+            'deny': [
+                {'authorizer': {}}
+            ]
+        }
+
+        self.__put_policy(str(self.client_id), str(self.client_id), str(authorizer_id), record_type, deny_authorizer)
+        self.__delete_access_key(str(self.client_id), str(self.client_id), str(authorizer_id), record_type)
+
+    def share_on_behalf_of(self, writer_id, reader_id, record_type):
+        """
+        Public Method for an authorizer to share data it has been authorized to share
+        with another client
+
+        Parameters
+        ----------
+        writer_id: str
+            data producer id
+
+        reader_id : str
+            The reader's client id (UUID) to share this record type with.
+
+        record_type: str
+            type of the record to be stored
+
+        Returns
+        -------
+        None
+        """
+
+        ak = self.__get_access_key(str(writer_id), str(writer_id), str(self.client_id), record_type)
+        # This should only happen if the authorizer tries to share on behalf of, and has had
+        # their authorizer rights revoked, the eak will be missing from the E3DB system at that point
+        if ak is None:
+            raise APIError('Requested item not found: HTTP 404')
+        self.__put_access_key(str(writer_id), str(writer_id), str(reader_id), record_type, ak)
+
+        allow_read = {
+            'allow': [
+                {'read': {}}
+            ]
+        }
+
+        self.__put_policy(str(writer_id), str(writer_id), str(reader_id), record_type, allow_read)
+
+    def revoke_on_behalf_of(self, writer_id, reader_id, record_type):
+        """
+        Public Method for an authorizer to revoke previously shared data between
+        two clients that it has been previously authorized for.
+
+        Parameters
+        ----------
+        writer_id: str
+            data producer id
+
+        reader_id : str
+            The reader's client id (UUID) to share this record type with.
+
+        record_type: str
+            type of the record to be stored
+
+        Returns
+        -------
+        None
+        """
+
+        deny_read = {
+            'deny': [
+                {
+                    'read': {}
+                }
+            ]
+        }
+
+        self.__put_policy(str(writer_id), str(writer_id), str(reader_id), record_type, deny_read)
+        self.__delete_access_key(str(writer_id), str(writer_id), str(reader_id), record_type)
+
+    def get_authorized_by(self):
+        """
+        Public Method to get a list of all clients (and associated record types) that
+        this client may act as an authorizer
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
+            List of e3db.AuthorizerPolicy documents
+        """
+
+        url = self.__get_url("v1", "storage", "policy", "granted")
+        response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
+        # create list of policy objects, and return them
+        policies = []
+        # check if there are no policies
+        if response.json():
+            for policy in response.json():
+                policies.append(AuthorizerPolicy(policy))
+        return policies
+
+    def get_authorizers(self):
+        """
+        Public Method to get a list of all clients (and associated record types) that
+        this client has authorized to share on its behalf.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
+            List of e3db.AuthorizerPolicy documents
+        """
+
+        url = self.__get_url("v1", "storage", "policy", "proxies")
+        response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
+        # create list of policy objects, and return them
+        policies = []
+        # check if there are no policies
+        if response.json():
+            for policy in response.json():
+                policies.append(AuthorizerPolicy(policy))
+        return policies

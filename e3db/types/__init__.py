@@ -6,3 +6,4 @@ from outgoing_sharing import OutgoingSharingPolicy
 from query_result import QueryResult
 from query import Query
 from record import Record
+from authorizer_policy import AuthorizerPolicy

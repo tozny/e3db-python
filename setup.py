@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
-version = "1.0.1"
+version = "1.1.0"
 setup(
   name="e3db",
   version=version,
   packages=find_packages(),
   install_requires=[
+    'PyNaCl >= 1.2.1, < 2',
+    'requests >= 2.19.1, < 3',
     'Cryptography >= 2.2',
-    'PyNaCl >= 1.1, < 2',
-    'requests >= 2.18, < 3'
   ],
   url = "https://github.com/tozny/e3db-python",
   download_url = 'https://github.com/tozny/e3db-python/archive/{0}.tar.gz'.format(version),

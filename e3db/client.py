@@ -322,7 +322,8 @@ class Client:
         requests.delete(url=url, auth=self.e3db_auth)
 
         ak_cache_key = (writer_id, user_id, record_type)
-        del self.ak_cache[ak_cache_key]
+        if ak_cache_key in self.ak_cache:
+            del self.ak_cache[ak_cache_key]
 
     def __get_url(self, *args):
         """

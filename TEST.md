@@ -57,7 +57,7 @@ export DEFAULT_API_URL=<https://api.url>
 ## Run tests and generate a verbose report output
 
 ```bash
-pytest --cov-report term-missing --cov -v
+pytest --cov-report term-missing --cov -v e3db
 ```
 
 # Build Docker containers

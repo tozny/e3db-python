@@ -6,11 +6,13 @@ import nacl.utils
 import nacl.secret
 import nacl.public
 
+
 def crypto_mode():
     if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
         return 'nist'
 
     return 'sodium'
+
 
 def test_base64():
     # ensure encoding and decoding string results in same string as original
@@ -100,6 +102,7 @@ def test_nist_public_key_encoding():
     encoded = e3db.Crypto.encode_public_key(decoded)
     assert(pubkey == encoded)
     assert(type(decoded) == cryptography.hazmat.backends.openssl.ec._EllipticCurvePublicKey)
+
 
 def test_nist_private_key_encoding():
     if crypto_mode() != 'nist':

@@ -71,5 +71,5 @@ docker build -t tozny/e3db-python .
 This container was built in the previous step, and will have the current code base in the repo running inside it. It is currently necessary to re-build the docker container for code changes due to the python `setuptools` configuration. This typically takes 2 to 3 minutes. After the above build step, you can run the container with the following command:
 
 ```bash
-docker run -it --rm --entrypoint=sh -e REGISTRATION_TOKEN=<TOKEN> -e DEFAULT_API_URL=<URL> tozny/e3db-python sh
+docker run -it --rm --entrypoint=sh -e REGISTRATION_TOKEN=<TOKEN> -e DEFAULT_API_URL=<URL> tozny/e3db-python
 ```

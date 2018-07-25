@@ -879,7 +879,7 @@ class Client:
         """
         url = self.__get_url('v1', 'storage', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
-        if 'error' in response.text:
+        if 'error' in response.json():
             # we had an error, return this to user
             raise QueryError(response.json()['error'])
         self.__response_check(response)

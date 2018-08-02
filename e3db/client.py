@@ -281,8 +281,9 @@ class Client:
         None
         """
 
-        ak_cache_key = (writer_id, user_id, record_type)
-        self.ak_cache[ak_cache_key] = ak
+        if use_cache:
+            ak_cache_key = (writer_id, user_id, record_type)
+            self.ak_cache[ak_cache_key] = ak
 
         reader_key = self.__client_key(reader_id)
         nonce = Crypto.random_nonce()

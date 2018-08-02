@@ -213,7 +213,7 @@ class Client:
         nonce = Crypto.base64decode(fields[1])
         return Crypto.decrypt_eak(Crypto.decode_private_key(self.private_key), authorizer_pubkey, ciphertext, nonce)
 
-    def __get_access_key(self, writer_id, user_id, reader_id, record_type):
+    def __get_access_key(self, writer_id, user_id, reader_id, record_type, use_cache=True):
         """
         Private method to obtain an access key.
 
@@ -237,9 +237,10 @@ class Client:
             ak
         """
 
-        ak_cache_key = (writer_id, user_id, record_type)
-        if ak_cache_key in self.ak_cache:
-            return self.ak_cache[ak_cache_key]
+        if use_cache:
+            ak_cache_key = (writer_id, user_id, record_type)
+            if ak_cache_key in self.ak_cache:
+                return self.ak_cache[ak_cache_key]
 
         url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
         response = requests.get(url=url, auth=self.e3db_auth)
@@ -250,10 +251,11 @@ class Client:
             self.__response_check(response)
             json = response.json()
             ak = self.__decrypt_eak(json)
-            self.ak_cache[ak_cache_key] = ak
+            if use_cache:
+                self.ak_cache[ak_cache_key] = ak
             return ak
 
-    def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak):
+    def __put_access_key(self, writer_id, user_id, reader_id, record_type, ak, use_cache=True):
         """
         Private method to put an access key on the server.
 
@@ -972,10 +974,19 @@ class Client:
         None
         """
 
-        ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type)
+        # Use get_authorizers to see if this client is already authorized
+        authorizer_policies = self.get_authorizers()
+        for policy in authorizer_policies:
+            if policy.authorizer_id == authorizer_id and policy.record_type == record_type:
+                # The authorizer has already been authorized, we can safely return now
+                return None
+
+        ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, use_cache=False)
         if ak is None:
             ak = Crypto.random_key()
-            self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak)
+            self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak, use_cache=False)
+
+        # write the EAK for the new authorizer client
         self.__put_access_key(str(self.client_id), str(self.client_id), str(authorizer_id), record_type, ak)
 
         allow_authorizer = {
@@ -1033,12 +1044,13 @@ class Client:
         None
         """
 
-        ak = self.__get_access_key(str(writer_id), str(writer_id), str(self.client_id), record_type)
+        ak = self.__get_access_key(str(writer_id), str(writer_id), str(self.client_id), record_type, use_cache=False)
         # This should only happen if the authorizer tries to share on behalf of, and has had
         # their authorizer rights revoked, the eak will be missing from the E3DB system at that point
         if ak is None:
             raise APIError('Requested item not found: HTTP 404')
-        self.__put_access_key(str(writer_id), str(writer_id), str(reader_id), record_type, ak)
+
+        self.__put_access_key(str(writer_id), str(writer_id), str(reader_id), record_type, ak, use_cache=False)
 
         allow_read = {
             'allow': [

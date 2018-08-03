@@ -617,6 +617,24 @@ class Client:
         record = Record(meta, data_json)
         return record
 
+    def read_file(self, record_id):
+        """
+        Retrieves an encrypted file from the server and decrypts it for 
+        reading locally.
+
+        Parameters
+        ----------
+        record_id : str
+            UUID of the record to retrieve
+
+        Returns
+        -------
+        e3db.File
+            Decrypted file.
+        
+        """
+        pass
+
     def read(self, record_id):
         """
         Public Method to retrieve encrypted record from the server, and decrypt it
@@ -634,6 +652,30 @@ class Client:
         """
 
         return self.__decrypt_record(self.__read_raw(record_id))
+
+    def write_file(self, record_type, file, plain=None):
+        """
+        Encrypt a plaintext record and associated file, and send it to the server.
+
+        Parameters
+        ----------
+        record_type: str
+            type of the record to be stored
+
+        file : e3db.File
+            A large file-like object that will be encrypted and stored alongside the record.
+
+        plain : dict
+            JSON-style document containing plaintext meta data.
+            Optional.
+
+        Returns
+        -------
+        e3db.Record
+            Decrypted E3DB record. Note that the record will need to be passed to
+            read_file in order to download and decrypt the associated file.
+        """
+        pass
 
     def write(self, record_type, data, plain=None):
         """
@@ -675,6 +717,30 @@ class Client:
         decrypted = self.__decrypt_record(Record(response_meta, response_json['data']))
         return decrypted
 
+    def update_file(self, record, file):
+        """
+        Update the given record and file associated with the record.
+
+        Maintains the same record id, while the record version, and data
+        changes.
+
+        Parameters
+        ----------
+        record: e3db.Record
+            plaintext record to encrypt and send updated version to server
+
+        file: e3db.File
+            A file-like object which will be encrypted and uploaded.
+
+        Returns
+        -------
+        e3db.Record
+            Decrypted E3DB record, with updated record version. Note that the
+            record will need to be passed to read_file in order download
+            and decrypt the associated file.
+        """
+        pass
+
     def update(self, record):
         """
         Public Method to take an updated plaintext record, encrypt it locally, and
@@ -711,6 +777,28 @@ class Client:
         new_record = Record(meta=new_meta, data=new_data)
         return self.__decrypt_record(new_record)
 
+    def delete_file(self, record_id, version):
+        """
+        Delete a record and associated file.
+
+        Requires both the record id, and current version to ensure a safe
+        delete operation. 
+
+        If the record does not have an associated file, an error will occur.
+
+        Parameters
+        ----------
+        record_id: str
+            UUID of the record
+
+        version: str
+            UUID version from the record
+
+        Returns
+        -------
+        None
+        """
+        
     def delete(self, record_id, version):
         """
         Public Method to delete a record.
@@ -790,8 +878,9 @@ class Client:
             Whether to include the record's data when returned in the query.
             Optional.
 
-        writer: list
-            List of writer ids to filter on.
+        writer: list or string
+            List of writer ids to filter on, or the keyword "all". If "all", then data
+            shared by all writers with this client will be returned.
             Optional.
 
         record: list

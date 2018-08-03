@@ -568,6 +568,39 @@ class TestIntegrationClient():
                 found = True
         assert(found is True)
 
+    def test_authorizer_multiple_times(self):
+        """
+        Test that Client 1 can authorize Client 2 once, and Client 2 can share
+        with Client 3, then Client 1 re-authorizes Client 2, then cleanup.
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        data = {
+            'time': starting_time
+        }
+        record1 = self.client1.write(record_type, data)
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+        self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+        record2 = self.client3.read(record1.meta.record_id)
+        assert(record2.data['time'] == starting_time)
+
+        # Test re-authorizing existing authorizer works without error
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+
+        # Ensure Client 3 can still read record after re-authorize
+        # and re-share operations
+        record2 = self.client3.read(record1.meta.record_id)
+        assert(record2.data['time'] == starting_time)
+
+        client1_authorizer_policies = self.client1.get_authorizers()
+
+        assert(client1_authorizer_policies is not None)
+        for policy in client1_authorizer_policies:
+            if policy.authorizer_id == self.client2.client_id and policy.record_type == record_type:
+                assert(policy.authorized_by == self.client1.client_id)
+                found = True
+        assert(found is True)
+
     def test_authorizer_revoke_on_behalf_of(self):
         """
         Test that Client 1 can authorize Client 2 and Client 2 can share with

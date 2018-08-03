@@ -972,10 +972,19 @@ class Client:
         None
         """
 
+        # Use get_authorizers to see if this client is already authorized
+        authorizer_policies = self.get_authorizers()
+        for policy in authorizer_policies:
+            if policy.authorizer_id == authorizer_id and policy.record_type == record_type:
+                # The authorizer has already been authorized, we can safely return now
+                return None
+
         ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type)
         if ak is None:
             ak = Crypto.random_key()
             self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak)
+
+        # write the EAK for the new authorizer client
         self.__put_access_key(str(self.client_id), str(self.client_id), str(authorizer_id), record_type, ak)
 
         allow_authorizer = {
@@ -1038,6 +1047,7 @@ class Client:
         # their authorizer rights revoked, the eak will be missing from the E3DB system at that point
         if ak is None:
             raise APIError('Requested item not found: HTTP 404')
+
         self.__put_access_key(str(writer_id), str(writer_id), str(reader_id), record_type, ak)
 
         allow_read = {

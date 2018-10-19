@@ -5,7 +5,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from sodium_crypto import SodiumCrypto as Crypto
 from config import Config
-from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy
+from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, EncryptedFileInfo
 from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import uuid

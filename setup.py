@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
-version = "1.1.3"
+version = "1.2.1"
 setup(
   name="e3db",
   version=version,
   packages=find_packages(),
   install_requires=[
-    'PyNaCl >= 1.2.1, < 2',
+    'PyNaCl >= 1.3.0, < 2',
     'requests >= 2.19.1, < 3',
     'Cryptography >= 2.2',
   ],

@@ -4,6 +4,7 @@ import binascii
 import pytest
 import time
 import e3db.types
+import hashlib
 
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
@@ -697,3 +698,43 @@ class TestIntegrationClient():
                 assert(policy.authorizer_id == self.client2.client_id)
                 found = True
         assert(found is True)
+
+    def test_large_file_write_read(self):
+        """
+        Test that Client 1 can upload a large file, and download and decrypt
+        the same file from the server.
+
+        Asserts plain metadata matches after file is re-downloaded
+
+        Asserts contents of file before encryption, after upload, after download
+        and after decryption match
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        plain_meta = {
+            'time': starting_time
+        }
+
+        plaintext_filename = "{0}.txt".format(record_type)
+        # Generate 10MB Large File to Upload
+        with open(plaintext_filename, "wb+") as f:
+            for i in range(1, 1024):
+                f.write('b' * 1024 * 10)
+
+        # checksum file to verify after download is the same contents
+        with open(plaintext_filename, 'rb') as f:
+            pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+
+        record_id = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
+
+        j = self.client1.read_file(record_id, decrypted_plaintext_filename)
+        assert(j["meta"]["plain"] == plain_meta)
+
+        with open(decrypted_plaintext_filename, 'rb') as f:
+            post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+        # clean up local files
+        os.remove(plaintext_filename)
+        os.remove(decrypted_plaintext_filename)
+
+        assert(pre_encrypt_md5 == post_decrypt_md5)

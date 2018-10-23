@@ -12,6 +12,8 @@ SECRET_STREAM_TAG_MESSAGE = 0x0
 TAG_FINAL = nacl.bindings.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 TAG_MESSAGE = nacl.bindings.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 ABYTES = nacl.bindings.crypto_secretstream_xchacha20poly1305_ABYTES
+FILE_VERSION = 3
+
 
 class SodiumCrypto(BaseCrypto):
 
@@ -74,43 +76,35 @@ class SodiumCrypto(BaseCrypto):
         return key.public_key, key
 
     @classmethod
-    def encrypt_file(self, plaintext_file, key):
+    def encrypt_file(self, plaintext_filename, key):
         # generate data key, wrap with AK
         '''
         Returns tuple with file Object
+        Assumes files are already on filesystem (retrieved previously from server)
         '''
-        dk = nacl.bindings.crypto_secretstream_xchacha20poly1305_keygen()
-        # crypto_secretstream_xchacha20poly1305_pull
-        #crypto_secretstream_xchacha20poly1305_push
-        #crypto_secretstream_xchacha20poly1305_rekey
-        #crypto_secretstream_xchacha20poly1305_init_push
-        #crypto_secretstream_xchacha20poly1305_TAG_FINAL
-        #crypto_secretstream_xchacha20poly1305_KEYBYTES
-        #crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
-        #crypto_secretstream_xchacha20poly1305_TAG_PUSH
 
+        dk = nacl.bindings.crypto_secretstream_xchacha20poly1305_keygen()
         m = hashlib.md5()
         edkN = self.random_nonce()
         edk = self.encrypt_secret(key, dk, edkN)
         edk = edk[len(edkN):]
         encrypted_length = 0
-        version = '3'
-        header = "{0}.{1}.{2}.".format(version, BaseCrypto.base64encode(edk), BaseCrypto.base64encode(edkN))
+        header = "{0}.{1}.{2}.".format(FILE_VERSION, BaseCrypto.base64encode(edk), BaseCrypto.base64encode(edkN))
         # last field is encrypted data
         # check that plaintext_file is valid and we can read it
 
-        if not os.path.isfile(plaintext_file):
-            raise IOError("File not found: {0}".format(plaintext_file))
-        # following will throw exception should permission be denied
+        if not os.path.isfile(plaintext_filename):
+            raise IOError("File not found: {0}".format(plaintext_filename))
+            # following will throw exception should permission be denied
         try:
-            plaintext_file_handle = open(plaintext_file, 'rb')
-        except:
-            encrypted_file_handle.close()
-        # create temporary file for encrypted data\
+            plaintext_file_handle = open(plaintext_filename, 'rb')
+        except IOError:
+            plaintext_file_handle.close()
+            # create temporary file for encrypted data
         try:
-            encrypted_filename = "e2e-{0}.bin".format(plaintext_file)
+            encrypted_filename = "e2e-{0}.bin".format(plaintext_filename)
             encrypted_file_handle = open(encrypted_filename, 'w+')
-        except:
+        except IOError:
             encrypted_file_handle.close()
 
         encrypted_file_handle.write(header)
@@ -153,13 +147,14 @@ class SodiumCrypto(BaseCrypto):
         return (encrypted_filename, base64.b64encode(m.digest()), encrypted_length)
 
     @classmethod
-    def decrypt_file(self, encrypted_file, destination_file, key):
+    def decrypt_file(self, encrypted_filename, destination_filename, key):
         '''
         No Return value
+        Assumes files are already on filesystem (retrieved previously from server)
         '''
         # Check if the file exists, and we can read it with proper permissions
-        if not os.path.isfile(encrypted_file):
-            raise IOError("File not found: {0}".format(encrypted_file))
+        if not os.path.isfile(encrypted_filename):
+            raise IOError("File not found: {0}".format(encrypted_filename))
 
         # We are going to use two file handles for the Encrypted File
         # Handle #1 is going to be used to read the header information
@@ -170,20 +165,20 @@ class SodiumCrypto(BaseCrypto):
 
         # open file handle to encrypted_file
         try:
-            encrypted_file_handle = open(encrypted_file, 'rb')
-        except:
+            encrypted_file_handle = open(encrypted_filename, 'rb')
+        except IOError:
             encrypted_file_handle.close()
 
         # open file handle to encrypted_file header
         try:
-            encrypted_file_header_handle = open(encrypted_file, 'rb')
-        except:
+            encrypted_file_header_handle = open(encrypted_filename, 'rb')
+        except IOError:
             encrypted_file_header_handle.close()
 
         # Try to create destination plaintext_file
         try:
-            destination_file_handle = open(destination_file, 'w+')
-        except:
+            destination_file_handle = open(destination_filename, 'w+')
+        except IOError:
             destination_file_handle.close()
 
         # Most modern Filesystems use a 4KB, or 4096 byte block size
@@ -195,6 +190,8 @@ class SodiumCrypto(BaseCrypto):
 
         # grab the version, edk, and edkN
         file_version = int(e3db_header_block[0])
+        if file_version != FILE_VERSION:
+            raise RuntimeError("File version: {0} does not match supported version: {1}".format(file_version, FILE_VERSION))
         edk = BaseCrypto.base64decode(e3db_header_block[1])
         edkN = BaseCrypto.base64decode(e3db_header_block[2])
         dk = self.decrypt_secret(key, edk, edkN)

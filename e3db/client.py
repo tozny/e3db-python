@@ -9,6 +9,7 @@ from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingShar
 from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import uuid
+import shutil
 
 
 class Client:
@@ -65,7 +66,8 @@ class Client:
             401: APIError('Unauthenticated: HTTP 401'),
             403: APIError('Unauthorized: HTTP 403'),
             404: APIError('Requested item not found: HTTP 404'),
-            409: ConflictError('Existing item cannot be modified: HTTP 409')
+            409: ConflictError('Existing item cannot be modified: HTTP 409'),
+            429: APIError('Too many requests made to endpoint. HTTP 429. Slow down.')
         }
 
         # Lookup type of error we should throw, and do so if needed.
@@ -1141,3 +1143,110 @@ class Client:
             for policy in response.json():
                 policies.append(AuthorizerPolicy(policy))
         return policies
+
+    def write_file(self, record_type, plaintext_filename, plain={}):
+        '''
+        Encrypt plaintext file, write to E3DB for storage
+        No return value
+        '''
+        # Get EAK for this record_type, for my client id
+        ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type)
+        if ak is None:
+            ak = Crypto.random_key()
+            self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak)
+
+        encrypted_filename, checksum, length = Crypto.encrypt_file(plaintext_filename, ak)
+        file_meta = EncryptedFileInfo(encrypted_filename, checksum, length)
+
+        payload = {
+            'data': {},
+            'meta': {
+                'plain': plain,
+                'writer_id': str(self.client_id),
+                'user_id': str(self.client_id),
+                'type': record_type,
+                'file_meta': {
+                    'checksum': file_meta.md5,
+                    'size': file_meta.size,
+                    'compression': 'raw',
+                    'filename': plaintext_filename
+                },
+            },
+        }
+
+        url = self.__get_url("v1", "storage", "files")
+        response = requests.post(url=url, json=payload, auth=self.e3db_auth)
+        self.__response_check(response)
+        if response.status_code != 202:
+            raise APIError("File return status code: {0}, body: {1}".format(response.status_code, response.body))
+
+        # pending file write created
+        response_json = response.json()
+        file_url = response_json["file_url"]
+        pending_file_id = uuid.UUID(response_json["id"])
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'Content-MD5': file_meta.md5
+        }
+
+        # Read our encrypted file, upload it to E3DB Large Files data storage
+        with open(file_meta.url, 'rb') as data:
+            # Don't need e3db_auth, since the file url is a signed url just for this session
+            response = requests.put(url=file_url, headers=headers, data=data)
+
+        self.__response_check(response)
+        if response.status_code != 200:
+            raise APIError("File upload status code: {0}, body: {1}".format(response.status_code, response.body))
+
+        # File is uploaded now to storage endpoint, need to confirm with E3DB server
+        # to "COMMIT" the file
+        url = self.__get_url("v1", "storage", "files", str(pending_file_id))
+        response = requests.patch(url=url, auth=self.e3db_auth)
+        # Delete temporary encrypted file, now it is on the server
+        os.remove(file_meta.url)
+        return response.json()['meta']['record_id']
+
+    def read_file(self, record_id, destination_filename):
+        # Check if destination file can be written to
+        try:
+            destination_file_handle = open(destination_filename, 'w+')
+        except IOError:
+            destination_file_handle.close()
+        destination_file_handle.close()
+
+        url = self.__get_url("v1", "storage", "files", str(record_id))
+        response = requests.get(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
+        if response.status_code != 200:
+            raise APIError("File fetch status code: {0}, body: {1}".format(response.status_code, response.body))
+        # decode the response
+        response_json = response.json()
+        meta = response_json["meta"]
+        file_meta = meta["file_meta"]
+        file_url = file_meta["file_url"]
+        writer_id = meta["writer_id"]
+        user_id = meta["user_id"]
+        reader_id = self.client_id
+        record_type = meta["type"]
+
+        # Get AK to decrypt the record
+        ak = self.__get_access_key(writer_id, user_id, reader_id, record_type)
+
+        if ak is None:
+            raise APIError("Can't read records of type {0}".format(record_type))
+
+        # Download the file from the storage server, store encrypted on filesystem
+        # until we decrypt it in the next steps
+        # Uses efficient copy from storage server to filesystem courtesy of:
+        # https://stackoverflow.com/a/39217788
+        encrypted_filename = "enc-{0}.bin".format(destination_filename)
+        with requests.get(url=file_url, stream=True) as r:
+            with open(encrypted_filename, 'wb+') as f:
+                shutil.copyfileobj(r.raw, f)
+
+        # Now we have the file locally, but it is still encrypted. We will now
+        # decrypt the file with our AK retrieved earlier
+        Crypto.decrypt_file(encrypted_filename, destination_filename, ak)
+        # Delete temporary encrypted file
+        os.remove(encrypted_filename)
+        return response_json

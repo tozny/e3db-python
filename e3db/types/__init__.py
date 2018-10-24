@@ -7,4 +7,4 @@ from query_result import QueryResult
 from query import Query
 from record import Record
 from authorizer_policy import AuthorizerPolicy
-from encrypted_file_info import EncryptedFileInfo
+from file import File

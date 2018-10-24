@@ -738,3 +738,83 @@ class TestIntegrationClient():
         os.remove(decrypted_plaintext_filename)
 
         assert(pre_encrypt_md5 == post_decrypt_md5)
+
+    def test_large_file_share(self):
+        """
+        Test that Client 1 can upload a large file
+        Client 1 then shares the record type with Client 2
+        Ensure Client 2 can download and decrypt the data
+
+        Asserts plain metadata matches after file is re-downloaded
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        plain_meta = {
+            'time': starting_time
+        }
+
+        plaintext_filename = "{0}.txt".format(record_type)
+        # Generate 10MB Large File to Upload
+        with open(plaintext_filename, "wb+") as f:
+            for i in range(1, 1024):
+                f.write('b' * 1024 * 10)
+
+        # checksum file to verify after download is the same contents
+        with open(plaintext_filename, 'rb') as f:
+            pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+
+        record_id = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
+
+        self.client1.share(record_type, self.client2.client_id)
+
+        j = self.client2.read_file(record_id, decrypted_plaintext_filename)
+        assert(j["meta"]["plain"] == plain_meta)
+
+        with open(decrypted_plaintext_filename, 'rb') as f:
+            post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+        # clean up local files
+        os.remove(plaintext_filename)
+        os.remove(decrypted_plaintext_filename)
+
+        assert(pre_encrypt_md5 == post_decrypt_md5)
+
+    def test_large_file_authorizer(self):
+        """
+        Test that Client 1 can upload a large file
+        Client 1 authorizes Client 2 to be the authorizer role
+        Client 2 is the authorizer then shares on behalf of to Client 3
+        Client 3 can then read the file, and decrypt it to check the contents
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        plain_meta = {
+            'time': starting_time
+        }
+
+        plaintext_filename = "{0}.txt".format(record_type)
+        # Generate 10MB Large File to Upload
+        with open(plaintext_filename, "wb+") as f:
+            for i in range(1, 1024):
+                f.write('b' * 1024 * 10)
+
+        # checksum file to verify after download is the same contents
+        with open(plaintext_filename, 'rb') as f:
+            pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+
+        record_id = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+        self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+
+        decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
+        j = self.client3.read_file(record_id, decrypted_plaintext_filename)
+        # TODO need nice data structure for encrypted file object?
+        assert(j["meta"]["plain"] == plain_meta)
+
+        with open(decrypted_plaintext_filename, 'rb') as f:
+            post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+        # clean up local files
+        os.remove(plaintext_filename)
+        os.remove(decrypted_plaintext_filename)
+
+        assert(pre_encrypt_md5 == post_decrypt_md5)

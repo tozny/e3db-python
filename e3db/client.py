@@ -5,11 +5,12 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from sodium_crypto import SodiumCrypto as Crypto
 from config import Config
-from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, EncryptedFileInfo
+from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File
 from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import uuid
 import shutil
+import hashlib
 
 
 class Client:
@@ -1155,44 +1156,30 @@ class Client:
             ak = Crypto.random_key()
             self.__put_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type, ak)
 
-        encrypted_filename, checksum, length = Crypto.encrypt_file(plaintext_filename, ak)
-        file_meta = EncryptedFileInfo(encrypted_filename, checksum, length)
+        encrypted_filename, file_checksum, file_size = Crypto.encrypt_file(plaintext_filename, ak)
+        file_compression = 'raw'
 
-        payload = {
-            'data': {},
-            'meta': {
-                'plain': plain,
-                'writer_id': str(self.client_id),
-                'user_id': str(self.client_id),
-                'type': record_type,
-                'file_meta': {
-                    'checksum': file_meta.md5,
-                    'size': file_meta.size,
-                    'compression': 'raw',
-                    'filename': plaintext_filename
-                },
-            },
-        }
+        upload_file = File(file_checksum, file_compression, file_size, self.client_id, self.client_id, record_type, plain=plain)
 
         url = self.__get_url("v1", "storage", "files")
-        response = requests.post(url=url, json=payload, auth=self.e3db_auth)
+        response = requests.post(url=url, json=upload_file.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
         if response.status_code != 202:
             raise APIError("File return status code: {0}, body: {1}".format(response.status_code, response.body))
 
         # pending file write created
         response_json = response.json()
-        file_url = response_json["file_url"]
-        pending_file_id = uuid.UUID(response_json["id"])
+        upload_file.file_url = response_json["file_url"]
+        upload_file.record_id = uuid.UUID(response_json["id"])
         headers = {
             'Content-Type': 'application/octet-stream',
-            'Content-MD5': file_meta.md5
+            'Content-MD5': upload_file.checksum
         }
 
         # Read our encrypted file, upload it to E3DB Large Files data storage
-        with open(file_meta.url, 'rb') as data:
+        with open(encrypted_filename, 'rb') as data:
             # Don't need e3db_auth, since the file url is a signed url just for this session
-            response = requests.put(url=file_url, headers=headers, data=data)
+            response = requests.put(url=upload_file.file_url, headers=headers, data=data)
 
         self.__response_check(response)
         if response.status_code != 200:
@@ -1200,10 +1187,11 @@ class Client:
 
         # File is uploaded now to storage endpoint, need to confirm with E3DB server
         # to "COMMIT" the file
-        url = self.__get_url("v1", "storage", "files", str(pending_file_id))
+        url = self.__get_url("v1", "storage", "files", str(upload_file.record_id))
         response = requests.patch(url=url, auth=self.e3db_auth)
         # Delete temporary encrypted file, now it is on the server
-        os.remove(file_meta.url)
+        os.remove(encrypted_filename)
+        # TODO construct EncryptedFileInfo Object?
         return response.json()['meta']['record_id']
 
     def read_file(self, record_id, destination_filename):

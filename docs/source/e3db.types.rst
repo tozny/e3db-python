@@ -28,6 +28,14 @@ e3db.types.client\_info module
     :undoc-members:
     :show-inheritance:
 
+e3db.types.file module
+----------------------
+
+.. automodule:: e3db.types.file
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 e3db.types.incoming\_sharing module
 -----------------------------------
 

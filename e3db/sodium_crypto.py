@@ -77,10 +77,13 @@ class SodiumCrypto(BaseCrypto):
 
     @classmethod
     def encrypt_file(self, plaintext_filename, key):
-        # generate data key, wrap with AK
         '''
-        Returns tuple with file Object
+        Encrypts plaintext_filename to a temporary encrypted file, with the
+        filename returned as encrypted_filename.
+
         Assumes files are already on filesystem (retrieved previously from server)
+
+        Returns tuple of (encrypted_filename, checksum, encrypted_length).
         '''
 
         dk = nacl.bindings.crypto_secretstream_xchacha20poly1305_keygen()
@@ -149,8 +152,8 @@ class SodiumCrypto(BaseCrypto):
     @classmethod
     def decrypt_file(self, encrypted_filename, destination_filename, key):
         '''
-        No Return value
-        Assumes files are already on filesystem (retrieved previously from server)
+        Decrypts encrypted_filename, and outputs plaintext file in destination_filename.
+        Assumes files are already on filesystem (retrieved previously from server).
         '''
         # Check if the file exists, and we can read it with proper permissions
         if not os.path.isfile(encrypted_filename):

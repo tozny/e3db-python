@@ -716,20 +716,20 @@ class TestIntegrationClient():
         }
 
         plaintext_filename = "{0}.txt".format(record_type)
-        # Generate 10MB Large File to Upload
+        # Generate 1MB Large File to Upload
         with open(plaintext_filename, "wb+") as f:
             for i in range(1, 1024):
-                f.write('b' * 1024 * 10)
+                f.write('b' * 1024)
 
         # checksum file to verify after download is the same contents
         with open(plaintext_filename, 'rb') as f:
             pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
 
-        record_id = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        encrypted_file_meta = self.client1.write_file(record_type, plaintext_filename, plain_meta)
         decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
 
-        j = self.client1.read_file(record_id, decrypted_plaintext_filename)
-        assert(j["meta"]["plain"] == plain_meta)
+        read_file_info = self.client1.read_file(encrypted_file_meta.record_id, decrypted_plaintext_filename)
+        assert(read_file_info.plain == plain_meta)
 
         with open(decrypted_plaintext_filename, 'rb') as f:
             post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
@@ -754,22 +754,22 @@ class TestIntegrationClient():
         }
 
         plaintext_filename = "{0}.txt".format(record_type)
-        # Generate 10MB Large File to Upload
+        # Generate 1MB Large File to Upload
         with open(plaintext_filename, "wb+") as f:
             for i in range(1, 1024):
-                f.write('b' * 1024 * 10)
+                f.write('b' * 1024)
 
         # checksum file to verify after download is the same contents
         with open(plaintext_filename, 'rb') as f:
             pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
 
-        record_id = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        encrypted_file_meta = self.client1.write_file(record_type, plaintext_filename, plain_meta)
         decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
 
         self.client1.share(record_type, self.client2.client_id)
 
-        j = self.client2.read_file(record_id, decrypted_plaintext_filename)
-        assert(j["meta"]["plain"] == plain_meta)
+        read_file_info = self.client2.read_file(encrypted_file_meta.record_id, decrypted_plaintext_filename)
+        assert(read_file_info.plain == plain_meta)
 
         with open(decrypted_plaintext_filename, 'rb') as f:
             post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
@@ -793,23 +793,22 @@ class TestIntegrationClient():
         }
 
         plaintext_filename = "{0}.txt".format(record_type)
-        # Generate 10MB Large File to Upload
+        # Generate 1MB Large File to Upload
         with open(plaintext_filename, "wb+") as f:
             for i in range(1, 1024):
-                f.write('b' * 1024 * 10)
+                f.write('b' * 1024)
 
         # checksum file to verify after download is the same contents
         with open(plaintext_filename, 'rb') as f:
             pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
 
-        record_id = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        encrypted_file_meta = self.client1.write_file(record_type, plaintext_filename, plain_meta)
         self.client1.add_authorizer(record_type, self.client2.client_id)
         self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
 
         decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
-        j = self.client3.read_file(record_id, decrypted_plaintext_filename)
-        # TODO need nice data structure for encrypted file object?
-        assert(j["meta"]["plain"] == plain_meta)
+        read_file_info = self.client3.read_file(encrypted_file_meta.record_id, decrypted_plaintext_filename)
+        assert(read_file_info.plain == plain_meta)
 
         with open(decrypted_plaintext_filename, 'rb') as f:
             post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()

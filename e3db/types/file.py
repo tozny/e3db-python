@@ -5,14 +5,51 @@ import uuid
 class File():
 
     def __init__(self, checksum, compression, size, writer_id, user_id,
-        record_type, file_url=None, file_name=None, record_id=None,
-        created=None, last_modified=None, version=None, plain={}):
+                record_type, file_url=None, file_name=None, record_id=None,
+                created=None, last_modified=None, version=None, plain={}):
         """
         Initialize the e3db.File class.
 
         Parameters
         ----------
-        TODO
+        checksum: str
+            Base64 encoded MD5 Checksum of the Encrypted File, including E3DB Header information
+
+        compression: str
+            The type of compression the file is using, before encryption. Reserved for future use.
+
+        size: int
+            Size of the encrypted file, in bytes, including E3DB Header information
+
+        writer_id: str
+            Writer id of the File
+
+        user_id: str
+            User id of the File
+
+        record_type: str
+            Type of the Record
+
+        file_url: str
+            Optional. Signed url used for PUT/GET to storage server
+
+        file_name: str
+            Optional. Name of the file stored on the server. File name consists of UUID + timestamp. Returned by the server after the file has been uploaded.
+
+        record_id: str
+            Optional. ID of the Record in a UUID format. Returned by the server after the file has been uploaded.
+
+        created: str
+            Optional. Created timestamp of the file, returned by the server after the file has been uploaded.
+
+        last_modified: str
+            Optional. Last Modified timestamp of the file, returned by the server after the file has been uploaded.
+
+        version: str
+            Optional. The version of the file based on File structure and cryptographic methods.
+
+        plain: dict
+            Optional. Plaintext metadata attached to the File.
 
         Returns
         -------
@@ -34,8 +71,8 @@ class File():
         else:
             self.__record_id = None
         # Have to check if specified or else we may end up with the string 'None'
-        #>>> str(None)
-        #'None'
+        # >>> str(None)
+        # 'None'
         self.__file_url = str(file_url) if file_url is not None else None
         self.__file_name = str(file_name) if file_name is not None else None
 
@@ -132,7 +169,7 @@ class File():
         Returns
         -------
         str
-            record type
+            Type of the Record
         """
         return self.__record_type
 
@@ -148,8 +185,7 @@ class File():
 
         Returns
         -------
-        str
-            record type
+        None
         """
         self.__record_type = value
 
@@ -166,7 +202,7 @@ class File():
         Returns
         -------
         dict
-            plaintext metadata
+            Plaintext metadata attached to the File.
         """
         return self.__plain
 
@@ -178,7 +214,7 @@ class File():
         Parameters
         ----------
         value : dict
-            plaintext metadata
+            Plaintext metadata attached to the File.
 
         Returns
         -------
@@ -199,7 +235,7 @@ class File():
         Returns
         -------
         uuid.UUID
-            record_id
+            ID of the Record in a UUID format.
         """
         return self.__record_id
 
@@ -211,13 +247,13 @@ class File():
         Parameters
         ----------
         value : str
-            record_id
+            ID of the Record
 
         Returns
         -------
         None
         """
-        self.__record_id = uuid.UUID(record_id)
+        self.__record_id = uuid.UUID(value)
 
     # created getters
     @property
@@ -283,7 +319,7 @@ class File():
         Returns
         -------
         str
-            checksum
+            Base64 encoded MD5 Checksum of the Encrypted File, including E3DB Header information
         """
         return self.__checksum
 
@@ -300,7 +336,7 @@ class File():
         Returns
         -------
         str
-            compression
+            The type of compression the file is using, before encryption. Reserved for future use.
         """
         return self.__compression
 
@@ -317,7 +353,7 @@ class File():
         Returns
         -------
         int
-            size
+            Size of the encrypted file, in bytes, including E3DB Header information
         """
         return self.__compression
 
@@ -334,7 +370,7 @@ class File():
         Returns
         -------
         str
-            file_url
+            Signed url used for PUT/GET to storage server
         """
         return self.__file_url
 
@@ -346,7 +382,7 @@ class File():
         Parameters
         ----------
         value : str
-            file_url
+            Signed url used for PUT/GET to storage server
 
         Returns
         -------
@@ -367,7 +403,7 @@ class File():
         Returns
         -------
         str
-            file_name
+            Name of the file stored on the server. File name consists of UUID + timestamp.
         """
         return self.__file_name
 
@@ -379,7 +415,7 @@ class File():
         Parameters
         ----------
         value : str
-            file_name
+            Name of the file stored on the server. File name consists of UUID + timestamp.
 
         Returns
         -------
@@ -387,9 +423,17 @@ class File():
         """
         self.__file_name = str(value)
 
-    def remove_empty(self, serialize):
+    def __remove_empty(self, serialize):
         """
-        Remove empty None objects during serialization
+        Parameters
+        ----------
+        serialize: dict
+            Dictionary to remove empty elements from
+
+        Returns
+        -------
+        dict
+            Dictionary with empty elements removed
         """
         for key, value in serialize.items():
             if isinstance(value, dict):
@@ -434,4 +478,4 @@ class File():
         }
 
         # remove None (JSON null) objects
-        return self.remove_empty(to_serialize)
+        return self.__remove_empty(to_serialize)

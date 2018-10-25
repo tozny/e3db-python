@@ -75,6 +75,11 @@ class Client:
         if response.status_code in errors:
             raise errors[response.status_code]
 
+        # If we do not have a pre-formulated error to return, but get another HTTP
+        # Error, we check if response is in the 4XX-5XX Range, and return a generic HTTP error
+        if response.status_code >= 400 and response.status_code <= 600:
+            raise APIError("HTTP Error: {0}".format(response.status_code))
+
     def __decrypt_record(self, record):
         """
         Private method for record decryption setup.
@@ -1146,10 +1151,28 @@ class Client:
         return policies
 
     def write_file(self, record_type, plaintext_filename, plain={}):
-        '''
-        Encrypt plaintext file, write to E3DB for storage
-        No return value
-        '''
+        """
+        Encrypt a plaintext file, and write it to the Server.
+
+        Does not Encrypt or Delete the plaintext file after operation is
+        complete. The SDK user must manage their plaintext files.
+
+        Parameters
+        ----------
+        record_type : str
+            Type of the record
+
+        plaintext_filename: str
+            Filename string, including path, to read, encrypt, and send to server
+
+        plain: dict
+            Plaintext metadata information to attach to the File
+
+        Returns
+        -------
+        e3db.File
+            File metadata information
+        """
         # Get EAK for this record_type, for my client id
         ak = self.__get_access_key(str(self.client_id), str(self.client_id), str(self.client_id), record_type)
         if ak is None:
@@ -1189,12 +1212,46 @@ class Client:
         # to "COMMIT" the file
         url = self.__get_url("v1", "storage", "files", str(upload_file.record_id))
         response = requests.patch(url=url, auth=self.e3db_auth)
+        response_json = response.json()
         # Delete temporary encrypted file, now it is on the server
         os.remove(encrypted_filename)
-        # TODO construct EncryptedFileInfo Object?
-        return response.json()['meta']['record_id']
+
+        # Construct File Object to be returned to the user
+        return File(
+            response_json['meta']['file_meta']['checksum'],
+            response_json['meta']['file_meta']['compression'],
+            response_json['meta']['file_meta']['size'],
+            response_json['meta']['writer_id'],
+            response_json['meta']['user_id'],
+            response_json['meta']['type'],
+            file_url=response_json['meta']['file_meta']['file_url'],
+            file_name=response_json['meta']['file_meta']['file_name'],
+            record_id=response_json['meta']['record_id'],
+            created=response_json['meta']['created'],
+            last_modified=response_json['meta']['last_modified'],
+            version=response_json['meta']['version'],
+            plain=response_json['meta']['plain']
+        )
 
     def read_file(self, record_id, destination_filename):
+        """
+        Retrieve and Encrypted file from the server based on record_id.
+        Decrypt the file, and store the plaintext file in destination_filename.
+
+        Parameters
+        ----------
+        record_id : str
+            ID of the record to retrieve
+
+        destination_filename: str
+            Filename string, including path, to store the plaintext file at.
+
+        Returns
+        -------
+        e3db.File
+            File metadata information
+        """
+
         # Check if destination file can be written to
         try:
             destination_file_handle = open(destination_filename, 'w+')
@@ -1207,28 +1264,38 @@ class Client:
         self.__response_check(response)
         if response.status_code != 200:
             raise APIError("File fetch status code: {0}, body: {1}".format(response.status_code, response.body))
+
         # decode the response
         response_json = response.json()
-        meta = response_json["meta"]
-        file_meta = meta["file_meta"]
-        file_url = file_meta["file_url"]
-        writer_id = meta["writer_id"]
-        user_id = meta["user_id"]
-        reader_id = self.client_id
-        record_type = meta["type"]
+
+        get_file_info = File(
+            response_json['meta']['file_meta']['checksum'],
+            response_json['meta']['file_meta']['compression'],
+            response_json['meta']['file_meta']['size'],
+            response_json['meta']['writer_id'],
+            response_json['meta']['user_id'],
+            response_json['meta']['type'],
+            file_url=response_json['meta']['file_meta']['file_url'],
+            file_name=response_json['meta']['file_meta']['file_name'],
+            record_id=response_json['meta']['record_id'],
+            created=response_json['meta']['created'],
+            last_modified=response_json['meta']['last_modified'],
+            version=response_json['meta']['version'],
+            plain=response_json['meta']['plain']
+        )
 
         # Get AK to decrypt the record
-        ak = self.__get_access_key(writer_id, user_id, reader_id, record_type)
+        ak = self.__get_access_key(get_file_info.writer_id, get_file_info.user_id, self.client_id, get_file_info.record_type)
 
         if ak is None:
-            raise APIError("Can't read records of type {0}".format(record_type))
+            raise APIError("Can't read records of type {0}".format(get_file_info.record_type))
 
         # Download the file from the storage server, store encrypted on filesystem
         # until we decrypt it in the next steps
         # Uses efficient copy from storage server to filesystem courtesy of:
         # https://stackoverflow.com/a/39217788
         encrypted_filename = "enc-{0}.bin".format(destination_filename)
-        with requests.get(url=file_url, stream=True) as r:
+        with requests.get(url=get_file_info.file_url, stream=True) as r:
             with open(encrypted_filename, 'wb+') as f:
                 shutil.copyfileobj(r.raw, f)
 
@@ -1237,4 +1304,18 @@ class Client:
         Crypto.decrypt_file(encrypted_filename, destination_filename, ak)
         # Delete temporary encrypted file
         os.remove(encrypted_filename)
-        return response_json
+        return File(
+            response_json['meta']['file_meta']['checksum'],
+            response_json['meta']['file_meta']['compression'],
+            response_json['meta']['file_meta']['size'],
+            response_json['meta']['writer_id'],
+            response_json['meta']['user_id'],
+            response_json['meta']['type'],
+            file_url=response_json['meta']['file_meta']['file_url'],
+            file_name=response_json['meta']['file_meta']['file_name'],
+            record_id=response_json['meta']['record_id'],
+            created=response_json['meta']['created'],
+            last_modified=response_json['meta']['last_modified'],
+            version=response_json['meta']['version'],
+            plain=response_json['meta']['plain']
+        )

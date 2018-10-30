@@ -1235,7 +1235,7 @@ class Client:
 
     def read_file(self, record_id, destination_filename):
         """
-        Retrieve and Encrypted file from the server based on record_id.
+        Retrieve an Encrypted file from the server based on record_id.
         Decrypt the file, and store the plaintext file in destination_filename.
 
         Parameters

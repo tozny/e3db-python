@@ -86,16 +86,7 @@ class SodiumCrypto(BaseCrypto):
         Returns tuple of (encrypted_filename, checksum, encrypted_length).
         '''
 
-        dk = nacl.bindings.crypto_secretstream_xchacha20poly1305_keygen()
-        m = hashlib.md5()
-        edkN = self.random_nonce()
-        edk = self.encrypt_secret(key, dk, edkN)
-        edk = edk[len(edkN):]
-        encrypted_length = 0
-        header = "{0}.{1}.{2}.".format(FILE_VERSION, BaseCrypto.base64encode(edk), BaseCrypto.base64encode(edkN))
-        # last field is encrypted data
         # check that plaintext_file is valid and we can read it
-
         if not os.path.isfile(plaintext_filename):
             raise IOError("File not found: {0}".format(plaintext_filename))
             # following will throw exception should permission be denied
@@ -109,6 +100,16 @@ class SodiumCrypto(BaseCrypto):
             encrypted_file_handle = open(encrypted_filename, 'w+')
         except IOError:
             encrypted_file_handle.close()
+
+        # Create file header information and generate keys
+        dk = nacl.bindings.crypto_secretstream_xchacha20poly1305_keygen()
+        m = hashlib.md5()
+        edkN = self.random_nonce()
+        edk = self.encrypt_secret(key, dk, edkN)
+        edk = edk[len(edkN):]
+        encrypted_length = 0
+        header = "{0}.{1}.{2}.".format(FILE_VERSION, BaseCrypto.base64encode(edk), BaseCrypto.base64encode(edkN))
+        # last field is encrypted data
 
         encrypted_file_handle.write(header)
         m.update(header)

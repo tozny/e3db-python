@@ -437,7 +437,7 @@ class File():
         """
         for key, value in serialize.items():
             if isinstance(value, dict):
-                self.remove_empty(value)
+                self.__remove_empty(value)
             elif value is None or value == 'None':
                 del serialize[key]
         return serialize

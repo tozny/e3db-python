@@ -817,3 +817,56 @@ class TestIntegrationClient():
         os.remove(decrypted_plaintext_filename)
 
         assert(pre_encrypt_md5 == post_decrypt_md5)
+
+    def test_read_write_config(self):
+        """
+        Register a client with a registration token.
+        Write that config to disk storage. Read config from storage to
+        instantiate a client showing config can be read and used later.
+        """
+
+        config_client_public_key, config_client_private_key = e3db.Client.generate_keypair()
+        config_client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_config_client = e3db.Client.register(token, config_client_name, config_client_public_key, api_url=api_url)
+        config_client_api_key_id = test_config_client.api_key_id
+        config_client_api_secret = test_config_client.api_secret
+        config_client_id = test_config_client.client_id
+
+        config_client_config = e3db.Config(
+            config_client_id,
+            config_client_api_key_id,
+            config_client_api_secret,
+            config_client_public_key,
+            config_client_private_key,
+            api_url=api_url
+        )
+        config_name = "integration_config_{0}".format(binascii.hexlify(os.urandom(16)))
+        # write to default location at ~/.tozny/e3db.json, with no profile
+        config_client_config.write()
+        # write config with profile 'config_name' ~/.tozny/<profile>/e3db.json
+        config_client_config.write(config_name)
+
+        with pytest.raises(IOError):
+            # Try to write over existing config file.
+            # SDK will prevent key loss and throw an error
+            config_client_config.write()
+
+        read_config = e3db.Config.load()
+        read_config_profile = e3db.Config.load(config_name)
+        # Check both config files were written properly, and able to be loaded
+        assert(read_config == read_config_profile)
+
+        read_client_config = e3db.Config(
+            read_config_profile['client_id'],
+            read_config_profile['api_key_id'],
+            read_config_profile['api_secret'],
+            read_config_profile['public_key'],
+            read_config_profile['private_key'],
+            read_config_profile['client_email'],
+            read_config_profile['version'],
+            read_config_profile['api_url']
+        )
+
+        # If this doesn't throw an exception during instantiation, we loaded
+        # the configuration properly
+        config_client = e3db.Client(read_client_config())

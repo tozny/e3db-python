@@ -78,6 +78,15 @@ config = e3db.Config(
 # Now create a client using that configuration.
 client = e3db.Client(config())
 
+# Optionally, if you want to save this Configuration to disk, do the following:
+config.write()
+
+# Configuration files live in ~/.tozny and you can have several
+# different "profiles" like *dev* and *production*.
+
+# Write ~/.tozny/dev/e3db.json profile
+# config.write('dev')
+
 # From this point on, the new client can be used as any other client to read
 # write, delete, and query for records. See the `simple.py` documentation
 # for more complete examples ...

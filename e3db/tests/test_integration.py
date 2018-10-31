@@ -4,6 +4,7 @@ import binascii
 import pytest
 import time
 import e3db.types
+import hashlib
 
 token = os.environ["REGISTRATION_TOKEN"]
 api_url = os.environ["DEFAULT_API_URL"]
@@ -697,3 +698,175 @@ class TestIntegrationClient():
                 assert(policy.authorizer_id == self.client2.client_id)
                 found = True
         assert(found is True)
+
+    def test_large_file_write_read(self):
+        """
+        Test that Client 1 can upload a large file, and download and decrypt
+        the same file from the server.
+
+        Asserts plain metadata matches after file is re-downloaded
+
+        Asserts contents of file before encryption, after upload, after download
+        and after decryption match
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        plain_meta = {
+            'time': starting_time
+        }
+
+        plaintext_filename = "{0}.txt".format(record_type)
+        # Generate 1MB Large File to Upload
+        with open(plaintext_filename, "wb+") as f:
+            for i in range(1, 1024):
+                f.write('b' * 1024)
+
+        # checksum file to verify after download is the same contents
+        with open(plaintext_filename, 'rb') as f:
+            pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+
+        encrypted_file_meta = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
+
+        read_file_info = self.client1.read_file(encrypted_file_meta.record_id, decrypted_plaintext_filename)
+        assert(read_file_info.plain == plain_meta)
+
+        with open(decrypted_plaintext_filename, 'rb') as f:
+            post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+        # clean up local files
+        os.remove(plaintext_filename)
+        os.remove(decrypted_plaintext_filename)
+
+        assert(pre_encrypt_md5 == post_decrypt_md5)
+
+    def test_large_file_share(self):
+        """
+        Test that Client 1 can upload a large file
+        Client 1 then shares the record type with Client 2
+        Ensure Client 2 can download and decrypt the data
+
+        Asserts plain metadata matches after file is re-downloaded
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        plain_meta = {
+            'time': starting_time
+        }
+
+        plaintext_filename = "{0}.txt".format(record_type)
+        # Generate 1MB Large File to Upload
+        with open(plaintext_filename, "wb+") as f:
+            for i in range(1, 1024):
+                f.write('b' * 1024)
+
+        # checksum file to verify after download is the same contents
+        with open(plaintext_filename, 'rb') as f:
+            pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+
+        encrypted_file_meta = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
+
+        self.client1.share(record_type, self.client2.client_id)
+
+        read_file_info = self.client2.read_file(encrypted_file_meta.record_id, decrypted_plaintext_filename)
+        assert(read_file_info.plain == plain_meta)
+
+        with open(decrypted_plaintext_filename, 'rb') as f:
+            post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+        # clean up local files
+        os.remove(plaintext_filename)
+        os.remove(decrypted_plaintext_filename)
+
+        assert(pre_encrypt_md5 == post_decrypt_md5)
+
+    def test_large_file_authorizer(self):
+        """
+        Test that Client 1 can upload a large file
+        Client 1 authorizes Client 2 to be the authorizer role
+        Client 2 is the authorizer then shares on behalf of to Client 3
+        Client 3 can then read the file, and decrypt it to check the contents
+        """
+        record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
+        starting_time = str(time.time())
+        plain_meta = {
+            'time': starting_time
+        }
+
+        plaintext_filename = "{0}.txt".format(record_type)
+        # Generate 1MB Large File to Upload
+        with open(plaintext_filename, "wb+") as f:
+            for i in range(1, 1024):
+                f.write('b' * 1024)
+
+        # checksum file to verify after download is the same contents
+        with open(plaintext_filename, 'rb') as f:
+            pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+
+        encrypted_file_meta = self.client1.write_file(record_type, plaintext_filename, plain_meta)
+        self.client1.add_authorizer(record_type, self.client2.client_id)
+        self.client2.share_on_behalf_of(self.client1.client_id, self.client3.client_id, record_type)
+
+        decrypted_plaintext_filename = "decrypted-{0}.txt".format(record_type)
+        read_file_info = self.client3.read_file(encrypted_file_meta.record_id, decrypted_plaintext_filename)
+        assert(read_file_info.plain == plain_meta)
+
+        with open(decrypted_plaintext_filename, 'rb') as f:
+            post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+        # clean up local files
+        os.remove(plaintext_filename)
+        os.remove(decrypted_plaintext_filename)
+
+        assert(pre_encrypt_md5 == post_decrypt_md5)
+
+    def test_read_write_config(self):
+        """
+        Register a client with a registration token.
+        Write that config to disk storage. Read config from storage to
+        instantiate a client showing config can be read and used later.
+        """
+
+        config_client_public_key, config_client_private_key = e3db.Client.generate_keypair()
+        config_client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_config_client = e3db.Client.register(token, config_client_name, config_client_public_key, api_url=api_url)
+        config_client_api_key_id = test_config_client.api_key_id
+        config_client_api_secret = test_config_client.api_secret
+        config_client_id = test_config_client.client_id
+
+        config_client_config = e3db.Config(
+            config_client_id,
+            config_client_api_key_id,
+            config_client_api_secret,
+            config_client_public_key,
+            config_client_private_key,
+            api_url=api_url
+        )
+        config_name = "integration_config_{0}".format(binascii.hexlify(os.urandom(16)))
+        # write to default location at ~/.tozny/e3db.json, with no profile
+        config_client_config.write()
+        # write config with profile 'config_name' ~/.tozny/<profile>/e3db.json
+        config_client_config.write(config_name)
+
+        with pytest.raises(IOError):
+            # Try to write over existing config file.
+            # SDK will prevent key loss and throw an error
+            config_client_config.write()
+
+        read_config = e3db.Config.load()
+        read_config_profile = e3db.Config.load(config_name)
+        # Check both config files were written properly, and able to be loaded
+        assert(read_config == read_config_profile)
+
+        read_client_config = e3db.Config(
+            read_config_profile['client_id'],
+            read_config_profile['api_key_id'],
+            read_config_profile['api_secret'],
+            read_config_profile['public_key'],
+            read_config_profile['private_key'],
+            read_config_profile['client_email'],
+            read_config_profile['version'],
+            read_config_profile['api_url']
+        )
+
+        # If this doesn't throw an exception during instantiation, we loaded
+        # the configuration properly
+        config_client = e3db.Client(read_client_config())

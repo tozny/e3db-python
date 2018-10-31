@@ -5,6 +5,7 @@ import pytest
 import nacl.utils
 import nacl.secret
 import nacl.public
+import hashlib
 
 
 def crypto_mode():
@@ -82,6 +83,28 @@ def test_public_key_sharing():
     plaintext = alice_box.decrypt(encrypted)
 
     assert(message == plaintext)
+
+
+def test_large_file_streaming_crypto():
+    if crypto_mode() != 'sodium':
+        pytest.skip("Skipping Libsodium-reliant test")
+    # based on https://pynacl.readthedocs.io/en/latest/public/, but with e3db wrappers
+
+    plaintext_filename = "10mb.txt"
+    # Generate 10MB Large File to Upload
+    with open(plaintext_filename, "wb+") as f:
+        for i in range(1, 1024):
+            f.write('b' * 1024 * 10)
+
+    with open(plaintext_filename, 'rb') as f:
+        pre_encrypt_md5 = hashlib.md5(f.read()).hexdigest()
+    ak = e3db.Crypto.random_key()
+    encrypted_filename, hash, length = e3db.Crypto.encrypt_file(plaintext_filename, ak)
+    destination_filename = "decrypted-{0}".format(plaintext_filename)
+    e3db.Crypto.decrypt_file(encrypted_filename, destination_filename, ak)
+    with open(destination_filename, 'rb') as f:
+        post_decrypt_md5 = hashlib.md5(f.read()).hexdigest()
+    assert(pre_encrypt_md5 == post_decrypt_md5)
 
 
 def test_generate_nist_keypair():

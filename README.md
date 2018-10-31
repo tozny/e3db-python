@@ -11,7 +11,7 @@ E3DB provides a familiar JSON-based NoSQL-style API for reading, writing, and qu
 
 # Installation
 
-## With Pip
+## With Pip (Preferred)
 
 `pip install e3db`
 
@@ -157,12 +157,12 @@ The SDK will operate in Sodium mode by default. To switch operation to NIST mode
 
 ```sh
 export CRYPTO_SUITE=NIST
-``` 
+```
 
 The NIST mode of operations will leverage:
 - ECDH over curve P-384 for public/private key exchange
 - SHA384 for hashing
-- ECDSA over curve P-384 for crypographic signatures
+- ECDSA over curve P-384 for cryptographic signatures
 - AES265GCM for symmetric encryption operations
 
 ## Documentation

@@ -63,3 +63,11 @@ class BaseCrypto:
     def base64encode(self, s):
         # remove "=" padding for general SDK compatibility
         return base64.urlsafe_b64encode(str(s)).strip("=")
+
+    @classmethod
+    def encrypt_file(self, plaintext_file, key):
+        pass
+
+    @classmethod
+    def decrypt_file(self, encrypted_file, destination_file, key):
+        pass

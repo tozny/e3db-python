@@ -63,7 +63,7 @@ class Config:
 
     def __call__(self):
         """
-        Serialize the configuration when the Client object is called.
+        Serialize the configuration when the Config object is called.
 
         Parameters
         ----------
@@ -129,3 +129,40 @@ class Config:
         # if profile is empty we read the default ~/.tozny/e3db.json file
         home = os.path.expanduser('~')
         return Config.__load_file(os.path.join(home, '.tozny', profile, 'e3db.json'))
+
+    def write(self, profile=''):
+        """
+        Public method to write a configuration file.
+
+        Parameters
+        ----------
+        profile : str
+            Profile to write to. Empty string writes to ~/.tozny/e3db.json.
+            profile='dev' would write ~/.tozny/dev/e3db.json
+
+        Returns
+        -------
+        None
+        """
+        # if profile is empty we read the default ~/.tozny/e3db.json file
+        home = os.path.expanduser('~')
+        directory = os.path.join(home, '.tozny', profile)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        # Check if file already exists, if so, throw exception to prevent
+        # overwriting of key material
+        file_path = os.path.join(home, '.tozny', profile, 'e3db.json')
+        if os.path.exists(file_path):
+            raise IOError("File {0} already exists.".format(file_path))
+        with open(file_path, 'wb+') as f:
+            config = {
+                'version': str(self.version),
+                'client_id': str(self.client_id),
+                'api_key_id': str(self.api_key_id),
+                'api_secret': str(self.api_secret),
+                'client_email': str(self.client_email),
+                'public_key': str(self.public_key),
+                'private_key': str(self.private_key),
+                'api_url': str(self.api_url),
+            }
+            f.write(json.dumps(config, indent=4, separators=(',', ': ')))

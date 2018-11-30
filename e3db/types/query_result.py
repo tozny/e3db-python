@@ -2,7 +2,7 @@ from query import Query
 from record import Record
 
 
-class QueryResult():
+class QueryResult(object):
 
     def __init__(self, query, records):
         """

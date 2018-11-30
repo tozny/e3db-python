@@ -1,7 +1,7 @@
 import uuid
 
 
-class Query():
+class Query(object):
 
     def __init__(self, count, after_index=0, include_data=False,
             writer_ids=None, user_ids=None, record_ids=None, content_types=None,

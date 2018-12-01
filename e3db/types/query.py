@@ -1,7 +1,7 @@
 import uuid
 
 
-class Query():
+class Query(object):
 
     def __init__(self, count, after_index=0, include_data=False,
             writer_ids=None, user_ids=None, record_ids=None, content_types=None,
@@ -236,21 +236,6 @@ class Query():
         """
         return self.__include_all_writers
 
-    def get_after_index(self):
-        """
-        Get after_index of records returned from the Query.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        int
-            After index returned from the Query after running against the
-            E3DB server.
-        """
-        return self.__after_index
 
     def to_json(self):
         """

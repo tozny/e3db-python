@@ -2,7 +2,7 @@ from query import Query
 from record import Record
 
 
-class QueryResult():
+class QueryResult(object):
 
     def __init__(self, query, records):
         """
@@ -101,19 +101,3 @@ class QueryResult():
         """
 
         return len(self.__records)
-
-    def get_after_index(self):
-        """
-        Get after_index of records returned from the Query.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        int
-            After index returned from the Query after running against the
-            E3DB server.
-        """
-        return self.__query.get_after_index()

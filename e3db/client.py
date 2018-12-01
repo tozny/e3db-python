@@ -822,7 +822,7 @@ class Client:
         last_index : int
             Retrieve records from this index onwards. Starts at 0 to return all.
             Useful for retrieving records in 'batches'. Exposed to user through
-            the QueryResult.get_after_index() method.
+            the QueryResult.after_index method.
 
         Returns
         -------

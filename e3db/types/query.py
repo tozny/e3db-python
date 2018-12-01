@@ -236,21 +236,6 @@ class Query(object):
         """
         return self.__include_all_writers
 
-    def get_after_index(self):
-        """
-        Get after_index of records returned from the Query.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        int
-            After index returned from the Query after running against the
-            E3DB server.
-        """
-        return self.__after_index
 
     def to_json(self):
         """

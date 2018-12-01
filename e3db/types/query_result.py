@@ -101,19 +101,3 @@ class QueryResult(object):
         """
 
         return len(self.__records)
-
-    def get_after_index(self):
-        """
-        Get after_index of records returned from the Query.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        int
-            After index returned from the Query after running against the
-            E3DB server.
-        """
-        return self.__query.get_after_index()

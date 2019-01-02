@@ -1,5 +1,5 @@
-from query import Query
-from record import Record
+from .query import Query
+from .record import Record
 
 
 class QueryResult(object):

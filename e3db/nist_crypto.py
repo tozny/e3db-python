@@ -1,4 +1,4 @@
-from base_crypto import BaseCrypto
+from .base_crypto import BaseCrypto
 import os
 
 from cryptography.hazmat.backends import default_backend

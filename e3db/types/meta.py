@@ -278,7 +278,7 @@ class Meta():
         }
 
         # remove None (JSON null) objects
-        for key, value in to_serialize.items():
+        for key, value in list(to_serialize.items()):
             if value is None or value == 'None':
                 del to_serialize[key]
 

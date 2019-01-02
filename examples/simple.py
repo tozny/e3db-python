@@ -51,7 +51,7 @@ data = {
 record = client.write(record_type, data)
 record_id = record.meta.record_id
 record_version = record.meta.version
-print "Wrote: {0}".format(record_id)
+print("Wrote: {0}".format(record_id))
 
 # ---------------------------------------------------------
 # Simple reading and queries
@@ -59,14 +59,14 @@ print "Wrote: {0}".format(record_id)
 
 # Use the new record's unique ID to read the same record again from E3DB:
 new_record = client.read(record_id)
-print "Record: {0} {1}".format(new_record.data['Storage'], new_record.data['Unlock Code'])
+print("Record: {0} {1}".format(new_record.data['Storage'], new_record.data['Unlock Code']))
 
 # Query for all records of type 'test-contact' and print out
 # a little bit of data and metadata.
 
 for record in client.query(record_type=[record_type]):
-    print "Data: {0} {1}".format(record.data['Storage'], record.data['Unlock Code'])
-    print "Metadata: {0} {1}".format(str(record.meta.record_id), record.meta.record_type)
+    print("Data: {0} {1}".format(record.data['Storage'], record.data['Unlock Code']))
+    print("Metadata: {0} {1}".format(str(record.meta.record_id), record.meta.record_type))
 
 # ---------------------------------------------------------
 # Simple sharing by record type
@@ -125,7 +125,7 @@ hammer_query = {
 
 # Execute that query:
 for record in client.query(plain=hammer_query):
-    print "Data: {0} {1}".format(record.data['Storage'], record.data['Unlock Code'])
+    print("Data: {0} {1}".format(record.data['Storage'], record.data['Unlock Code']))
 
 # Now create a more complex query with only the Hammers that are in the Shed
 drill_query = {
@@ -147,7 +147,7 @@ drill_query = {
 
 # Execute that query:
 for record in client.query(plain=drill_query):
-    print "Data: {0} {1}".format(record.data['Storage'], record.data['Unlock Code'])
+    print("Data: {0} {1}".format(record.data['Storage'], record.data['Unlock Code']))
 
 # ---------------------------------------------------------
 # Learning about other clients
@@ -156,7 +156,7 @@ for record in client.query(plain=drill_query):
 isaac_client_info = client.client_info(isaac_client_id)
 
 # Get the public key:
-print "Isaac Public Key: {0}".format(isaac_client_info.public_key)
+print("Isaac Public Key: {0}".format(isaac_client_info.public_key))
 
 # ---------------------------------------------------------
 # Clean up - Comment these out if you want to experiment

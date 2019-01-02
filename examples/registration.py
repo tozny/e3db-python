@@ -22,19 +22,19 @@ import binascii
 # we assume an environment variable called REGISTRATION_TOKEN is set
 token = os.environ["REGISTRATION_TOKEN"]
 
-print "Using Registration Token: {0}".format(token)
+print("Using Registration Token: {0}".format(token))
 
 public_key, private_key = e3db.Client.generate_keypair()
 
-print "Public Key: {0}".format(public_key)
-print "Private Key: {0}".format(private_key)
+print("Public Key: {0}".format(public_key))
+print("Private Key: {0}".format(private_key))
 
 # Clients must be registered with a name unique to your account to help
 # differentiate between different sets of credentials in the Admin Console.
 # In this example, the name is set at random
 client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
 
-print "Client Name: {0}".format(client_name)
+print("Client Name: {0}".format(client_name))
 
 # Passing all of the data above into the registration routine will create
 # a new client with the system. Remember to keep your private key private!
@@ -55,9 +55,9 @@ api_key_id = client_info.api_key_id
 api_secret = client_info.api_secret
 client_id = client_info.client_id
 
-print "Client ID: {0}".format(client_id)
-print "API Key ID: {0}".format(api_key_id)
-print "API Secret: {0}".format(api_secret)
+print("Client ID: {0}".format(client_id))
+print("API Key ID: {0}".format(api_key_id))
+print("API Secret: {0}".format(api_secret))
 
 # ---------------------------------------------------------
 # Usage

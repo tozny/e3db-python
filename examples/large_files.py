@@ -35,4 +35,4 @@ read_file_info = client.read_file(encrypted_file_meta.record_id, decrypted_plain
 
 # Now you can do normal File operations, such as reading the decrypted file contents
 with open(decrypted_plaintext_filename, 'r') as f:
-    print f.read()
+    print(f.read())

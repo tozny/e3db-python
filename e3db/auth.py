@@ -2,7 +2,7 @@ import requests
 from requests.auth import AuthBase
 from requests.auth import HTTPBasicAuth
 import datetime
-from exceptions import APIError
+from .exceptions import APIError
 
 
 class E3DBAuth(AuthBase):

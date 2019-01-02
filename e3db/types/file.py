@@ -435,7 +435,7 @@ class File():
         dict
             Dictionary with empty elements removed
         """
-        for key, value in serialize.items():
+        for key, value in list(serialize.items()):
             if isinstance(value, dict):
                 self.__remove_empty(value)
             elif value is None or value == 'None':

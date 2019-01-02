@@ -107,8 +107,8 @@ class Config:
                 data = json.load(e3db_config)
             return data
         except ValueError as error:
-            print "Loading E3DB json file failed. Perhaps the JSON is malformed?"
-            print "Error: " + str(error)
+            print("Loading E3DB json file failed. Perhaps the JSON is malformed?")
+            print("Error: " + str(error))
 
     @classmethod
     def load(self, profile=''):

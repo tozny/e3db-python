@@ -1,12 +1,12 @@
-from auth import E3DBAuth
+from .auth import E3DBAuth
 import os
 if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
-    from nist_crypto import NistCrypto as Crypto
+    from .nist_crypto import NistCrypto as Crypto
 else:
-    from sodium_crypto import SodiumCrypto as Crypto
-from config import Config
-from types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File
-from exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
+    from .sodium_crypto import SodiumCrypto as Crypto
+from .config import Config
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File
+from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import uuid
 import shutil
@@ -125,7 +125,7 @@ class Client:
 
         encrypted_record = record.to_json()
 
-        for key, value in encrypted_record['data'].iteritems():
+        for key, value in encrypted_record['data'].items():
             fields = value.split(".")
 
             if len(fields) != 4:
@@ -178,7 +178,7 @@ class Client:
             self.__put_access_key(writer_id, user_id, self.client_id, record_type, ak)
 
         # Loop through the plaintext fields and encrypt them
-        for key, value in record['data'].iteritems():
+        for key, value in record['data'].items():
             dk = Crypto.random_key()
             efN = Crypto.random_nonce()
             ef = Crypto.encrypt_secret(dk, str(value), efN)

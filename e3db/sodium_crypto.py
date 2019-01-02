@@ -1,4 +1,4 @@
-from base_crypto import BaseCrypto
+from .base_crypto import BaseCrypto
 import nacl.utils
 import nacl.secret
 import nacl.public

@@ -1,5 +1,5 @@
 import copy
-from meta import Meta
+from .meta import Meta
 
 
 class Record():

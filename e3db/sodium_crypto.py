@@ -23,7 +23,7 @@ class SodiumCrypto(BaseCrypto):
 
     @classmethod
     def encrypt_secret(self, ak, plain, nonce):
-        return self.secret_box(ak).encrypt(plain, nonce)
+        return self.secret_box(ak).encrypt(BaseCrypto.to_bytes(plain), nonce)
 
     @classmethod
     def decrypt_secret(self, ak, ciphertext, nonce):
@@ -47,7 +47,7 @@ class SodiumCrypto(BaseCrypto):
 
     @classmethod
     def decode_public_key(self, key):
-        return nacl.public.PublicKey(BaseCrypto.base64decode(str(key)))
+        return nacl.public.PublicKey(BaseCrypto.base64decode(key))
 
     @classmethod
     def encode_public_key(self, key):
@@ -55,7 +55,7 @@ class SodiumCrypto(BaseCrypto):
 
     @classmethod
     def decode_private_key(self, key):
-        return nacl.public.PrivateKey(BaseCrypto.base64decode(str(key)))
+        return nacl.public.PrivateKey(BaseCrypto.base64decode(key))
 
     @classmethod
     def encode_private_key(self, key):
@@ -97,7 +97,7 @@ class SodiumCrypto(BaseCrypto):
             # create temporary file for encrypted data
         try:
             encrypted_filename = "e2e-{0}.bin".format(plaintext_filename)
-            encrypted_file_handle = open(encrypted_filename, 'w+')
+            encrypted_file_handle = open(encrypted_filename, 'wb+')
         except IOError:
             encrypted_file_handle.close()
 
@@ -108,12 +108,13 @@ class SodiumCrypto(BaseCrypto):
         edk = self.encrypt_secret(key, dk, edkN)
         edk = edk[len(edkN):]
         encrypted_length = 0
-        header = "{0}.{1}.{2}.".format(FILE_VERSION, BaseCrypto.base64encode(edk), BaseCrypto.base64encode(edkN))
+        header = "{0}.{1}.{2}.".format(FILE_VERSION, BaseCrypto.base64encode(edk).decode("utf-8"), BaseCrypto.base64encode(edkN).decode("utf-8"))
         # last field is encrypted data
 
-        encrypted_file_handle.write(header)
-        m.update(header)
-        encrypted_length += len(header)
+        header_bytes = BaseCrypto.to_bytes(header)
+        m.update(header_bytes)
+        encrypted_file_handle.write(header_bytes)
+        encrypted_length += len(header_bytes)
 
         state = nacl.bindings.crypto_secretstream_xchacha20poly1305_state()
         stream_header = nacl.bindings.crypto_secretstream_xchacha20poly1305_init_push(state, dk)
@@ -128,7 +129,7 @@ class SodiumCrypto(BaseCrypto):
         head_block = plaintext_file_handle.read(BLOCK_SIZE)
         while not done:
             next_block = plaintext_file_handle.read(BLOCK_SIZE)
-            if next_block == '':
+            if next_block == b'':
                 tag = TAG_FINAL
                 # Next block is empty, so we know we hit EOF
                 # block is full and we haven't hit EOF
@@ -190,7 +191,8 @@ class SodiumCrypto(BaseCrypto):
         # whether or not it is used. Since 4KB is already going to be read,
         # and we know the E3DB file header information is much less than 4KB,
         # this size of read makes sense to extract the header from the file
-        e3db_header_block = encrypted_file_header_handle.read(4096).split(".")
+        h1 = encrypted_file_header_handle.read(4096)
+        e3db_header_block = h1.split(b'.')
 
         # grab the version, edk, and edkN
         file_version = int(e3db_header_block[0])
@@ -222,10 +224,10 @@ class SodiumCrypto(BaseCrypto):
 
             if tag == TAG_MESSAGE:
                 # write decrypted block to file
-                destination_file_handle.write(message)
+                destination_file_handle.write(message.decode("utf-8"))
             elif tag == TAG_FINAL:
                 # write the final block
-                destination_file_handle.write(message)
+                destination_file_handle.write(message.decode("utf-8"))
                 break
             else:
                 raise RuntimeError("Decryption failed, TAG_MESSAGE or TAG_FINAL not present for ciphertext block: {0} \n message: {1} \n tag: {2}".format(read_block, message, tag))

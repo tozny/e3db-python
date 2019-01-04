@@ -236,7 +236,6 @@ class Query(object):
         """
         return self.__include_all_writers
 
-
     def to_json(self):
         """
         Serialize the configuration as JSON-style object.

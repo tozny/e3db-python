@@ -8,7 +8,6 @@ from .config import Config
 from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
-import uuid
 import shutil
 import hashlib
 
@@ -139,7 +138,7 @@ class Client:
             dk = Crypto.decrypt_secret(ak, edk, edkN)
             pv = Crypto.decrypt_secret(dk, ef, efN)
 
-            encrypted_record['data'][key] = pv
+            encrypted_record['data'][key] = pv.decode("utf-8")
         # return new Record object data with plaintext data
         return Record(Meta(encrypted_record['meta']), encrypted_record['data'])
 
@@ -181,7 +180,7 @@ class Client:
         for key, value in record['data'].items():
             dk = Crypto.random_key()
             efN = Crypto.random_nonce()
-            ef = Crypto.encrypt_secret(dk, str(value), efN)
+            ef = Crypto.encrypt_secret(dk, value, efN)
             # remove nonce from ciphertext
             ef = ef[len(efN):]
             edkN = Crypto.random_nonce()
@@ -189,7 +188,7 @@ class Client:
             # remove nonce from ciphertext
             edk = edk[len(edkN):]
 
-            record['data'][key] = ".".join([Crypto.base64encode(c) for c in [edk, edkN, ef, efN]])
+            record['data'][key] = ".".join([Crypto.base64encode(c).decode("utf-8") for c in [edk, edkN, ef, efN]])
 
         # return new Record object data with encrypted data
         return Record(Meta(meta), record['data'])
@@ -295,7 +294,7 @@ class Client:
         eak = Crypto.encrypt_ak(Crypto.decode_private_key(self.private_key), reader_key, ak, nonce)
         # Need to strip the nonce off the front of the eak
         eak = eak[len(nonce):]
-        encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak), Crypto.base64encode(nonce))
+        encoded_eak = "{0}.{1}".format(Crypto.base64encode(eak).decode("utf-8"), Crypto.base64encode(nonce).decode("utf-8"))
         url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
         json = {
             'eak': encoded_eak
@@ -543,7 +542,9 @@ class Client:
         """
 
         public_key, private_key = Crypto.generate_keypair()
-        return Crypto.encode_public_key(public_key), Crypto.encode_private_key(private_key)
+        return (
+            Crypto.encode_public_key(public_key).decode("utf-8"),
+            Crypto.encode_private_key(private_key).decode("utf-8"))
 
     def client_info(self, client_id):
         """
@@ -1182,7 +1183,7 @@ class Client:
         encrypted_filename, file_checksum, file_size = Crypto.encrypt_file(plaintext_filename, ak)
         file_compression = 'raw'
 
-        upload_file = File(file_checksum, file_compression, file_size, self.client_id, self.client_id, record_type, plain=plain)
+        upload_file = File(file_checksum.decode("utf-8"), file_compression, file_size, self.client_id, self.client_id, record_type, plain=plain)
 
         url = self.__get_url("v1", "storage", "files")
         response = requests.post(url=url, json=upload_file.to_json(), auth=self.e3db_auth)
@@ -1193,7 +1194,7 @@ class Client:
         # pending file write created
         response_json = response.json()
         upload_file.file_url = response_json["file_url"]
-        upload_file.record_id = uuid.UUID(response_json["id"])
+        upload_file.record_id = response_json["id"]
         headers = {
             'Content-Type': 'application/octet-stream',
             'Content-MD5': upload_file.checksum

@@ -52,17 +52,29 @@ class BaseCrypto:
         # return public, private
         pass
 
+    @staticmethod
+    def to_bytes(b):
+        if type(b) is bytes:
+            return b
+        elif type(b) is str:
+            return bytes(b, "utf-8")
+        else:
+            return bytes(b)
+
     @classmethod
     def base64decode(self, s):
         # From https://stackoverflow.com/a/9956217
         # Python base64 implementation requires padding, which may not be present in the
         # encoded public/private keypair
-        return base64.urlsafe_b64decode(str(s) + '=' * (4 - len(s) % 4))
+        b = BaseCrypto.to_bytes(s)
+        return base64.urlsafe_b64decode(b + b'=' * (4 - len(s) % 4))
 
     @classmethod
     def base64encode(self, s):
+        # Encodes a utf-8/ascii bytes into  base 64 encoded bytes
         # remove "=" padding for general SDK compatibility
-        return base64.urlsafe_b64encode(str(s)).strip("=")
+        b = BaseCrypto.to_bytes(s)
+        return base64.urlsafe_b64encode(b).strip(b'=')
 
     @classmethod
     def encrypt_file(self, plaintext_file, key):

@@ -154,7 +154,7 @@ class Config:
         file_path = os.path.join(home, '.tozny', profile, 'e3db.json')
         if os.path.exists(file_path):
             raise IOError("File {0} already exists.".format(file_path))
-        with open(file_path, 'wb+') as f:
+        with open(file_path, 'w+') as f:
             config = {
                 'version': str(self.version),
                 'client_id': str(self.client_id),

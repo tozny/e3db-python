@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'e3db-python'
-copyright = '2018, Tozny'
+copyright = '2019, Tozny'
 author = 'Tozny'
 
 # The version info for the project you're documenting, acts as replacement for

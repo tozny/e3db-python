@@ -17,10 +17,10 @@ def crypto_mode():
 
 def test_base64():
     # ensure encoding and decoding string results in same string as original
-    string = "testing base64 is the best! #testing"
+    string = "testing base64 is the best! #testing1"
     encoded = e3db.Crypto.base64encode(string)
     decoded = e3db.Crypto.base64decode(encoded)
-    assert(string == decoded)
+    assert(string == decoded.decode())
 
 
 def test_generate_keypair():
@@ -39,7 +39,7 @@ def test_public_key_encoding():
     pubkey = 'RMG04iil2HDaUWye9wMVG8RmIL_s5tPOilRoiLUjLT8'
     decoded = e3db.Crypto.decode_public_key(pubkey)
     encoded = e3db.Crypto.encode_public_key(decoded)
-    assert(pubkey == encoded)
+    assert(pubkey == encoded.decode())
     assert(type(decoded) == nacl.public.PublicKey)
 
 
@@ -50,7 +50,7 @@ def test_private_key_encoding():
     privkey = '_wSGC32a3g_VOPPy3kILDqzKLa1tPwdTNW3DQrJMPxk'
     decoded = e3db.Crypto.decode_private_key(privkey)
     encoded = e3db.Crypto.encode_private_key(decoded)
-    assert(privkey == encoded)
+    assert(privkey == encoded.decode())
     assert(type(decoded) == nacl.public.PrivateKey)
 
 
@@ -78,9 +78,9 @@ def test_public_key_sharing():
     message = "Tozny is awesome."
 
     nonce = e3db.Crypto.random_nonce()
-    encrypted = bob_box.encrypt(message, nonce)
+    encrypted = bob_box.encrypt(message.encode(), nonce)
     alice_box = e3db.Crypto.box(skalice_decoded, pkbob_decoded)
-    plaintext = alice_box.decrypt(encrypted)
+    plaintext = alice_box.decrypt(encrypted).decode("utf-8")
 
     assert(message == plaintext)
 
@@ -92,7 +92,7 @@ def test_large_file_streaming_crypto():
 
     plaintext_filename = "10mb.txt"
     # Generate 10MB Large File to Upload
-    with open(plaintext_filename, "wb+") as f:
+    with open(plaintext_filename, "w+") as f:
         for i in range(1, 1024):
             f.write('b' * 1024 * 10)
 
@@ -123,7 +123,7 @@ def test_nist_public_key_encoding():
     pubkey = 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUhZd0VBWUhLb1pJemowQ0FRWUZLNEVFQUNJRFlnQUVka3p1cXFQdWo5TzRUY0xkTzMxNVIvL2NsMXE5c3BtNApuck54UlMrS3R2SzZIdXZkMTBhcUVRZml1V0lFQnJzYkZuRllLaFV2bk9pKzBscVNpd29Wd3AvRTdJOUhyQ2NEClRIbks1RnY1ZEo4aFZBVTdmT3VreFJwOHVULzA1US9hCi0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo'
     decoded = e3db.Crypto.decode_public_key(pubkey)
     encoded = e3db.Crypto.encode_public_key(decoded)
-    assert(pubkey == encoded)
+    assert(pubkey == encoded.decode())
     assert(type(decoded) == cryptography.hazmat.backends.openssl.ec._EllipticCurvePublicKey)
 
 
@@ -134,7 +134,7 @@ def test_nist_private_key_encoding():
     privkey = 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JRzJBZ0VBTUJBR0J5cUdTTTQ5QWdFR0JTdUJCQUFpQklHZU1JR2JBZ0VCQkRDeDg1L3lENFIrSWFsRUNhbm8KQjBIUVdtWWpxYnNwK3hISEt5U3MrbDBZZ1d2M1BybXBXb0tvRGE1RTRQZDJ2czZoWkFOaUFBUUx0T213eWFVbQpmY25vRGNBQjQ4TC9yc2N4dlJ2a0g3Ri9lcWk1V0E4ZVRJbDAwSlZYNXFyZlR0a3drVTYwM2Q0aHA4R1FrOGlUCjl1RlMvLzhUdXdmVVE2VnJGd3IySThsc2wzUTcyTkhzSFhJQUhJdmgyZUlncXRnTUxtVEZWSEk9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K'
     decoded = e3db.Crypto.decode_private_key(privkey)
     encoded = e3db.Crypto.encode_private_key(decoded)
-    assert(privkey == encoded)
+    assert(privkey == encoded.decode())
     assert(type(decoded) == cryptography.hazmat.backends.openssl.ec._EllipticCurvePrivateKey)
 
 
@@ -159,7 +159,7 @@ def test_nist_public_key_sharing():
 
     bob_exchange = e3db.Crypto._exchange(skbob_decoded, pkalice_decoded)
 
-    message = "Tozny is awesome."
+    message = b"Tozny is awesome."
 
     nonce = e3db.Crypto.random_nonce()
     encrypted = bob_exchange.encrypt(nonce, message, None)

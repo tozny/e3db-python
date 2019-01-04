@@ -7,7 +7,7 @@ E3DB provides a familiar JSON-based NoSQL-style API for reading, writing, and qu
 
 # Requirements
 
-* Python 2.7 environment
+* Python 3.4+ environment (Version 1.x of the E3DB SDK supports 2.7, but is no longer being supported except in the case of security updates)
 
 # Installation
 

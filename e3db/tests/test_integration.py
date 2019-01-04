@@ -260,7 +260,6 @@ class TestIntegrationClient():
             'time': starting_time
         }
         self.client1.write(record_type, data)
-
         results = self.client1.query(record_type=[record_type])
         assert(len(results) >= 1)
 
@@ -719,7 +718,7 @@ class TestIntegrationClient():
         # Generate 1MB Large File to Upload
         with open(plaintext_filename, "wb+") as f:
             for i in range(1, 1024):
-                f.write('b' * 1024)
+                f.write(b'b' * 1024)
 
         # checksum file to verify after download is the same contents
         with open(plaintext_filename, 'rb') as f:
@@ -757,7 +756,7 @@ class TestIntegrationClient():
         # Generate 1MB Large File to Upload
         with open(plaintext_filename, "wb+") as f:
             for i in range(1, 1024):
-                f.write('b' * 1024)
+                f.write(b'b' * 1024)
 
         # checksum file to verify after download is the same contents
         with open(plaintext_filename, 'rb') as f:
@@ -796,7 +795,7 @@ class TestIntegrationClient():
         # Generate 1MB Large File to Upload
         with open(plaintext_filename, "wb+") as f:
             for i in range(1, 1024):
-                f.write('b' * 1024)
+                f.write(b'b' * 1024)
 
         # checksum file to verify after download is the same contents
         with open(plaintext_filename, 'rb') as f:

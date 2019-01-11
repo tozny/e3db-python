@@ -182,7 +182,7 @@ class SodiumCrypto(BaseCrypto):
 
         # Try to create destination plaintext_file
         try:
-            destination_file_handle = open(destination_filename, 'w+')
+            destination_file_handle = open(destination_filename, 'wb+')
         except IOError:
             destination_file_handle.close()
 
@@ -224,10 +224,10 @@ class SodiumCrypto(BaseCrypto):
 
             if tag == TAG_MESSAGE:
                 # write decrypted block to file
-                destination_file_handle.write(message.decode("utf-8"))
+                destination_file_handle.write(message)
             elif tag == TAG_FINAL:
                 # write the final block
-                destination_file_handle.write(message.decode("utf-8"))
+                destination_file_handle.write(message)
                 break
             else:
                 raise RuntimeError("Decryption failed, TAG_MESSAGE or TAG_FINAL not present for ciphertext block: {0} \n message: {1} \n tag: {2}".format(read_block, message, tag))

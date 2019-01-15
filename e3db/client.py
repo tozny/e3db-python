@@ -326,7 +326,8 @@ class Client:
         """
 
         url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
-        requests.delete(url=url, auth=self.e3db_auth)
+        response = requests.delete(url=url, auth=self.e3db_auth)
+        self.__response_check(response)
 
         ak_cache_key = (writer_id, user_id, record_type)
         if ak_cache_key in self.ak_cache:
@@ -888,10 +889,10 @@ class Client:
         """
         url = self.__get_url('v1', 'storage', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        self.__response_check(response)
         if 'error' in response.json():
             # we had an error, return this to user
             raise QueryError(response.json()['error'])
-        self.__response_check(response)
         return response.json()
 
     def share(self, record_type, reader_id):

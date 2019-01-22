@@ -5,7 +5,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
-from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import shutil
@@ -850,25 +850,7 @@ class Client:
         # take this apart
         last_index = response['last_index']
         results = response['results']
-        records = []
-
-        for result in results:
-            result_meta = result['meta']
-            meta = Meta(result_meta)
-            result_data = result['record_data']
-            record = Record(meta=meta, data=result_data)
-
-            if data:
-                # need to decrypt all the results before returning.
-                access_key = result['access_key']
-                if access_key:
-                    ak = self.__decrypt_eak(access_key)
-                    record = self.__decrypt_record_with_key(record, ak)
-                else:
-                    record = self.__decrypt_record(record)
-
-            records.append(record)
-
+        records = self.__parse_results(results, data)
         qr = QueryResult(q, records)
         qr.after_index = last_index
         return qr
@@ -905,6 +887,44 @@ class Client:
         # code with no body, which the query endpoint should not do, however mapping that to a query exception make
         # sense if that situation does arise
         return QueryError("An unexpected response occurred, and no results were returned")
+
+    def search(self, query):
+        response = self.__search(query)
+        results = response['results']
+        last_index = response['last_index']
+        search_id = response['search_id']
+
+        if results is None:
+            return SearchResult(query, [], last_index, search_id)
+
+        records = self.__parse_results(results, query.include_data)
+        qr = SearchResult(query, records, last_index, search_id)
+        return qr
+
+    def __search(self, query):
+        url = self.__get_url('v2', 'search')
+        response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        self.__response_check(response)
+        json = response.json() # Search Service does not return error message, just status codes
+        return json
+
+    def __parse_results(self, results, include_data):
+        records = []
+        for result in results:
+            result_meta = result['meta']
+            meta = Meta(result_meta)
+            result_data = result['record_data']
+            record = Record(meta=meta, data=result_data)
+            if include_data:
+                # need to decrypt all the results before returning.
+                access_key = result['access_key']
+                if access_key:
+                    ak = self.__decrypt_eak(access_key)
+                    record = self.__decrypt_record_with_key(record, ak)
+                else:
+                    record = self.__decrypt_record(record)
+            records.append(record)
+        return records
 
     def share(self, record_type, reader_id):
         """

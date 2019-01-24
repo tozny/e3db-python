@@ -889,11 +889,22 @@ class Client:
         """
         url = self.__get_url('v1', 'storage', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        try:
+            json = response.json()
+            if 'error' in json:
+                # we had an error, return this to user
+                raise QueryError(json['error'])
+            self.__response_check(response)
+            return json
+        except ValueError:
+            # This Value error only occurs if there is no json body, we want it suppressed
+            pass
+        # In the case of a value error see if the response is non 200 and map to the correct exception
         self.__response_check(response)
-        if 'error' in response.json():
-            # we had an error, return this to user
-            raise QueryError(response.json()['error'])
-        return response.json()
+        # It is unlikely that this return will get called, it would require the service to return a 200 level response
+        # code with no body, which the query endpoint should not do, however mapping that to a query exception make
+        # sense if that situation does arise
+        return QueryError("An unexpected response occurred, and no results were returned")
 
     def share(self, record_type, reader_id):
         """

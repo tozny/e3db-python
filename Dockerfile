@@ -1,4 +1,4 @@
-FROM python:2.7-alpine
+FROM python:3.7-alpine
 
 RUN apk add --no-cache gcc musl-dev libffi-dev make openssl-dev
 RUN mkdir -p /src

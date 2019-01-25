@@ -889,6 +889,26 @@ class Client:
         return QueryError("An unexpected response occurred, and no results were returned")
 
     def search(self, query):
+        """
+        Public Method to perform improved search request for E3db records according to the query provided.
+
+        Requires a Search object to perform the Query. Construction and Execution is as follows:
+
+        search_this = Search().Match(records=[some_params,...]).Exclude(writers=[omit_this,...])
+        search_result = client.search(search_this) 
+
+        For more information see the documentation of the Search Object or Tests.
+
+        Parameters
+        ----------
+        query : Search
+            Object that contains the information to search for.
+        
+        Returns
+        -------
+        SearchResult
+            Result of a valid response from E3DB.
+        """
         response = self.__search(query)
         results = response['results']
         last_index = response['last_index']
@@ -902,6 +922,19 @@ class Client:
         return qr
 
     def __search(self, query):
+        """
+        Private Method to send search request to E3DB and return a json response.
+        
+        Parameters
+        ----------
+        query: Search
+            Search object represents the query made to the E3DB.
+        
+        Returns
+        -------
+        dict
+            response from the server as json (dict).
+        """
         url = self.__get_url('v2', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
@@ -909,6 +942,26 @@ class Client:
         return json
 
     def __parse_results(self, results, include_data):
+        """
+        Private Method to parse the response of a search v1 or v2 request.
+
+        A Query/Search Response comes in as json and is abstracted into the
+        Meta and Record class. If data is included in the response (result_data != None),
+        then the data is decrypted with the provided access_key.
+
+        Parameters
+        ----------
+        results: dict[string]object (json)
+            json response from PDS
+
+        include_data: bool
+            Flag to indicate if data is included in the response, taken from the Query.
+        
+        Returns
+        ----------
+        [Records]
+            List of Record Objects
+        """
         records = []
         for result in results:
             result_meta = result['meta']

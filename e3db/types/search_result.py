@@ -20,9 +20,16 @@ class SearchResult(object):
         records : list<e3db.Record>
             A list of records to store for later iteration and operations.
 
+        after_index : int
+            Index that indicates where to start the next query for batch jobs.
+
+        search_id : str
+            ID to access search_id for async searches, but currently is not implemented in
+            the search service.  
+
         Returns
         -------
-        None
+        SearchResult
         """
         if search and (not isinstance(search, Search)):
             raise TypeError("Search object is not e3db.Search type. Given type: {0}".format(type(search)))
@@ -39,13 +46,17 @@ class SearchResult(object):
 
     @property
     def search_id(self):
+        """
+        Get search_id for SearchResult
+        
+        Returns
+        -------
+        str
+            ID to access search_id for async searches, but currently is not implemented in
+            the search service.  
+        """
         return self.__search_id
     
-    @search_id.setter
-    def search_id(self, id):
-        self.__search_id = id
-
-    # after_index getters and setters
     @property
     def after_index(self):
         """
@@ -62,21 +73,17 @@ class SearchResult(object):
         """
         return self.__after_index
 
-    @after_index.setter
-    def after_index(self, value):
+    @property
+    def records(self):
         """
-        Set after_index of SearchResult
-
-        Parameters
-        ----------
-        value: int
-            Set after_index from server result
-
+        Get records for SearchResult
+        
         Returns
         -------
-        None
+        Record
+            Returns Records for manual access
         """
-        self.__after_index = int(value)
+        return self.__records
 
     def __iter__(self):
         """

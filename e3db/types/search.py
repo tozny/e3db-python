@@ -11,6 +11,40 @@ class Search(object):
         It is exposed through the e3db.Client.search method.
 
         Parameters
+        ----------
+        last_index : int, optional
+            Where to start the query at. E3DB will return an index which indicates
+            where the  query left off. Another query can be executed including this last_index, and 
+            it will pick off where the other left off (the default is 0, which starts from the beginning).
+
+        count : int, optional
+            How many records to include minimum of 1 and up to a maximum of 1000 (the default is 50).
+            Based on the current version, the resulting query might return less than this count, even if
+            there are more records available. The query will need to be re-run with the corresponding last_index.
+
+        include_all_writers : bool, optional
+            Whether or not to include all writers, or just the writer_id of the 
+            (the default is False).
+
+        include_data : bool, optional
+            Whether to include data, or just meta data when retrieving the
+            E3DB records (the default is False).
+
+        match : [Params], optional
+            A list of Search Param objects to Match when querying for Records
+            (the default is None, which matches all records).
+
+        exclude : [Params], optional
+            A list of Search Param objects to Exclude when querying for Records
+            (the default is None, which matches no records excluding nothing).
+
+        range : Range, optional
+            A Search Range object to filter results based on created or last_modified time
+            (the default is None, which removes any time filter.).
+
+        Returns
+        -------
+        Search
         """
         self.__next_token = int(last_index)
         self.__limit = int(count)
@@ -20,17 +54,99 @@ class Search(object):
         self.__exclude = exclude if exclude else []
         self.__range = None
         
+    @property
+    def matches(self):
+        """
+        Get list of Params on which to match.
+        
+        Returns
+        -------
+        [Params]
+            List of Match Parameters
+        """
+        return self.__match
+
+    @matches.setter
+    def matches(self, p):
+        """
+        Set list of Params on which to match. 
+        Overrides current Match Params.
+
+        Parameters
+        ----------
+        p: [Params]
+            Parameters to search on
+
+        Returns
+        -------
+        None
+        """
+        self.__match = p
+
+    @property
+    def excludes(self):
+        """
+        Get list of Params on which to exclude.
+        
+        Returns
+        -------
+        [Params]
+            List of Exclude Parameters
+        """
+        return self.__exclude
+
+    @excludes.setter
+    def excludes(self, p):
+        """
+        Set list of Params on which to exclude. 
+        Overrides current Match Params.
+
+        Parameters
+        ----------
+        p: [Params]
+            Parameters to search on
+
+        Returns
+        -------
+        None
+        """
+        self.__exclude = p
+
     def append_match(self, p):
+        """
+        Add to list of Params on which to Match
+
+        Parameters
+        ----------
+        p : Param
+             Parameter to add to Match list
+
+        Returns
+        -------
+        None
+        """
         self.__match.append(p)
 
     def append_exclude(self, p):
+        """
+        Add to list of Params on which to Exclude
+
+        Parameters
+        ----------
+        p : Param
+             Parameter to add to Exclude list
+
+        Returns
+        -------
+        None
+        """
         self.__exclude.append(p)
 
     # count getters
     @property
     def count(self):
         """
-        Get count of Query.
+        Get count of Search.
 
         Parameters
         ----------
@@ -47,7 +163,7 @@ class Search(object):
     @property
     def after_index(self):
         """
-        Get after_index of Query.
+        Get after_index of Search.
 
         Parameters
         ----------
@@ -56,14 +172,14 @@ class Search(object):
         Returns
         -------
         int
-            Get after_index of the Query.
+            Get after_index of the Search.
         """
         return self.__next_token
 
     @after_index.setter
     def after_index(self, value):
         """
-        Set after_index of QueryResult
+        Set after_index of SearchResult.
 
         Parameters
         ----------
@@ -80,7 +196,7 @@ class Search(object):
     @property
     def include_data(self):
         """
-        Get included_data of Query.
+        Get included_data of Search.
 
         Parameters
         ----------
@@ -122,7 +238,7 @@ class Search(object):
         Returns
         -------
         dict
-            JSON-style document containing the Query elements.
+            JSON-style document containing the Search elements.
         """
         return {
             "limit": int(self.__limit),
@@ -135,16 +251,138 @@ class Search(object):
         }
 
     def match(self, condition="OR", strategy="EXACT", writer=[], record=[], user=[], record_type=[], keys=[], values=[], plain=None):
+        """
+        Public method to construct Query Params on which to Match(select) when searching for E3DB records.
+
+        Appends to the List of Match Parameters in the Search Object.
+        Independent Match Parameters are OR-ed together. 
+
+        Parameters
+        ----------
+        condition : str, optional
+            "OR|AND" (the default is "OR")
+            Provided parameters are either OR-ed or AND-ed together based on the condition provided.
+
+        strategy : str, optional
+            "EXACT|FUZZY|WILDCARD|REGEXP" (the default is "EXACT")
+            Determines the strategy when matching the parameters provided.
+
+        writer : list, optional
+            List of writer ids to filter on (the default is [], which matches all)
+
+        record : list, optional
+            List of reader ids to filter on (the default is [], which matches all)
+
+        user : list, optional
+            List of user ids to filter on (the default is [], which matches all)
+
+        record_type : list, optional
+            List of record_types to filter on (the default is [], which matches all)
+
+        keys : list, optional
+            List of keys to filter on (the default is [], which matches all)
+
+        values : list, optional
+            List of values to filter on (the default is [], which matches all)
+
+        plain : dict, optional
+            Plaintext meta data to match against record plaintext meta data fields.
+        
+        Returns
+        -------
+        Search
+            Returns reference to self, allows for chaining of match, exclude, range methods.
+        """
+
         m = Params(condition=condition, strategy=strategy, writer_ids=writer, record_ids=record, user_ids=user, content_types=record_type, keys=keys, values=values, plain=plain)
         self.append_match(m)
         return self
 
     def exclude(self, condition="OR", strategy="EXACT", writer=[], record=[], user=[], record_type=[], keys=[], values=[], plain=None):
+        """
+        Public method to construct Query Params on which to Exclude(select) when searching for E3DB records.
+
+        Appends to the List of Exclude Parameters in the Search Object.
+        Independent Exclude Parameters are OR-ed together. 
+
+        Parameters
+        ----------
+        condition : str, optional
+            "OR|AND" (the default is "OR")
+            Provided parameters are either OR-ed or AND-ed together based on the condition provided.
+
+        strategy : str, optional
+            "EXACT|FUZZY|WILDCARD|REGEXP" (the default is "EXACT")
+            Determines the strategy when matching the parameters provided.
+
+        writer : list, optional
+            List of writer ids to filter on (the default is [], which matches all)
+
+        record : list, optional
+            List of reader ids to filter on (the default is [], which matches all)
+
+        user : list, optional
+            List of user ids to filter on (the default is [], which matches all)
+
+        record_type : list, optional
+            List of record_types to filter on (the default is [], which matches all)
+
+        keys : list, optional
+            List of keys to filter on (the default is [], which matches all)
+
+        values : list, optional
+            List of values to filter on (the default is [], which matches all)
+
+        plain : dict, optional
+            Plaintext meta data to match against record plaintext meta data fields.
+        
+        Returns
+        -------
+        Search
+            Returns reference to self, allows for chaining of match, exclude, range methods.
+        """
         e = Params(condition=condition, strategy=strategy, writer_ids=writer, record_ids=record, user_ids=user, content_types=record_type, keys=keys, values=values, plain=plain)
         self.append_exclude(e)
         return self
     
-    def range(self, key="CREATED", format="Unix", zone="UTC", before=None, after=None):
+    def range(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, before=None, after=None):
+        """
+        Public Method to filter search based on time the E3DB record was created or last modified.
+
+        Parameters
+        ----------
+        key : str, optional
+            "CREATED|MODIFIED" (the default is "CREATED")
+
+        format : str, optional
+            Currently is not a supported parameter (the default is "Unix")
+
+        zone : str, optional
+            Since python time objects are naive or zone-agnostic, this will attempt to append
+            the proper timezone information to the time object for the query.
+            Currently supported are:
+                "PST":"-08:00", "MST":"-07:00", "CST":"-06:00", "EST":"-05:00", "UTC":"+00:00"
+                (the default is "UTC" if the proper timezone cannot be found, which represents +00:00)
+
+        zone_offset : str, optional
+            If provided this offset will be used over zone.
+            Accepts the format "[+|-]dd:dd"
+            (the default is None(UTC), which will attempt to use zone if provided)
+        
+        before : time, optional
+            Search only for records that come before this time 
+            (the default is None, which leaves no upper bound on the query)
+        
+        after : time, optional
+            Search only for record that come after this time 
+            (the default is None, which leaves no lower bound on the query)
+        
+        Returns
+        -------
+        Search
+            Returns reference to self, allows for chaining of match, exclude, range methods.
+        """
+
         r = Range(key=key, format=format, zone=zone, before=before, after=after)
         self.__range = r
         return self

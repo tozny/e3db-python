@@ -66,7 +66,7 @@ class File():
         self.__size = int(size)
         # optional, as some get set by the server
         # set these to None if they are not included when init is called.
-        if record_id is not None:
+        if record_id is not None and not isinstance(record_id, uuid.UUID):
             self.__record_id = uuid.UUID(record_id)
         else:
             self.__record_id = None

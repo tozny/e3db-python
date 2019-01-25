@@ -19,12 +19,6 @@ help:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-dep:
-	pip install pytest pytest-cov
-
-docker-build:
-	docker build ./ -f LocalDevDockerfile -t tozny/e3db-python 
-
 integration-test:
 	docker run -it --rm --entrypoint=sh -e REGISTRATION_TOKEN=${REGISTRATION_TOKEN} -e DEFAULT_API_URL=${DEFAULT_API_URL} tozny/e3db-python
 

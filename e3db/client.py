@@ -913,12 +913,13 @@ class Client:
         results = response['results']
         last_index = response['last_index']
         search_id = response['search_id']
+        total_results = response['total_results']
 
         if results is None:
-            return SearchResult(query, [], last_index, search_id)
+            return SearchResult(query, [], last_index, total_results, search_id)
 
         records = self.__parse_results(results, query.include_data)
-        qr = SearchResult(query, records, last_index, search_id)
+        qr = SearchResult(query, records, last_index, total_results, search_id)
         return qr
 
     def __search(self, query):
@@ -938,7 +939,7 @@ class Client:
         url = self.__get_url('v2', 'search')
         response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
         self.__response_check(response)
-        json = response.json() # Search Service does not return error message, just status codes
+        json = response.json() # server does not return error message, just status codes
         return json
 
     def __parse_results(self, results, include_data):

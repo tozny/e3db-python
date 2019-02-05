@@ -130,6 +130,17 @@ class TestSearchIntegration():
 
         self.record2 = self.client1.write(self.record_type, 
                                             {'time': str(time.time())})
+        self.pag_record_type = "page_record_test"
+        self.pag_rec1 = self.client2.write(self.pag_record_type,
+                                            {'time': str(time.time())})
+        self.pag_rec2 = self.client2.write(self.pag_record_type,
+                                            {'time': str(time.time())})
+        self.pag_rec3 = self.client2.write(self.pag_record_type,
+                                            {'time': str(time.time())})
+        self.pag_rec4 = self.client2.write(self.pag_record_type,
+                                            {'time': str(time.time())})
+        self.pag_rec5 = self.client2.write(self.pag_record_type,
+                                            {'time': str(time.time())})
         fileName = "large_file.txt"
         didCreate = self.__help_create_large_file(fileName)
         if not didCreate:
@@ -171,14 +182,12 @@ class TestSearchIntegration():
         assert(len(results)==1)
 
     def test_v2_invalid_range(self):
-        record1_id = self.record1.meta.record_id
-        q = e3db.types.Search(include_data=True).match(record=[record1_id]).range(before=datetime.now(), after=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_type=[self.record_type]).range(before=datetime.now(), after=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_valid_range(self):
-        record1_id = self.record1.meta.record_id
-        q = e3db.types.Search(include_data=True).match(record=[record1_id]).range(zone="PST", before=datetime.now()+timedelta(hours=1), after=datetime.now()+timedelta(hours=-1))
+        q = e3db.types.Search(include_data=True).match(record_type=[self.record_type]).range(zone="PST", before=datetime.now()+timedelta(hours=1), after=datetime.now()+timedelta(hours=-1))
         results = self.client1.search(q)
         assert(len(results)==2)
 
@@ -211,7 +220,7 @@ class TestSearchIntegration():
             assert(r.data is None)
 
     def test_v2_search_regexp(self):
-        q = e3db.types.Search(include_data=True).match(strategy="REGEXP", values=['tozny.*'])
+        q = e3db.types.Search(count=1000, include_data=True).match(strategy="REGEXP", values=['tozny.*'])
         results = self.client1.search(q)
         for r in results:
             print("record:")
@@ -236,3 +245,16 @@ class TestSearchIntegration():
         for r in results:
             assert(r.meta.file_meta is not None)
             assert(r.meta.file_meta._checksum == self.encrypted_file_meta.checksum)
+
+    def test_v2_pagination(self):
+        q = e3db.types.Search(count=2).match(condition="AND", record_type=[self.pag_record_type], writer=[self.client2.client_id])
+        results = self.client2.search(q)
+        assert(len(results) == 2)
+        assert(results.after_index == 2)
+        assert(results.total_results == 5)
+
+        q = e3db.types.Search(last_index=results.after_index, count=10).match(condition="AND", record_type=[self.pag_record_type], writer=[self.client2.client_id])
+        results = self.client2.search(q)
+        assert(len(results) == 3)
+        assert(results.after_index == 0)
+        assert(results.total_results == 5)

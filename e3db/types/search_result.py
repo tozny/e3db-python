@@ -3,7 +3,7 @@ from .record import Record
 
 class SearchResult(object):
 
-    def __init__(self, search, records, after_index=0, search_id=""):
+    def __init__(self, search, records, after_index=0, total_results=0, search_id=""):
         """
         Initialize the SearchResult class.
 
@@ -25,7 +25,7 @@ class SearchResult(object):
 
         search_id : str
             ID to access search_id for async searches, but currently is not implemented in
-            the search service.  
+            E3DB.  
 
         Returns
         -------
@@ -43,6 +43,7 @@ class SearchResult(object):
             self.__records = records
         self.__after_index = after_index
         self.__search_id = search_id
+        self.__total_results = total_results
 
     @property
     def search_id(self):
@@ -53,7 +54,7 @@ class SearchResult(object):
         -------
         str
             ID to access search_id for async searches, but currently is not implemented in
-            the search service.  
+            the E3DB.  
         """
         return self.__search_id
     
@@ -80,10 +81,23 @@ class SearchResult(object):
         
         Returns
         -------
-        Record
+        List[Record]
             Returns Records for manual access
         """
         return self.__records
+
+    @property
+    def total_results(self):
+        """
+        Get total results of a search, may be more than contained in SearchResult records.
+        To get the full amount of results, call search again with the after index of this SearchResult
+    
+        Returns
+        -------
+        int
+            Number of results found in E3DB
+        """
+        return self.__total_results
 
     def __iter__(self):
         """

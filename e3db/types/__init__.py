@@ -8,3 +8,7 @@ from .query import Query
 from .record import Record
 from .authorizer_policy import AuthorizerPolicy
 from .file import File
+from .search_result import SearchResult
+from .search import Search
+from .search import Params
+from .search import Range

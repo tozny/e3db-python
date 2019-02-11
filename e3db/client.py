@@ -5,7 +5,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
-from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import shutil
@@ -850,25 +850,7 @@ class Client:
         # take this apart
         last_index = response['last_index']
         results = response['results']
-        records = []
-
-        for result in results:
-            result_meta = result['meta']
-            meta = Meta(result_meta)
-            result_data = result['record_data']
-            record = Record(meta=meta, data=result_data)
-
-            if data:
-                # need to decrypt all the results before returning.
-                access_key = result['access_key']
-                if access_key:
-                    ak = self.__decrypt_eak(access_key)
-                    record = self.__decrypt_record_with_key(record, ak)
-                else:
-                    record = self.__decrypt_record(record)
-
-            records.append(record)
-
+        records = self.__parse_results(results, data)
         qr = QueryResult(q, records)
         qr.after_index = last_index
         return qr
@@ -905,6 +887,98 @@ class Client:
         # code with no body, which the query endpoint should not do, however mapping that to a query exception make
         # sense if that situation does arise
         return QueryError("An unexpected response occurred, and no results were returned")
+
+    def search(self, query):
+        """
+        Public Method to perform improved search request for E3db records according to the query provided.
+
+        Requires a Search object to perform the Query. Construction and Execution is as follows:
+
+        search_this = Search().Match(records=[some_params,...]).Exclude(writers=[omit_this,...])
+        search_result = client.search(search_this) 
+
+        For more information see the documentation of the Search Object or Tests.
+
+        Parameters
+        ----------
+        query : Search
+            Object that contains the information to search for.
+        
+        Returns
+        -------
+        SearchResult
+            Result of a valid response from E3DB.
+        """
+        response = self.__search(query)
+        results = response['results']
+        last_index = response['last_index']
+        search_id = response['search_id']
+        total_results = response['total_results']
+
+        if results is None:
+            return SearchResult(query, [], last_index, total_results, search_id)
+
+        records = self.__parse_results(results, query.include_data)
+        qr = SearchResult(query, records, last_index, total_results, search_id)
+        return qr
+
+    def __search(self, query):
+        """
+        Private Method to send search request to E3DB and return a json response.
+        
+        Parameters
+        ----------
+        query: Search
+            Search object represents the query made to the E3DB.
+        
+        Returns
+        -------
+        dict
+            response from the server as json (dict).
+        """
+        url = self.__get_url('v2', 'search')
+        response = requests.post(url=url, json=query.to_json(), auth=self.e3db_auth)
+        self.__response_check(response)
+        json = response.json() # server does not return error message, just status codes
+        return json
+
+    def __parse_results(self, results, include_data):
+        """
+        Private Method to parse the response of a search v1 or v2 request.
+
+        A Query/Search Response comes in as json and is abstracted into the
+        Meta and Record class. If data is included in the response (result_data != None),
+        then the data is decrypted with the provided access_key.
+
+        Parameters
+        ----------
+        results: dict[string]object (json)
+            json response from PDS
+
+        include_data: bool
+            Flag to indicate if data is included in the response, taken from the Query.
+        
+        Returns
+        ----------
+        [Records]
+            List of Record Objects
+        """
+        records = []
+        for result in results:
+            result_meta = result['meta']
+            meta = Meta(result_meta)
+            result_data = result['record_data']
+            record = Record(meta=meta, data=result_data)
+            if include_data:
+                # need to decrypt all the results before returning.
+                access_key = result['access_key']
+                if access_key:
+                    ak = self.__decrypt_eak(access_key)
+                    record = self.__decrypt_record_with_key(record, ak)
+                else:
+                    record = self.__decrypt_record(record)
+            records.append(record)
+        return records
 
     def share(self, record_type, reader_id):
         """

@@ -1,4 +1,5 @@
 from datetime import datetime
+from .file_meta import FileMeta
 import uuid
 
 
@@ -49,6 +50,15 @@ class Meta():
             self.__last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%d %H:%M:%S.%f') if 'last_modified' in json else None
 
         self.__version = json['version'] if 'version' in json else None
+
+        self.__file_meta = None
+        if json.get('file_meta') is not None:
+            self.__file_meta = FileMeta(checksum=json['file_meta'].get('checksum'), 
+                                compression=json['file_meta'].get('compression'),
+                                size=int(json['file_meta'].get('size', "-1")), 
+                                file_url=json['file_meta'].get('file_url'),
+                                file_name=json['file_meta'].get('file_name')
+                                )
 
     # writer_id getters and setters
     @property
@@ -252,6 +262,19 @@ class Meta():
         """
         return self.__version
 
+    # file_meta getter
+    @property
+    def file_meta(self):
+        """
+        Get file_meta of record if it exists
+        
+        Returns
+        -------
+        File
+            File meta information returned when a record was uploaded with Large Files or None
+        """
+        return self.__file_meta
+
     def to_json(self):
         """
         Serialize the configuration as JSON-style object.
@@ -274,7 +297,8 @@ class Meta():
             'plain': self.__plain,
             'created': str(self.__created),
             'last_modified': str(self.__last_modified),
-            'version': str(self.__version)
+            'version': str(self.__version),
+            'file_meta': None if self.__file_meta is None else self.__file_meta.to_json()
         }
 
         # remove None (JSON null) objects

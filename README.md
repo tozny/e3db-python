@@ -135,7 +135,16 @@ For example, to list all records of type `contact` and print a simple report con
 # setup
 import e3db
 from e3db import Search
-client = e3db.Client(' config ')
+
+config = e3db.Config(
+    os.environ["client_id"],
+    os.environ["api_key_id"],
+    os.environ["api_secret"],
+    os.environ["public_key"],
+    os.environ["private_key"]
+)
+
+client = e3db.Client(config())
 
 query = Search(include_data=True).Match(record_type=['contact'])
 results = client.Search(query)
@@ -145,23 +154,23 @@ for record in results:
     print "{0} --- {1}".format(full_name, record.data['phone'])
 ```
 
-The full list of parameters you can search for are under `e3db.types.Params`. Searching gives you access to chaining more powerful queries such as conditional operators, exlusions, and date filters.     
+The full list of parameters you can search for are under `e3db.types.Params`. Searching gives you access to chaining more powerful queries such as conditional operators, exclusions, and date filters.     
 
-To search for records of type `season` that have values `summer` and `sunny`, create the following query:
+To search for records of type `season` that have unencrypted metadata values of `summer` and `sunny`, create the following query:
 ```python 
 # e3db setup...
 query = Search().Match(condition="AND", record_type=["season"], values=["summer", "sunny"])
 results = client.Search(query)
 ```
 
-To search for records of type `soda` excluding values of `pepsi`, create the following query:
+To search for records of type `jam` with values of `apricot`, but excluding values of `strawberry`, create the following query:
 ```python 
 # e3db setup...
-query = Search().Match(record_type=["soda"]).Exclude(values=["pepsi"])
+query = Search().Match(record_type=["jam"], values=["apricot"]).Exclude(values=["strawberry"])
 results = client.Search(query)
 ```
 
-To filter queries provide a datetime range and a valid timezone, to override the `UTC` default. To get all the records of last 24 hours written by a user use:
+To filter queries provide a datetime range and a valid timezone, to override the `UTC` default. Run the following search to get all records written by a specific user during the last 24 hours:
 ```python
 # e3db setup...
 from datetime import datetime, timedelta
@@ -177,14 +186,14 @@ results = client.Search(query)
 
 #### Defaults
 
-The Search has a number of default parameters when searching, more detail can be found within the inline documentation.
+The Search method has a number of default parameters when searching, more detail can be found within the inline documentation.
 
 Under Search there are these defaults:
 ```python
-# Starts search from the first page of results
+# Optional value that starts search from the first page of results, only required for paginated queries.
 after_index = 0
 
-# Amount of records to returned, limiting if more are available. Defaults to 50 to a maximum of 1000.
+# Amount of records to be returned, limiting if more are available. Defaults to 50, and the maximum value allowed is 1000.
 count = 50
 
 # Include only records written by the client (False), or search other writer ids (True)
@@ -205,7 +214,7 @@ strategy = "EXACT" # options "EXACT"|"FUZZY"|"WILDCARD"|"REGEXP"
 
 Under Search Range there is this default:
 ```python
-# Search records based on when they were created of last modified
+# Search records based on when they were created or last modified
 key = "CREATED" # options: "CREATED"|"MODIFIED"
 
 # Default time provided is set to UTC.
@@ -227,14 +236,41 @@ To mirror some of the above queries with these matching strategies we get:
 # e3db setup...
 
 # fuzzy
+# generates an edit distance and matches fields that are 1-2 edits away from the provided query.
+# summer is 1 edit s-> b away from bummer
 fuzz_query = Search().Match(strategy="FUZZY", record_type=["season"], values=["bummer"])
 
 # wildcard
+# supported wildcards are * and ?
+# * matches any character sequence, including the empty sequence.
+# ? matches any single character
 wild_query = Search().Match(strategy="WILDCARD", record_type=["season"], values=["su??er"])
 
 # regexp
+# some of the support operators are ^ $ . ? + * | { } [ ] ( ) \
+# refer to the table below for more information
 regxp_query = Search().Match(strategy="REGEXP", record_type=["season"], values=["sum.*"])
 ```
+
+#### Regexp operators
+```
+^ anchors expression to the start of the matched strings
+$ anchors expression to the end of the matched strings
+. represents any single character
+? used to match the preceding shortest pattern zero or one times
++ used to match the preceding shortest pattern one or more times
+* used to match the preceding shortest pattern zero or more times
+| acts as an OR operator, matches this OR that
+{ } used to specify the min and max nubmer of times the preceding pattern can repeat. 
+    - {2} repeat twice, {2,} repeat at least twice, {2,3} repeat 2-3 times
+( ) used to group sub patterns
+    - (ab)+ repeat the value within parenthesis 'ab' one or more times
+[ ] used to specify a range of characters
+    - [abc] matches 'a' or 'b' or 'c'
+    - within the square brackets a ^ negates the class: [^abc] excludes characters 'a', 'b', and 'c'
+\ is used to escape any of the previous special characters
+```
+For more information look [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-regexp-query.html)
 
 ### Paging
 
@@ -243,8 +279,8 @@ The construction of the Search object offers a number of options for paging thro
 To page through a large number of results, you can loop like this:
 ```python
 # e3db setup...
-# limit number of results returned to 10 at a time
-query = Search(count=10).Match(record_type=["many_results"])
+# limit number of results returned to 1000 at a time
+query = Search(count=1000).Match(record_type=["many_results"])
 results = client.Search(query)
 
 # Number of results in e3db
@@ -259,7 +295,7 @@ while results.after_index:
 
 The `after_index` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query. 
 
-See [the integration tests](https://github.com/tozny/e3db-python/blob/master/e3db/tests/test_search_integration.py) for more examples.
+See [the integration tests](e3db/tests/test_search_integration.py) for more examples.
 
 ### Large Files
 

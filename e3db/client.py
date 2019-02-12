@@ -911,15 +911,15 @@ class Client:
         """
         response = self.__search(query)
         results = response['results']
-        last_index = response['last_index']
+        next_token = response['last_index']
         search_id = response['search_id']
         total_results = response['total_results']
 
         if results is None:
-            return SearchResult(query, [], last_index, total_results, search_id)
+            return SearchResult(query, [], next_token, total_results, search_id)
 
         records = self.__parse_results(results, query.include_data)
-        qr = SearchResult(query, records, last_index, total_results, search_id)
+        qr = SearchResult(query, records, next_token, total_results, search_id)
         return qr
 
     def __search(self, query):

@@ -3,7 +3,7 @@ from .record import Record
 
 class SearchResult(object):
 
-    def __init__(self, search, records, after_index=0, total_results=0, search_id=""):
+    def __init__(self, search, records, next_token=0, total_results=0, search_id=""):
         """
         Initialize the SearchResult class.
 
@@ -15,12 +15,12 @@ class SearchResult(object):
         ----------
         search : e3db.Search
             Search object stored for later operations, such as looking up the
-            after index returned from the server during search execution.
+            next token returned from the server during search execution.
 
         records : list<e3db.Record>
             A list of records to store for later iteration and operations.
 
-        after_index : int
+        next_token : int
             Index that indicates where to start the next query for batch jobs.
 
         search_id : str
@@ -41,7 +41,7 @@ class SearchResult(object):
             raise TypeError("Records should be a list of e3db.Record types. Given type: {0}".format(type(records)))
         else:
             self.__records = records
-        self.__after_index = after_index
+        self.__next_token = next_token
         self.__search_id = search_id
         self.__total_results = total_results
 
@@ -59,9 +59,9 @@ class SearchResult(object):
         return self.__search_id
     
     @property
-    def after_index(self):
+    def next_token(self):
         """
-        Get after_index of Search.
+        Get next_token of Search.
 
         Parameters
         ----------
@@ -70,9 +70,9 @@ class SearchResult(object):
         Returns
         -------
         int
-            Get after_index of the Search.
+            Get next_token of the Search.
         """
-        return self.__after_index
+        return self.__next_token
 
     @property
     def records(self):
@@ -90,7 +90,7 @@ class SearchResult(object):
     def total_results(self):
         """
         Get total results of a search, may be more than contained in SearchResult records.
-        To get the full amount of results, call search again with the after index of this SearchResult
+        To get the full amount of results, call search again with the next token of this SearchResult
     
         Returns
         -------

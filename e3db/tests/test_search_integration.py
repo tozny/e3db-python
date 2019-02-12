@@ -253,7 +253,7 @@ class TestSearchIntegration():
         assert(results.after_index == 2)
         assert(results.total_results == 5)
 
-        q = e3db.types.Search(after_index=results.after_index, count=10).match(condition="AND", record_type=[self.pag_record_type], writer=[self.client2.client_id])
+        q = e3db.types.Search(last_index=results.after_index, count=10).match(condition="AND", record_type=[self.pag_record_type], writer=[self.client2.client_id])
         results = self.client2.search(q)
         assert(len(results) == 3)
         assert(results.after_index == 0)

@@ -3,7 +3,7 @@ from .search_range import Range
 from .search_params import Params
 
 class Search(object):
-    def __init__(self, after_index=0, count=50, include_all_writers=False, include_data=False, match=None, exclude=None, range=None): 
+    def __init__(self, last_index=0, count=50, include_all_writers=False, include_data=False, match=None, exclude=None, range=None): 
         """
         Initialize the search v2 class.
 
@@ -12,15 +12,15 @@ class Search(object):
 
         Parameters
         ----------
-        after_index : int, optional
+        last_index : int, optional
             Where to start the query at. E3DB will return an index which indicates
-            where the  query left off. Another query can be executed including this after_index, and 
+            where the  query left off. Another query can be executed including this last_index, and 
             it will pick off where the other left off (the default is 0, which starts from the beginning).
 
         count : int, optional
             How many records to include minimum of 1 and up to a maximum of 1000 (the default is 50).
             Based on the current version, the resulting query might return less than this count, even if
-            there are more records available. The query will need to be re-run with the corresponding after_index.
+            there are more records available. The query will need to be re-run with the corresponding last_index.
 
         include_all_writers : bool, optional
             Whether or not to include all writers, or just the writer_id of the 
@@ -46,7 +46,7 @@ class Search(object):
         -------
         Search
         """
-        self.__after_index = int(after_index)
+        self.__next_token = int(last_index)
         self.__limit = int(count)
         self.__include_data = bool(include_data)
         self.__include_all_writers = bool(include_all_writers)
@@ -174,7 +174,7 @@ class Search(object):
         int
             Get after_index of the Search.
         """
-        return self.__after_index
+        return self.__next_token
 
     @after_index.setter
     def after_index(self, value):

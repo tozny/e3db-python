@@ -159,13 +159,32 @@ The full list of parameters you can search for are under `e3db.types.Params`. Se
 To search for records of type `season` that have unencrypted metadata values of `summer` and `sunny`, create the following query:
 ```python 
 # e3db setup...
+
+data = {"temp": "secret_temp"}
+plain = {"name":"summer", "weather":"sunny"}
+client.write("season", data, plain)
+
+# {key:values} in the plain JSON field are mapped to keys=[] and values=[] behind the scenes in E3DB.
 query = Search().Match(condition="AND", record_type=["season"], values=["summer", "sunny"])
 results = client.Search(query)
+
+# searching on keys instead...
+query = Search().Match(condition="AND", record_type=["season"], keys=["name", "weather"])
 ```
 
 To search for records of type `jam` with values of `apricot`, but excluding values of `strawberry`, create the following query:
 ```python 
 # e3db setup...
+
+apricot_data = {"recipe": "encrypted_secret_formula"}
+apricot_plain = {"flavor":"apricot"}
+
+client.write("jam", apricot_data, apricot_plain)
+
+strawberry_data = {"recipe": "encrypted_secret_formula"}
+strawberry_plain = {"flavor":"strawberry"}
+client.write("jam", strawberry_data, strawberry_plain )
+
 query = Search().Match(record_type=["jam"], values=["apricot"]).Exclude(values=["strawberry"])
 results = client.Search(query)
 ```

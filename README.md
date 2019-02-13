@@ -322,11 +322,16 @@ When searching or querying for large files, even if you set `include_data=True`,
 
 ```python
 # e3db setup...
-# record_id retrieved from search...
 
-record_id = "some_record_id"
-dest = "./large_file.txt"
-FileMeta = client.read_file(record_id, dest)
+# record_id retrieved from search...
+query = Search().Match(record_type=["large_file"])
+results = client.Search(query)
+
+# download large files
+for i, r in enumerate(results):
+    record_id = r.meta.record_id
+    dest = "./large_file_{0}.txt".format(i)
+    FileMeta = client.read_file(record_id, dest)
 ```
 
 ## Querying records

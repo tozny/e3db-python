@@ -194,12 +194,12 @@ To filter queries provide a datetime range and a valid timezone, to override the
 # e3db setup...
 from datetime import datetime, timedelta
 
-# time T between after <-T-> before
-before = datetime.now()
-after =  before - timedelta(days=1)
+# time T between start <-T-> end
+end = datetime.now()
+start =  end - timedelta(days=1)
 writer_id = "some_writer_uuid"
 
-query = Search().Match(writer=[writer_id]).Range(zone_offset="-08:00", after=after, before=before)
+query = Search().Match(writer=[writer_id]).Range(zone_offset="-08:00", start=start, end=end)
 results = client.Search(query)
 ```
 
@@ -210,7 +210,7 @@ The Search method has a number of default parameters when searching, more detail
 Under Search there are these defaults:
 ```python
 # Optional value that starts search from the first page of results, only required for paginated queries.
-after_index = 0
+next_token = 0
 
 # Amount of records to be returned, limiting if more are available. Defaults to 50, and the maximum value allowed is 1000.
 count = 50
@@ -293,7 +293,7 @@ For more information look [here](https://www.elastic.co/guide/en/elasticsearch/r
 
 ### Paging
 
-The construction of the Search object offers a number of options for paging through your results: namely `after_index` and `count`.
+The construction of the Search object offers a number of options for paging through your results: namely `next_token` and `count`.
 
 To page through a large number of results, you can loop like this:
 ```python
@@ -306,13 +306,13 @@ results = client.Search(query)
 total_results = results.total_results
 # Return records from this point onwards in next query
 
-while results.after_index:
-    query.after_index = results.after_index
+while results.next_token:
+    query.next_token = results.next_token
     results = client.Search(query)
     do_something(results) # process results
 ```
 
-The `after_index` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query. 
+The `next_token` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query. 
 
 See [the integration tests](e3db/tests/test_search_integration.py) for more examples.
 

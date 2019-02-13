@@ -182,12 +182,12 @@ class TestSearchIntegration():
         assert(len(results)==1)
 
     def test_v2_invalid_range(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(before=datetime.now(), after=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now(), end=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_valid_range(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", before=datetime.now()+timedelta(hours=1), after=datetime.now()+timedelta(hours=-1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
         results = self.client1.search(q)
         assert(len(results)==2)
 

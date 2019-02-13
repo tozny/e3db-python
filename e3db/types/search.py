@@ -345,7 +345,7 @@ class Search(object):
         self.append_exclude(e)
         return self
     
-    def range(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, before=None, after=None):
+    def range(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, start=None, end=None):
         """
         Public Method to filter search based on time the E3DB record was created or last modified.
 
@@ -369,13 +369,13 @@ class Search(object):
             Accepts the format "[+|-]dd:dd"
             (the default is None(UTC), which will attempt to use zone if provided)
         
-        before : time, optional
+        start : time, optional
+            Search only for records that come after this time 
+            (the default is None, which leaves no lower bound on the query)
+        
+        end : time, optional
             Search only for records that come before this time 
             (the default is None, which leaves no upper bound on the query)
-        
-        after : time, optional
-            Search only for record that come after this time 
-            (the default is None, which leaves no lower bound on the query)
         
         Returns
         -------
@@ -383,6 +383,6 @@ class Search(object):
             Returns reference to self, allows for chaining of match, exclude, range methods.
         """
 
-        r = Range(key=key, format=format, zone=zone, before=before, after=after)
+        r = Range(key=key, format=format, zone=zone, start=start, end=end)
         self.__range = r
         return self

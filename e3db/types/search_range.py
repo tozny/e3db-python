@@ -1,6 +1,6 @@
 
 class Range():
-    def __init__(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, before=None, after=None):
+    def __init__(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, start=None, end=None):
         """
         Initialize the Range class for use in Search. This class can be manually created if needed, but 
         the Search.range() method handles the Search workflow.
@@ -25,7 +25,7 @@ class Range():
             Accepts the format "[+|-]dd:dd"
             (the default is None(UTC), which will attempt to use zone if provided)
         
-        before : time, optional
+        end : time, optional
             Search only for records that come before this time 
             (the default is None, which leaves no upper bound on the query)
         
@@ -40,8 +40,8 @@ class Range():
         self.__key = key
         self.__format = format
         self.__zone = zone
-        self.__before = before 
-        self.__after = after
+        self.__start = start 
+        self.__end = end
         self.zone_dict = {
             "PST":"-08:00",
             "MST":"-07:00",
@@ -55,54 +55,54 @@ class Range():
             self.__zone_offset = self.zone_dict.get(zone, "+00:00")
     
     @property
-    def before(self):
+    def end(self):
         """
-        Get the before time with time zone information appended as a string
+        Get the end time with time zone information appended as a string
 
         Returns
         -------
         str
-            Before time properly formatted to send to E3DB.
+            end time properly formatted to send to E3DB.
         """
-        return self.__before.isoformat("T") + self.__zone_offset
+        return self.__end.isoformat("T") + self.__zone_offset
     
-    @before.setter
-    def before(self, t):
+    @end.setter
+    def end(self, t):
         """
-        Set the before time of Search Range
+        Set the end time of Search Range
 
         Parameters
         ----------
-        t : time
-            time to search before
+        t : datetime
+            upper time bound for Search Range
 
         Returns
         -------
         None
         """
-        self.__before = t
+        self.__end = t
 
     @property
-    def after(self):
+    def start(self):
         """
-        Get the after time with time zone information appended as a string
+        Get the start time with time zone information appended as a string
 
         Returns
         -------
         str
-            Before time properly formatted to send to E3DB.
+            start time properly formatted to send to E3DB.
         """
-        return self.__after.isoformat("T") + self.__zone_offset
+        return self.__start.isoformat("T") + self.__zone_offset
 
-    @after.setter
-    def after(self, t):
+    @start.setter
+    def start(self, t):
         """
-        Set the after time of Search Range
+        Set the start time of Search Range
 
         Parameters
         ----------
-        t : time
-            time to search after
+        t : datetime
+            lower time bound for Search Range
 
         Returns
         -------
@@ -209,6 +209,6 @@ class Range():
         """
         return {
             "range_key": str(self.__key),
-            "before": self.before,
-            "after": self.after
+            "before": self.__end,
+            "after": self.__start,
         }

@@ -97,7 +97,7 @@ class TestSearchIntegration():
         wait = 1 
         record_id = self.encrypted_file_meta.record_id
         while not found and retries >= 0:
-            q = e3db.types.Search().match(record=[record_id])
+            q = e3db.types.Search().match(records=[record_id])
             results = self.client2.search(q)
             if len(results) != 1:
                 time.sleep(wait)
@@ -152,7 +152,7 @@ class TestSearchIntegration():
 
     def test_v2_search_write_and_query(self):
         record1_id = self.record1.meta.record_id
-        q = e3db.types.Search(include_data=True).match(record=[record1_id])
+        q = e3db.types.Search(include_data=True).match(records=[record1_id])
         results = self.client1.search(q)
         for r in results:
             print("record:")
@@ -168,11 +168,11 @@ class TestSearchIntegration():
         assert(len(results) == 0)
 
     def test_v2_other_client_finds_nothing(self):
-        q = e3db.types.Search(count=1000).match(record_type=[self.record_type]).exclude(record=[self.record1.meta.record_id])
+        q = e3db.types.Search(count=1000).match(record_types=[self.record_type]).exclude(records=[self.record1.meta.record_id])
         results = self.client1.search(q)
         assert(len(results)==1)
 
-        q = e3db.types.Search().match(record_type=[self.record_type])
+        q = e3db.types.Search().match(record_types=[self.record_type])
         results = self.client2.search(q)
         assert(len(results)==0)
 
@@ -182,38 +182,38 @@ class TestSearchIntegration():
         assert(len(results)==1)
 
     def test_v2_invalid_range(self):
-        q = e3db.types.Search(include_data=True).match(record_type=[self.record_type]).range(before=datetime.now(), after=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(before=datetime.now(), after=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_valid_range(self):
-        q = e3db.types.Search(include_data=True).match(record_type=[self.record_type]).range(zone="PST", before=datetime.now()+timedelta(hours=1), after=datetime.now()+timedelta(hours=-1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", before=datetime.now()+timedelta(hours=1), after=datetime.now()+timedelta(hours=-1))
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_multi_match(self):
         record1_id = self.record1.meta.record_id
         record2_id = self.record2.meta.record_id
-        q = e3db.types.Search().match(record=[record1_id]).match(record=[record2_id])
+        q = e3db.types.Search().match(records=[record1_id]).match(records=[record2_id])
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_multi_and_match(self):
         record1_id = self.record1.meta.record_id
         record2_id = self.record2.meta.record_id
-        q = e3db.types.Search().match(condition="AND", record=[record1_id, record2_id])
+        q = e3db.types.Search().match(condition="AND", records=[record1_id, record2_id])
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_receive_data(self):
         record1_id = self.record1.meta.record_id
-        q = e3db.types.Search(include_data=True).match(record=[record1_id])
+        q = e3db.types.Search(include_data=True).match(records=[record1_id])
         results = self.client1.search(q)
         assert(len(results)==1)
         for r in results:
             assert(r.data is not None)
 
-        q = e3db.types.Search(include_data=False).match(record=[record1_id])
+        q = e3db.types.Search(include_data=False).match(records=[record1_id])
         results = self.client1.search(q)
         assert(len(results)==1)
         for r in results:
@@ -239,7 +239,7 @@ class TestSearchIntegration():
             assert(r.meta.file_meta._checksum == self.encrypted_file_meta.checksum)
 
     def test_v2_file_meta(self):
-        q = e3db.types.Search().match(record=[self.encrypted_file_meta.record_id])
+        q = e3db.types.Search().match(records=[self.encrypted_file_meta.record_id])
         results = self.client2.search(q)
         assert(len(results) == 1)
         for r in results:
@@ -247,14 +247,14 @@ class TestSearchIntegration():
             assert(r.meta.file_meta._checksum == self.encrypted_file_meta.checksum)
 
     def test_v2_pagination(self):
-        q = e3db.types.Search(count=2).match(condition="AND", record_type=[self.pag_record_type], writer=[self.client2.client_id])
+        q = e3db.types.Search(count=2).match(condition="AND", record_types=[self.pag_record_type], writers=[self.client2.client_id])
         results = self.client2.search(q)
         assert(len(results) == 2)
-        assert(results.after_index == 2)
+        assert(results.next_token == 2)
         assert(results.total_results == 5)
 
-        q = e3db.types.Search(last_index=results.after_index, count=10).match(condition="AND", record_type=[self.pag_record_type], writer=[self.client2.client_id])
+        q = e3db.types.Search(next_token=results.next_token, count=10).match(condition="AND", record_types=[self.pag_record_type], writers=[self.client2.client_id])
         results = self.client2.search(q)
         assert(len(results) == 3)
-        assert(results.after_index == 0)
+        assert(results.next_token == 0)
         assert(results.total_results == 5)

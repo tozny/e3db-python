@@ -3,7 +3,7 @@ from .search_range import Range
 from .search_params import Params
 
 class Search(object):
-    def __init__(self, last_index=0, count=50, include_all_writers=False, include_data=False, match=None, exclude=None, range=None): 
+    def __init__(self, next_token=0, count=50, include_all_writers=False, include_data=False, match=None, exclude=None, range=None): 
         """
         Initialize the search v2 class.
 
@@ -12,15 +12,15 @@ class Search(object):
 
         Parameters
         ----------
-        last_index : int, optional
-            Where to start the query at. E3DB will return an index which indicates
-            where the  query left off. Another query can be executed including this last_index, and 
+        next_token : int, optional
+            Where to start the query at. E3DB will return an token which indicates
+            where the  query left off. Another query can be executed including this next_token, and 
             it will pick off where the other left off (the default is 0, which starts from the beginning).
 
         count : int, optional
             How many records to include minimum of 1 and up to a maximum of 1000 (the default is 50).
             Based on the current version, the resulting query might return less than this count, even if
-            there are more records available. The query will need to be re-run with the corresponding last_index.
+            there are more records available. The query will need to be re-run with the corresponding next_token.
 
         include_all_writers : bool, optional
             Whether or not to include all writers, or just the writer_id of the 
@@ -46,7 +46,7 @@ class Search(object):
         -------
         Search
         """
-        self.__next_token = int(last_index)
+        self.__next_token = int(next_token)
         self.__limit = int(count)
         self.__include_data = bool(include_data)
         self.__include_all_writers = bool(include_all_writers)
@@ -159,11 +159,11 @@ class Search(object):
         """
         return self.__limit
 
-    # after_index getters
+    # next_token getters
     @property
-    def after_index(self):
+    def next_token(self):
         """
-        Get after_index of Search.
+        Get next_token of Search.
 
         Parameters
         ----------
@@ -172,19 +172,19 @@ class Search(object):
         Returns
         -------
         int
-            Get after_index of the Search.
+            Get next_token of the Search.
         """
         return self.__next_token
 
-    @after_index.setter
-    def after_index(self, value):
+    @next_token.setter
+    def next_token(self, value):
         """
-        Set after_index of SearchResult.
+        Set next_token of SearchResult.
 
         Parameters
         ----------
         value: int
-            Set after_index from server result
+            Set next_token from server result
 
         Returns
         -------
@@ -250,7 +250,7 @@ class Search(object):
             "range": self.__range.to_json() if self.__range is not None else {}
         }
 
-    def match(self, condition="OR", strategy="EXACT", writer=[], record=[], user=[], record_type=[], keys=[], values=[], plain=None):
+    def match(self, condition="OR", strategy="EXACT", writers=[], records=[], users=[], record_types=[], keys=[], values=[], plain=None):
         """
         Public method to construct Query Params on which to Match(select) when searching for E3DB records.
 
@@ -294,11 +294,11 @@ class Search(object):
             Returns reference to self, allows for chaining of match, exclude, range methods.
         """
 
-        m = Params(condition=condition, strategy=strategy, writer_ids=writer, record_ids=record, user_ids=user, content_types=record_type, keys=keys, values=values, plain=plain)
+        m = Params(condition=condition, strategy=strategy, writer_ids=writers, record_ids=records, user_ids=users, content_types=record_types, keys=keys, values=values, plain=plain)
         self.append_match(m)
         return self
 
-    def exclude(self, condition="OR", strategy="EXACT", writer=[], record=[], user=[], record_type=[], keys=[], values=[], plain=None):
+    def exclude(self, condition="OR", strategy="EXACT", writers=[], records=[], users=[], record_types=[], keys=[], values=[], plain=None):
         """
         Public method to construct Query Params on which to Exclude(select) when searching for E3DB records.
 
@@ -341,7 +341,7 @@ class Search(object):
         Search
             Returns reference to self, allows for chaining of match, exclude, range methods.
         """
-        e = Params(condition=condition, strategy=strategy, writer_ids=writer, record_ids=record, user_ids=user, content_types=record_type, keys=keys, values=values, plain=plain)
+        e = Params(condition=condition, strategy=strategy, writer_ids=writers, record_ids=records, user_ids=users, content_types=record_types, keys=keys, values=values, plain=plain)
         self.append_exclude(e)
         return self
     

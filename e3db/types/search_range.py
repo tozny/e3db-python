@@ -209,6 +209,6 @@ class Range():
         """
         return {
             "range_key": str(self.__key),
-            "before": self.__end,
-            "after": self.__start,
+            "before": self.end,
+            "after": self.start,
         }

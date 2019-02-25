@@ -1002,7 +1002,7 @@ class Client:
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         if ak is None:
             ak = Crypto.random_key()
-        self.__put_access_key(self.client_id, self.client_id, self.client_id, record_type, ak) # Give yourself the ak 
+            self.__put_access_key(self.client_id, self.client_id, self.client_id, record_type, ak) # Give yourself the ak 
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
         allow_read = {

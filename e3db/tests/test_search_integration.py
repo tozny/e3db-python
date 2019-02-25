@@ -186,6 +186,16 @@ class TestSearchIntegration():
         results = self.client1.search(q)
         assert(len(results)==0)
 
+    def test_v2_range_end_none(self):
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", start=datetime.now())
+        results = self.client1.search(q)
+        assert(len(results)==0)
+
+    def test_v2_range_start_none(self):
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", end=datetime.now())
+        results = self.client1.search(q)
+        assert(len(results)==2)
+
     def test_v2_valid_range(self):
         q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
         results = self.client1.search(q)

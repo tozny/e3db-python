@@ -244,7 +244,7 @@ class Client:
             ak
         """
 
-        ak_cache_key = (writer_id, user_id, record_type)
+        ak_cache_key = (str(writer_id), str(user_id), record_type)
         if ak_cache_key in self.ak_cache:
             return self.ak_cache[ak_cache_key]
 
@@ -286,7 +286,7 @@ class Client:
         None
         """
 
-        ak_cache_key = (writer_id, user_id, record_type)
+        ak_cache_key = (str(writer_id), str(user_id), record_type)
         self.ak_cache[ak_cache_key] = ak
 
         reader_key = self.__client_key(reader_id)
@@ -328,10 +328,6 @@ class Client:
         url = self.__get_url("v1", "storage", "access_keys", str(writer_id), str(user_id), str(reader_id), record_type)
         response = requests.delete(url=url, auth=self.e3db_auth)
         self.__response_check(response)
-
-        ak_cache_key = (writer_id, user_id, record_type)
-        if ak_cache_key in self.ak_cache:
-            del self.ak_cache[ak_cache_key]
 
     def __get_url(self, *args):
         """
@@ -1006,6 +1002,7 @@ class Client:
         ak = self.__get_access_key(self.client_id, self.client_id, self.client_id, record_type)
         if ak is None:
             ak = Crypto.random_key()
+        self.__put_access_key(self.client_id, self.client_id, self.client_id, record_type, ak) # Give yourself the ak 
         self.__put_access_key(self.client_id, self.client_id, reader_id, record_type, ak)
 
         allow_read = {

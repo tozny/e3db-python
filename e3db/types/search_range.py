@@ -64,6 +64,8 @@ class Range():
         str
             end time properly formatted to send to E3DB.
         """
+        if self.__end is None:
+            return None
         return self.__end.isoformat("T") + self.__zone_offset
     
     @end.setter
@@ -92,6 +94,8 @@ class Range():
         str
             start time properly formatted to send to E3DB.
         """
+        if self.__start is None:
+            return None
         return self.__start.isoformat("T") + self.__zone_offset
 
     @start.setter
@@ -207,8 +211,14 @@ class Range():
         dict
             JSON-style document containing the Range elements.
         """
-        return {
+        to_serialize = {
             "range_key": str(self.__key),
             "before": self.end,
             "after": self.start,
         }
+        # remove None (JSON null) objects
+        for key, value in list(to_serialize.items()):
+            if value is None or value == 'None':
+                del to_serialize[key]
+
+        return to_serialize

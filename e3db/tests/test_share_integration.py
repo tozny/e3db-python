@@ -102,3 +102,8 @@ class TestShareIntegration():
 
         self.client1.read(record.meta.record_id)
     
+    def test_share_twice(self):
+        record_type = "sharing3"
+        self.client1.share(record_type, self.client2.client_id)
+        self.client1.revoke(record_type, self.client2.client_id)
+        self.client1.share(record_type, self.client2.client_id)

@@ -134,7 +134,7 @@ For example, to list all records of type `contact` and print a simple report con
 ```python
 # setup
 import e3db
-from e3db import Search
+from e3db.types import Search
 
 config = e3db.Config(
     os.environ["client_id"],
@@ -146,8 +146,8 @@ config = e3db.Config(
 
 client = e3db.Client(config())
 
-query = Search(include_data=True).Match(record_type=['contact'])
-results = client.Search(query)
+query = Search(include_data=True).match(record_types=['contact'])
+results = client.search(query)
 
 for record in results:
     full_name = "{0} --- {1}".format(record.data['first_name'], record.data['last_name'])
@@ -165,11 +165,11 @@ plain = {"name":"summer", "weather":"sunny"}
 client.write("season", data, plain)
 
 # {key:values} in the plain JSON field are mapped to keys=[] and values=[] behind the scenes in E3DB.
-query = Search().Match(condition="AND", record_type=["season"], values=["summer", "sunny"])
-results = client.Search(query)
+query = Search().match(condition="AND", record_types=["season"], values=["summer", "sunny"])
+results = client.search(query)
 
 # searching on keys instead...
-query = Search().Match(condition="AND", record_type=["season"], keys=["name", "weather"])
+query = Search().match(condition="AND", record_types=["season"], keys=["name", "weather"])
 ```
 
 To search for records of type `jam` with values of `apricot`, but excluding values of `strawberry`, create the following query:
@@ -185,8 +185,8 @@ strawberry_data = {"recipe": "encrypted_secret_formula"}
 strawberry_plain = {"flavor":"strawberry"}
 client.write("jam", strawberry_data, strawberry_plain )
 
-query = Search().Match(record_type=["jam"], values=["apricot"]).Exclude(values=["strawberry"])
-results = client.Search(query)
+query = Search().match(record_types=["jam"], values=["apricot"]).exclude(values=["strawberry"])
+results = client.search(query)
 ```
 
 To filter queries provide a datetime range and a valid timezone, to override the `UTC` default. Run the following search to get all records written by a specific user during the last 24 hours:
@@ -199,8 +199,8 @@ end = datetime.now()
 start =  end - timedelta(days=1)
 writer_id = "some_writer_uuid"
 
-query = Search().Match(writer=[writer_id]).Range(zone_offset="-08:00", start=start, end=end)
-results = client.Search(query)
+query = Search().match(writers=[writer_id]).range(zone_offset="-08:00", start=start, end=end)
+results = client.search(query)
 ```
 
 #### Defaults
@@ -257,18 +257,18 @@ To mirror some of the above queries with these matching strategies we get:
 # fuzzy
 # generates an edit distance and matches fields that are 1-2 edits away from the provided query.
 # summer is 1 edit s-> b away from bummer
-fuzz_query = Search().Match(strategy="FUZZY", record_type=["season"], values=["bummer"])
+fuzz_query = Search().match(strategy="FUZZY", record_types=["season"], values=["bummer"])
 
 # wildcard
 # supported wildcards are * and ?
 # * matches any character sequence, including the empty sequence.
 # ? matches any single character
-wild_query = Search().Match(strategy="WILDCARD", record_type=["season"], values=["su??er"])
+wild_query = Search().match(strategy="WILDCARD", record_types=["season"], values=["su??er"])
 
 # regexp
 # some of the support operators are ^ $ . ? + * | { } [ ] ( ) \
 # refer to the table below for more information
-regxp_query = Search().Match(strategy="REGEXP", record_type=["season"], values=["sum.*"])
+regxp_query = Search().match(strategy="REGEXP", record_types=["season"], values=["sum.*"])
 ```
 
 #### Regexp operators
@@ -299,8 +299,8 @@ To page through a large number of results, you can loop like this:
 ```python
 # e3db setup...
 # limit number of results returned to 1000 at a time
-query = Search(count=1000).Match(record_type=["many_results"])
-results = client.Search(query)
+query = Search(count=1000).match(record_types=["many_results"])
+results = client.search(query)
 
 # Number of results in e3db
 total_results = results.total_results
@@ -308,7 +308,7 @@ total_results = results.total_results
 
 while results.next_token:
     query.next_token = results.next_token
-    results = client.Search(query)
+    results = client.search(query)
     do_something(results) # process results
 ```
 
@@ -324,8 +324,8 @@ When searching or querying for large files, even if you set `include_data=True`,
 # e3db setup...
 
 # record_id retrieved from search...
-query = Search().Match(record_type=["large_file"])
-results = client.Search(query)
+query = Search().match(record_types=["large_file"])
+results = client.search(query)
 
 # download large files
 for i, r in enumerate(results):

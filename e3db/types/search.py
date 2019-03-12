@@ -84,6 +84,29 @@ class Search(object):
         self.__match = p
 
     @property
+    def range_filter(self):
+        """
+        Get range parameters.
+        
+        Returns
+        -------
+        Range
+            Range object with range information
+        """
+        return self.__range
+
+    @range_filter.setter
+    def range_filter(self, r):
+        """
+        Set range parameters.
+
+        Returns
+        -------
+        None
+        """
+        self.__range = r
+
+    @property
     def excludes(self):
         """
         Get list of Params on which to exclude.

@@ -61,6 +61,17 @@ class Range():
     @property
     def end(self):
         """
+        Get the end time as datetime object
+
+        Returns
+        -------
+        datetime
+            end time for query.
+        """
+        return self.__end
+    
+    def end_formatted(self):
+        """
         Get the end time with time zone information appended as a string
 
         Returns
@@ -71,7 +82,7 @@ class Range():
         if self.__end is None:
             return None
         return self.__end.isoformat("T") + self.__zone_offset
-    
+
     @end.setter
     def end(self, t):
         """
@@ -90,6 +101,17 @@ class Range():
 
     @property
     def start(self):
+        """
+        Get the start time as datetime object
+
+        Returns
+        -------
+        datetime
+            start time for query.
+        """
+        return self.__start
+
+    def start_formatted(self):
         """
         Get the start time with time zone information appended as a string
 
@@ -116,7 +138,7 @@ class Range():
         -------
         None
         """
-        self.__after = t
+        self.__start = t
 
     @property
     def zone(self):
@@ -217,8 +239,8 @@ class Range():
         """
         to_serialize = {
             "range_key": str(self.__key),
-            "before": self.end,
-            "after": self.start,
+            "before": self.end_formatted(),
+            "after": self.start_formatted(),
         }
         # remove None (JSON null) objects
         for key, value in list(to_serialize.items()):

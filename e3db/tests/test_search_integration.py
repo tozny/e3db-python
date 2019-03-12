@@ -187,19 +187,29 @@ class TestSearchIntegration():
         assert(len(results)==0)
 
     def test_v2_range_end_none(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", start=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PDT", start=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_range_start_none(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", end=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PDT", end=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_valid_range(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PST", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PDT", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
         results = self.client1.search(q)
         assert(len(results)==2)
+
+    def test_v2_valid_range_offset(self):
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone_offset="-07:00", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        results = self.client1.search(q)
+        assert(len(results)==2)
+
+    def test_v2_invalid_range_offset(self):
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone_offset=None, start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        results = self.client1.search(q)
+        assert(len(results)==0)
 
     def test_v2_multi_match(self):
         record1_id = self.record1.meta.record_id

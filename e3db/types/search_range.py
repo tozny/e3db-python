@@ -44,9 +44,13 @@ class Range():
         self.__end = end
         self.zone_dict = {
             "PST":"-08:00",
+            "PDT":"-07:00",
             "MST":"-07:00",
+            "MDT":"-06:00",
             "CST":"-06:00",
+            "CDT":"-05:00",
             "EST":"-05:00",
+            "EDT":"-04:00",
             "UTC":"+00:00"
         } 
         if zone_offset is not None:

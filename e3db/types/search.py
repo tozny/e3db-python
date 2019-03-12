@@ -383,6 +383,6 @@ class Search(object):
             Returns reference to self, allows for chaining of match, exclude, range methods.
         """
 
-        r = Range(key=key, format=format, zone=zone, start=start, end=end)
+        r = Range(key=key, format=format, zone=zone, zone_offset=zone_offset, start=start, end=end)
         self.__range = r
         return self

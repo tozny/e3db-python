@@ -127,9 +127,70 @@ print 'Wrote record {0}'.format(record.meta.record_id)
 
 ## Searching records
 
-E3DB supports complex search options for finding records based on the fields stored in record metadata. 
+E3DB supports complex search options for finding records based on the terms stored in record metadata. 
+These fields include the properties in the [Meta class](e3db/types/meta.py):
+```
+ - record_ids
+ - writer_ids
+ - user_ids
+ - record_types
+ - plain
+```
 
-For example, to list all records of type `contact` and print a simple report containing names and phone numbers:
+The values in the plain meta dictionary are expanded into keys and values for two additional query fields:
+
+```
+ - keys
+ - values
+
+WHERE
+
+ plain = {"key1":"value1", "key2":"value2"}
+ keys = ["key1", "key2"]
+ values = ["value1", "value2"]
+```
+
+To further narrow your search, these a range can be provided for these fields:
+```
+ - created
+ - last_modified
+```
+
+#### Search Construction Logic
+
+
+#### Search Results
+
+The results of your search come back in a [SearchResult object](e3db/types/search_result.py):
+
+```python
+# This object contains your records,
+# and additional information about your search.
+
+query = Search(include_data=True)
+results = client.search(query)
+
+# Records found in your search
+results.records 
+
+# Number of records returned from search
+len(results) 
+
+# Number of records present in E3db that match your search.
+# If there are more records to be retrieved this number will be greater than len(results), 
+# and next_token will not be 0
+results.total_results 
+
+# Token for paginating through queries, 
+# this token will be 0 if there are no more records to be returned.
+results.next_token 
+
+results.search_id # id for bulk searching of many records, currently not available
+```
+
+#### Examples
+
+To list all records of type `contact` and print a simple report containing names and phone numbers:
 
 ```python
 # setup
@@ -371,6 +432,8 @@ $ anchors expression to the end of the matched strings
 ```
 For more information look [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-regexp-query.html)
 
+See [the integration tests](e3db/tests/test_search_integration.py) or [examples folder](examples/) for more examples.
+
 ### Paging
 
 The construction of the Search object offers a number of options for paging through your results: namely `next_token` and `count`.
@@ -394,7 +457,17 @@ while results.next_token:
 
 The `next_token` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query. 
 
-See [the integration tests](e3db/tests/test_search_integration.py) for more examples.
+See [pagination example](examples/simple_paginate_results.py)
+
+### Search Restraints
+
+You aren't limited to a specific number of searches, however for single a single search the maximum amount of records returned in a single result page is 1000, and exceeding this limit will by reject your request. Pagination as shown above can be used to grab more than 1000 records.
+
+```
+query = Search(count=1000)
+```
+
+Additionally, if your search is too broad you will only be able to retrieve 10,000 results. You can choose to narrow your query by constricting time ranges manually or programatically as shown here with this [sample script](examples/narrow_range_of_large_search.py).
 
 ### Large Files
 

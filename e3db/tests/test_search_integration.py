@@ -3,11 +3,10 @@ import os
 import binascii
 import pytest
 import time
-import e3db.types
+import e3db.types as types
 import hashlib
 import requests
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 from ..auth import E3DBAuth
 from ..types import ClientDetails
 
@@ -187,29 +186,72 @@ class TestSearchIntegration():
         assert(len(results)==0)
 
     def test_v2_range_end_none(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PDT", start=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_range_start_none(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PDT", end=datetime.now())
-        results = self.client1.search(q)
-        assert(len(results)==2)
-
-    def test_v2_valid_range(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone="PDT", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(end=datetime.now())
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_valid_range_offset(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone_offset="-07:00", start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_invalid_range_offset(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone_offset=None, start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone_offset=0, start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
         results = self.client1.search(q)
         assert(len(results)==0)
+
+    def test_v2_range_timezone_conversion_use_local_timezone(self):
+        timezone_naive_now = datetime.now() 
+        r = types.Range(start=timezone_naive_now, end=timezone_naive_now)
+        assert(r.start == timezone_naive_now.astimezone())
+        assert(r.end == timezone_naive_now.astimezone())
+
+    def test_v2_range_timezone_conversion_enforce_start_UTC(self):
+        timezone_naive_now = datetime.now() 
+        r = types.Range(start=timezone_naive_now, zone_offset=0)
+        assert(r.start != timezone_naive_now.astimezone(timezone(timedelta(0))))
+        assert(r.start_formatted()[-6:] == "+00:00")
+        assert(r.end is None)
+
+    def test_v2_range_timezone_conversion_enforce_end_UTC(self):
+        timezone_naive_now = datetime.now() 
+        r = types.Range(end=timezone_naive_now, zone_offset=0)
+        assert(r.end!= timezone_naive_now.astimezone(timezone(timedelta(0))))
+        assert(r.end_formatted()[-6:] == "+00:00")
+        assert(r.start is None)
+
+    def test_v2_range_timezone_conversion_custom_timezone(self):
+        timezone_now = datetime.now().astimezone()
+        custom_time = datetime.now().astimezone(timezone(timedelta(0)))
+        r = types.Range(start=custom_time)
+        assert(custom_time.isoformat("T") == r.start_formatted())
+        assert(r.start_formatted() != timezone_now.isoformat("T"))
+
+    def test_v2_range_timezone_change_offset(self):
+        naive_now = datetime.now()
+        timezone_now = naive_now.astimezone()
+
+        utc_custom_time = datetime.now().astimezone(timezone(timedelta(0)))
+        r = types.Range(start=timezone_now)
+        assert(r.start.tzinfo == timezone_now.tzinfo) # inherit timezone
+
+        r.zone_offset = 0
+        assert(r.start.tzinfo != utc_custom_time.tzinfo) # changing offset does nothing, continue to inherit timezone
+        assert(r.start_formatted() != utc_custom_time.isoformat("T"))
+
+        r.start = naive_now # adding a naive time with no timezone means we set to zone_offset
+        assert(r.start.tzinfo == utc_custom_time.tzinfo)
+        assert(r.start_formatted() != utc_custom_time.isoformat("T"))
+
+        r.zone_offset = None
+        r.start = naive_now # zone_offset is none so we come back with local timezone
+        assert(r.start.tzinfo == timezone_now.tzinfo)
+        assert(r.start_formatted() == timezone_now.isoformat("T"))
 
     def test_v2_multi_match(self):
         record1_id = self.record1.meta.record_id

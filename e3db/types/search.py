@@ -368,7 +368,7 @@ class Search(object):
         self.append_exclude(e)
         return self
     
-    def range(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, start=None, end=None):
+    def range(self, key="CREATED", start=None, end=None, zone_offset=None):
         """
         Public Method to filter search based on time the E3DB record was created or last modified.
 
@@ -377,21 +377,6 @@ class Search(object):
         key : str, optional
             "CREATED|MODIFIED" (the default is "CREATED")
 
-        format : str, optional
-            Currently is not a supported parameter (the default is "Unix")
-
-        zone : str, optional
-            Since python time objects are naive or zone-agnostic, this will attempt to append
-            the proper timezone information to the time object for the query.
-            Currently supported are:
-                "PST":"-08:00", "MST":"-07:00", "CST":"-06:00", "EST":"-05:00", "UTC":"+00:00"
-                (the default is "UTC" if the proper timezone cannot be found, which represents +00:00)
-
-        zone_offset : str, optional
-            If provided this offset will be used over zone.
-            Accepts the format "[+|-]dd:dd"
-            (the default is None(UTC), which will attempt to use zone if provided)
-        
         start : time, optional
             Search only for records that come after this time 
             (the default is None, which leaves no lower bound on the query)
@@ -400,12 +385,27 @@ class Search(object):
             Search only for records that come before this time 
             (the default is None, which leaves no upper bound on the query)
         
+        zone_offset : int, optional
+            Accepts int for provided timezone in hour difference from UTC.
+            For PST(UTC-8) provide zone_offset = -8
+            For PDT(UTC-7) provide zone_offset = -7
+
+            If datetime object has timezone information, that will be given precedence.
+            If zone_offset is provided, datetime objects, start and end append this timezone
+                ex:
+                    - input: zone_offset = -7, datetime.isoformat("T") = 2019-01-01T00:00:00Z
+                    - output: 2019-01-01T00:00:00Z-07:00
+                This option should only be used if you know you want to search 
+                for a specific time within a different timezone.
+            If zone_offset == None and tzinfo does not exist, your local timezone will be used.
+            Assumes that start and end have the same timezone information
+
         Returns
         -------
         Search
             Returns reference to self, allows for chaining of match, exclude, range methods.
         """
 
-        r = Range(key=key, format=format, zone=zone, zone_offset=zone_offset, start=start, end=end)
+        r = Range(key=key, start=start, end=end, zone_offset=zone_offset)
         self.__range = r
         return self

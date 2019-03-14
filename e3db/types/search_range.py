@@ -1,6 +1,7 @@
+from datetime import timezone, timedelta
 
 class Range():
-    def __init__(self, key="CREATED", format="Unix", zone="UTC", zone_offset=None, start=None, end=None):
+    def __init__(self, key="CREATED", start=None, end=None, zone_offset=None):
         """
         Initialize the Range class for use in Search. This class can be manually created if needed, but 
         the Search.range() method handles the Search workflow.
@@ -10,54 +11,75 @@ class Range():
         key : str, optional
             "CREATED|MODIFIED" (the default is "CREATED")
 
-        format : str, optional
-            Currently is not a supported parameter (the default is "Unix")
-
-        zone : str, optional
-            Since python time objects are naive or zone-agnostic, this will attempt to append
-            the proper timezone information to the time object for the query.
-            Currently supported are:
-                "PST":"-08:00", "MST":"-07:00", "CST":"-06:00", "EST":"-05:00", "UTC":"+00:00"
-                (the default is "UTC" if the proper timezone cannot be found, which represents +00:00)
-
-        zone_offset : str, optional
-            If provided this offset will be used over zone.
-            Accepts the format "[+|-]dd:dd"
-            (the default is None(UTC), which will attempt to use zone if provided)
+        start: time, optional
+            Search only for record that come after this time 
+            (the default is None, which leaves no lower bound on the query)
         
         end : time, optional
             Search only for records that come before this time 
             (the default is None, which leaves no upper bound on the query)
-        
-        after : time, optional
-            Search only for record that come after this time 
-            (the default is None, which leaves no lower bound on the query)
+
+        zone_offset : int, optional
+            Accepts int for provided timezone in hour difference from UTC.
+            For PST(UTC-8) provide zone_offset = -8
+            For PDT(UTC-7) provide zone_offset = -7
+
+            If datetime object has timezone information, that will be given precedence.
+            If zone_offset is provided, datetime objects, start and end append this timezone
+                ex:
+                    - input: zone_offset = -7, datetime.isoformat("T") = 2019-01-01T00:00:00Z
+                    - output: 2019-01-01T00:00:00Z-07:00
+                This option should only be used if you know you want to search 
+                for a specific time within a different timezone.
+            If zone_offset == None and tzinfo does not exist, your local timezone will be used.
+            Assumes that start and end have the same timezone information
         
         Returns
         ----------
         None
         """
         self.__key = key
-        self.__format = format
-        self.__zone = zone
         self.__start = start 
         self.__end = end
-        self.zone_dict = {
-            "PST":"-08:00",
-            "PDT":"-07:00",
-            "MST":"-07:00",
-            "MDT":"-06:00",
-            "CST":"-06:00",
-            "CDT":"-05:00",
-            "EST":"-05:00",
-            "EDT":"-04:00",
-            "UTC":"+00:00"
-        } 
+        self.__zone_offset = zone_offset
+
+        if start is not None:
+            self.__start = Range._set_timezone(start, zone_offset)
+        if end is not None:
+            self.__end = Range._set_timezone(end, zone_offset)
+
+    @staticmethod
+    def _set_timezone(t, zone_offset=None):
+        """
+        If datetime object has timezone information, that will be given precedence.
+        If zone_offset is provided, datetime objects, start and end append this timezone
+            ex:
+                - input: zone_offset = -7, datetime.isoformat("T") = 2019-01-01T00:00:00Z
+                - output: 2019-01-01T00:00:00Z-07:00
+            This option should only be used if you know you want to search 
+            for a specific time within a different timezone.
+        If zone_offset == None and tzinfo does not exist, your local timezone will be used.
+        Assumes that start and end have the same timezone information
+
+        Parameters
+        ----------
+        t : datetime
+            datetime that needs timezone information
+
+        zone_offset: int, optional
+            number denoting the offset in hours from utc
+
+        Returns
+        -------
+        datetime
+            datetime with proper timezone information
+        """
+        if t.tzinfo is not None:
+            return t
         if zone_offset is not None:
-            self.__zone_offset = zone_offset
-        else:
-            self.__zone_offset = self.zone_dict.get(zone, "+00:00")
-    
+            return t.replace(tzinfo=timezone(timedelta(hours=zone_offset)))
+        return t.astimezone()
+
     @property
     def end(self):
         """
@@ -81,7 +103,7 @@ class Range():
         """
         if self.__end is None:
             return None
-        return self.__end.isoformat("T") + self.__zone_offset
+        return self.__end.isoformat("T")
 
     @end.setter
     def end(self, t):
@@ -97,6 +119,8 @@ class Range():
         -------
         None
         """
+        if t is not None:
+            t = Range._set_timezone(t, self.__zone_offset) 
         self.__end = t
 
     @property
@@ -122,7 +146,7 @@ class Range():
         """
         if self.__start is None:
             return None
-        return self.__start.isoformat("T") + self.__zone_offset
+        return self.__start.isoformat("T")
 
     @start.setter
     def start(self, t):
@@ -138,38 +162,9 @@ class Range():
         -------
         None
         """
+        if t is not None:
+            t = Range._set_timezone(t, self.__zone_offset) 
         self.__start = t
-
-    @property
-    def zone(self):
-        """
-        Get zone of Search Range
-        
-        Returns
-        -------
-        str
-            zone value
-        """
-        return self.__zone
-
-    @zone.setter
-    def zone(self, z):
-        """
-        Set zone for Search Range. Will default to "UTC" if proper timezone cannot be found, 
-        and will override the value set in zone_offset.
-
-        Parameters
-        ----------
-        z : str
-            Proper zone parameter:
-            "PST":"-08:00", "MST":"-07:00", "CST":"-06:00", "EST":"-05:00", "UTC":"+00:00"
-
-        Returns
-        -------
-        None
-        """
-        self.zone = z
-        self.__zone_offset = self.zone_dict.get(z, "+00:00")
 
     @property
     def zone_offset(self):
@@ -178,7 +173,7 @@ class Range():
         
         Returns
         -------
-        str
+        int
             zone_offset value
         """
         return self.__zone_offset
@@ -187,18 +182,24 @@ class Range():
     def zone_offset(self, z):
         """
         Set zone_offset for Search Range
+        Updates start and end time to match the newly set zone IFF they are timezone naive.
 
         Parameters
         ----------
-        z : str
-            Proper zone_offset parameter:
-            Accepts the format "[+|-]dd:dd"
+        z : int
+            Accepts int for provided timezone in hour difference from UTC.
+            For PST(UTC-8) provide zone_offset = -8
+            For PDT(UTC-7) provide zone_offset = -7
 
         Returns
         -------
         None
         """
-        self.zone_offset = z
+        self.__zone_offset = z
+        if self.__start is not None:
+            self.__start = Range._set_timezone(self.__start, z)
+        if self.__end is not None:
+            self.__end = Range._set_timezone(self.__end, z)
     
     @property
     def key(self):

@@ -377,15 +377,21 @@ class Search(object):
         key : str, optional
             "CREATED|MODIFIED" (the default is "CREATED")
 
-        start : time, optional
-            Search only for records that come after this time 
+        start: datetime, int, optional
+            Search only for record that come after this time 
+            Accepts datetime object with and without timezone information, see zone_offset for more details.
+            OR
+            Accepts int denoting unix epoch time and this will always be in UTC timezone.
             (the default is None, which leaves no lower bound on the query)
         
-        end : time, optional
+        end : datetime, int, optional
             Search only for records that come before this time 
+            Accepts datetime object with and without timezone information, see zone_offset for more details.
+            OR
+            Accepts int denoting unix epoch time and this will always be in UTC timezone.
             (the default is None, which leaves no upper bound on the query)
-        
-        zone_offset : int, optional
+
+        zone_offset : int, str, optional
             Accepts int for provided timezone in hour difference from UTC.
             For PST(UTC-8) provide zone_offset = -8
             For PDT(UTC-7) provide zone_offset = -7

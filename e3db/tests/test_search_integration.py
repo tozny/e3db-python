@@ -186,72 +186,124 @@ class TestSearchIntegration():
         assert(len(results)==0)
 
     def test_v2_range_end_none(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now().astimezone())
         results = self.client1.search(q)
         assert(len(results)==0)
 
     def test_v2_range_start_none(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(end=datetime.now())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(end=datetime.now().astimezone())
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_valid_range_offset(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now().astimezone()+timedelta(hours=-1), end=datetime.now().astimezone()+timedelta(hours=1))
         results = self.client1.search(q)
         assert(len(results)==2)
 
     def test_v2_invalid_range_offset(self):
-        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(zone_offset=0, start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]).range(start=datetime.now()+timedelta(hours=-1), end=datetime.now()+timedelta(hours=1))
         results = self.client1.search(q)
         assert(len(results)==0)
 
-    def test_v2_range_timezone_conversion_use_local_timezone(self):
-        timezone_naive_now = datetime.now() 
-        r = types.Range(start=timezone_naive_now, end=timezone_naive_now)
-        assert(r.start == timezone_naive_now.astimezone())
-        assert(r.end == timezone_naive_now.astimezone())
+    def test_v2_valid_range_unix_search(self):
+        unix_now = int(time.time())
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]) \
+            .range(start=unix_now-1000, end=unix_now+1000)
+        results = self.client1.search(q)
+        assert(len(results)==2)
 
-    def test_v2_range_timezone_conversion_enforce_start_UTC(self):
-        timezone_naive_now = datetime.now() 
-        r = types.Range(start=timezone_naive_now, zone_offset=0)
-        assert(r.start != timezone_naive_now.astimezone(timezone(timedelta(0))))
+    def test_v2_valid_range_zoneoffset_search(self):
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]) \
+            .range(start=datetime.now()+timedelta(hours=-2), end=datetime.now()+timedelta(hours=2), zone_offset="-07:00")
+        results = self.client1.search(q)
+        assert(len(results)==2)
+
+        q = e3db.types.Search(include_data=True).match(record_types=[self.record_type]) \
+            .range(start=datetime.now()+timedelta(hours=-2), end=datetime.now()+timedelta(hours=2), zone_offset=-7)
+        results = self.client1.search(q)
+        assert(len(results)==2)
+
+    def test_v2_range_timezone_conversion_use_local_timezone(self):
+        local_datetime = datetime.now().astimezone()
+        r = types.Range(start=local_datetime, end=local_datetime)
+        assert(r.start == local_datetime)
+        assert(r.end == local_datetime)
+
+    def test_v2_range_timezone_conversion_default_start_UTC(self):
+        naive_now  = datetime.now() 
+        r = types.Range(start=naive_now)
+        assert(r.start != naive_now.astimezone(timezone(timedelta(0))))
         assert(r.start_formatted()[-6:] == "+00:00")
         assert(r.end is None)
 
-    def test_v2_range_timezone_conversion_enforce_end_UTC(self):
-        timezone_naive_now = datetime.now() 
-        r = types.Range(end=timezone_naive_now, zone_offset=0)
-        assert(r.end!= timezone_naive_now.astimezone(timezone(timedelta(0))))
+    def test_v2_range_timezone_conversion_default_end_UTC(self):
+        naive_now = datetime.now() 
+        r = types.Range(end=naive_now )
+        assert(r.end != naive_now.astimezone(timezone(timedelta(0))))
         assert(r.end_formatted()[-6:] == "+00:00")
         assert(r.start is None)
 
-    def test_v2_range_timezone_conversion_custom_timezone(self):
-        timezone_now = datetime.now().astimezone()
-        custom_time = datetime.now().astimezone(timezone(timedelta(0)))
-        r = types.Range(start=custom_time)
-        assert(custom_time.isoformat("T") == r.start_formatted())
+    def test_v2_range_timezone_conversion_obey_custom_zoneoffset(self):
+        timezone_now = datetime.now()
+        custom_time = datetime.now().replace(tzinfo = timezone(timedelta(hours=-5)))
+        r = types.Range(start=custom_time, end=custom_time)
+        assert(r.start_formatted() == custom_time.isoformat("T"))
         assert(r.start_formatted() != timezone_now.isoformat("T"))
 
-    def test_v2_range_timezone_change_offset(self):
+        assert(r.end_formatted() == custom_time.isoformat("T"))
+        assert(r.end_formatted() != timezone_now.isoformat("T"))
+
+    def test_v2_range_timezone_conversion_custom_zoneoffset_int(self):
         naive_now = datetime.now()
-        timezone_now = naive_now.astimezone()
+        r = types.Range(start=naive_now, end=naive_now, zone_offset=-7)
+        assert(r.start_formatted()[-6:] == "-07:00")
+        assert(r.end_formatted()[-6:] == "-07:00")
 
-        utc_custom_time = datetime.now().astimezone(timezone(timedelta(0)))
-        r = types.Range(start=timezone_now)
-        assert(r.start.tzinfo == timezone_now.tzinfo) # inherit timezone
+    def test_v2_range_timezone_conversion_custom_zoneoffset_str(self):
+        naive_now = datetime.now()
+        r = types.Range(start=naive_now, end=naive_now, zone_offset="+09:23")
+        assert(r.start_formatted()[-6:] == "+09:23")
+        assert(r.end_formatted()[-6:] == "+09:23")
 
-        r.zone_offset = 0
-        assert(r.start.tzinfo != utc_custom_time.tzinfo) # changing offset does nothing, continue to inherit timezone
-        assert(r.start_formatted() != utc_custom_time.isoformat("T"))
+    def test_v2_range_timezone_discard_zoneoffset(self):
+        now = datetime.now().astimezone()
+        r = types.Range(start=now, end=now, zone_offset=0)
+        assert(r.start_formatted()[-6:] == "-07:00")
+        assert(r.end_formatted()[-6:] == "-07:00")
 
-        r.start = naive_now # adding a naive time with no timezone means we set to zone_offset
-        assert(r.start.tzinfo == utc_custom_time.tzinfo)
-        assert(r.start_formatted() != utc_custom_time.isoformat("T"))
+    def test_v2_range_unix_epoch_timezone(self):
+        seconds_now = int(time.time())
+        r = types.Range(start=seconds_now, end=seconds_now, zone_offset=10)
+        assert(r.start_formatted()[-6:] == "+00:00")
+        assert(r.end_formatted()[-6:] == "+00:00")
 
-        r.zone_offset = None
-        r.start = naive_now # zone_offset is none so we come back with local timezone
-        assert(r.start.tzinfo == timezone_now.tzinfo)
-        assert(r.start_formatted() == timezone_now.isoformat("T"))
+    def test_v2_range_start_and_end_independent(self):
+        naive_now = datetime.now()
+        now = naive_now.astimezone()
+        r = types.Range(start=naive_now, end=now, zone_offset=1)
+        assert(r.start_formatted()[-6:] == "+01:00")
+        assert(r.end_formatted()[-6:] == "-07:00")
+
+    def test_v2_range_offset_too_large(self):
+        naive_now = datetime.now()
+        with pytest.raises(ValueError):
+            types.Range(start=naive_now, zone_offset=30)
+        with pytest.raises(ValueError):
+            types.Range(start=naive_now, zone_offset="+24:80")
+
+    def test_v2_range_offset_not_proper_str_or_int(self):
+        with pytest.raises(TypeError):
+            types.Range(zone_offset=10.2)
+        with pytest.raises(TypeError):
+            types.Range(zone_offset="+.00:11")
+            types.Range(zone_offset="+00:a1")
+            types.Range(zone_offset="+00:11lol")
+    
+    def test_v2_start_end_not_int_or_datetime(self):
+        with pytest.raises(TypeError):
+            types.Range(start=1.234, zone_offset=-1)
+        with pytest.raises(TypeError):
+            types.Range(end="2019-01-01T00:00:00Z+00:00", zone_offset=-1)
 
     def test_v2_multi_match(self):
         record1_id = self.record1.meta.record_id

@@ -1,4 +1,5 @@
-from datetime import timezone, timedelta
+from datetime import timezone, timedelta, datetime
+import re
 
 class Range():
     def __init__(self, key="CREATED", start=None, end=None, zone_offset=None):
@@ -6,20 +7,30 @@ class Range():
         Initialize the Range class for use in Search. This class can be manually created if needed, but 
         the Search.range() method handles the Search workflow.
 
+        Once created, modifying zone_offset will not propogate the timezone changes over to start and end.
+        If you wish to change the zone for a particular time within the same Range object, provide a datetime object
+        with zone information (tzinfo).
+
         Parameters
         ----------
         key : str, optional
             "CREATED|MODIFIED" (the default is "CREATED")
 
-        start: time, optional
+        start: datetime, int, optional
             Search only for record that come after this time 
+            Accepts datetime object with and without timezone information, see zone_offset for more details.
+            OR
+            Accepts int denoting unix epoch time and this will always be in UTC timezone.
             (the default is None, which leaves no lower bound on the query)
         
-        end : time, optional
+        end : datetime, int, optional
             Search only for records that come before this time 
+            Accepts datetime object with and without timezone information, see zone_offset for more details.
+            OR
+            Accepts int denoting unix epoch time and this will always be in UTC timezone.
             (the default is None, which leaves no upper bound on the query)
 
-        zone_offset : int, optional
+        zone_offset : int, str, optional
             Accepts int for provided timezone in hour difference from UTC.
             For PST(UTC-8) provide zone_offset = -8
             For PDT(UTC-7) provide zone_offset = -7
@@ -39,32 +50,17 @@ class Range():
         None
         """
         self.__key = key
-        self.__start = start 
-        self.__end = end
-        self.__zone_offset = zone_offset
-
-        if start is not None:
-            self.__start = Range._set_timezone(start, zone_offset)
-        if end is not None:
-            self.__end = Range._set_timezone(end, zone_offset)
+        self.zone_offset = zone_offset
+        self.start = start
+        self.end = end
 
     @staticmethod
-    def _set_timezone(t, zone_offset=None):
+    def _set_timezone(t, zone_offset_minutes=None):
         """
-        If datetime object has timezone information, that will be given precedence.
-        If zone_offset is provided, datetime objects, start and end append this timezone
-            ex:
-                - input: zone_offset = -7, datetime.isoformat("T") = 2019-01-01T00:00:00Z
-                - output: 2019-01-01T00:00:00Z-07:00
-            This option should only be used if you know you want to search 
-            for a specific time within a different timezone.
-        If zone_offset == None and tzinfo does not exist, your local timezone will be used.
-        Assumes that start and end have the same timezone information
-
         Parameters
         ----------
         t : datetime
-            datetime that needs timezone information
+            datetime that may need timezone information
 
         zone_offset: int, optional
             number denoting the offset in hours from utc
@@ -76,9 +72,9 @@ class Range():
         """
         if t.tzinfo is not None:
             return t
-        if zone_offset is not None:
-            return t.replace(tzinfo=timezone(timedelta(hours=zone_offset)))
-        return t.astimezone()
+        if zone_offset_minutes is not None:
+            return t.replace(tzinfo=timezone(timedelta(minutes=zone_offset_minutes)))
+        return t.replace(tzinfo=timezone(timedelta(hours=0)))
 
     @property
     def end(self):
@@ -119,9 +115,17 @@ class Range():
         -------
         None
         """
-        if t is not None:
-            t = Range._set_timezone(t, self.__zone_offset) 
         self.__end = t
+        if t is not None:
+            if isinstance(t, int):
+                utc_no_timezone = datetime.utcfromtimestamp(t)
+                utc = utc_no_timezone.replace(tzinfo=timezone(timedelta(minutes=0)))
+                self.__end = utc
+            elif isinstance(t, datetime):
+                self.__end = t
+                self.__end = Range._set_timezone(t, self.__zone_offset_minutes)
+            else:
+                raise TypeError('end time only accepts types int or datetime')
 
     @property
     def start(self):
@@ -162,9 +166,17 @@ class Range():
         -------
         None
         """
-        if t is not None:
-            t = Range._set_timezone(t, self.__zone_offset) 
         self.__start = t
+        if t is not None:
+            if isinstance(t, int):
+                utc_no_timezone = datetime.utcfromtimestamp(t)
+                utc = utc_no_timezone.replace(tzinfo=timezone(timedelta(minutes=0)))
+                self.__start = utc
+            elif isinstance(t, datetime):
+                self.__start = t
+                self.__start = Range._set_timezone(t, self.__zone_offset_minutes)
+            else:
+                raise TypeError('start time only accepts types int or datetime')
 
     @property
     def zone_offset(self):
@@ -190,16 +202,30 @@ class Range():
             Accepts int for provided timezone in hour difference from UTC.
             For PST(UTC-8) provide zone_offset = -8
             For PDT(UTC-7) provide zone_offset = -7
+            and so on for valid UTC offsets...
+            For a more comprehensive list see https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
 
         Returns
         -------
         None
         """
         self.__zone_offset = z
-        if self.__start is not None:
-            self.__start = Range._set_timezone(self.__start, z)
-        if self.__end is not None:
-            self.__end = Range._set_timezone(self.__end, z)
+        self.__zone_offset_minutes = None
+        if z is not None:
+            if isinstance(z, int):
+                self.__zone_offset_minutes = z * 60
+            elif isinstance(z, str):
+                confirm_format = r'^[+|-]\d{2}:\d{2}$'
+                if re.search(confirm_format, z) is None:
+                    raise TypeError('a zone offset string must be in the in the format "[+|-]HH:MM"')
+
+                time_information = [int(s) for s in re.findall(r'\d+', z)]
+                self.__zone_offset_minutes = (time_information[0] * 60) + time_information[1]
+
+                if z[0] == '-':
+                    self.__zone_offset_minutes = self.__zone_offset_minutes * -1 
+            else:
+                raise TypeError('zone offset only accepts an int, denoting hours offset, or a str in the format "+HH:MM" ')
     
     @property
     def key(self):

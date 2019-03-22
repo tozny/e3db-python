@@ -13,10 +13,10 @@ from ..types import ClientDetails
 api_url = os.environ["DEFAULT_API_URL"]
 token = os.environ["REGISTRATION_TOKEN"]
 ### Variables required for internal testing
-local_api_url = os.environ["LOCAL_API_URL"]
-local_boot_key = os.environ["LOCAL_BOOT_KEY"]
-local_boot_secret = os.environ["LOCAL_BOOT_SECRET"]
-local_register = os.environ["USE_LOCAL_REGISTER"]
+local_api_url = os.getenv("LOCAL_API_URL", None)
+local_boot_key = os.getenv("LOCAL_BOOT_KEY", None)
+local_boot_secret = os.getenv("LOCAL_BOOT_SECRET", None)
+local_register = os.getenv("USE_LOCAL_REGISTER", "false")
 
 class TestSearchIntegration():
     @classmethod

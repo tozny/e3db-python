@@ -60,6 +60,25 @@ export DEFAULT_API_URL=<https://api.url>
 pytest --cov-report term-missing --cov -v e3db
 ```
 
+## Run specific tests based on test name
+This will pattern match names of tests that contain the pattern provided.
+
+```bash
+pytest -k <pattern>
+```
+
+# Local testing
+To test against a locally running instance of E3db checkout the development testing branch `development/testing`, make sure it is up-to-date with master, and set these flags with valid values:
+
+```bash
+export LOCAL_API_URL=http://localhost
+export USE_LOCAL_REGISTER=true
+export LOCAL_BOOT_KEY=
+export LOCAL_BOOT_SECRET=
+```
+
+Locally, tests with client2 large files does not function, and so this flow should only be used to run specific tests of search not the entire suite.
+
 # Build Docker containers
 
 ```bash

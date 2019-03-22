@@ -189,18 +189,97 @@ query = Search().match(record_types=["jam"], values=["apricot"]).exclude(values=
 results = client.search(query)
 ```
 
-To filter queries provide a datetime range and a valid timezone, to override the `UTC` default. Run the following search to get all records written by a specific user during the last 24 hours:
+#### Time Filters
+
+The Search method has the capability to filter by the time records were created or last modified, restricting search results to a specific timeframe. The most basic example, of searching for all records written by a writer in the last 24 hours, is shown below:
+
 ```python
 # e3db setup...
+from e3db.types import Search
 from datetime import datetime, timedelta
+import time
 
-# time T between start <-T-> end
-end = datetime.now()
-start =  end - timedelta(days=1)
+# Using seconds from unix epoch
+now = int(time.time())
+start = now - (60 * 60 * 24) # 60 seconds, 60 minutes, 24 hours
+end = now
+
 writer_id = "some_writer_uuid"
-
-query = Search().match(writers=[writer_id]).range(zone_offset="-08:00", start=start, end=end)
+query = Search().match(writers=[writer_id])\
+    .range(start=start, end=end) # Filters here
 results = client.search(query)
+
+# using datetime
+now = datetime.now().astimezone()
+start = now - timedelta(days=1)
+end = now
+
+writer_id = "some_writer_uuid"
+query = Search().match(writers=[writer_id])\
+    .range(start=start, end=end) # Filters here
+results = client.search(query)
+```
+
+The Range can be open ended if you want to, for example, see all records written before yesterday:
+```python
+now = int(time.time())
+end = now - (60 * 60 * 24) # 60 seconds, 60 minutes, 24 hours == 1 day in seconds
+
+query = Search().match()\
+    .range(end=end)
+results = client.search(query)
+```
+
+Or see all records written in the last week...
+
+```python
+now = int(time.time())
+start = now - (60 * 60 * 24 * 7) # 60 seconds, 60 minutes, 24 hours, 7 days == 1 week in seconds
+
+query = Search().match()\
+    .range(start=start)
+results = client.search(query)
+```
+
+The Search Range accepts Unix Epoch, datetime objects, and datetime timezone-unaware objects, for start and end times. In Python all datetime objects are `timezone naive` or `timezone-unaware` unless you are using a libary like pytz. So the Search Range will assume that you want a timezone of UTC unless otherwise specified.
+
+To target a specific timezone you have a couple options:
+```python
+# 1. Go zone agnostic by providing a time based off of the Unix Epoch (recommended).
+unix_epoch = int(time.time()) # https://www.epochconverter.com/ for conversions
+query = Search().match().range(start=unix_epoch-3600, end=unix_epoch) # This will always return the most recent hour of results
+
+# 2. Create timezone aware objects to pass into Search Range.
+tz_unaware = datetime.now()
+tz_aware = tz_unaware.astimezone() # sets timezone to match local machine
+
+# 3. Specify an approriate zone_offset. The hour offset from UTC as int or "[+|-]HH:MM" as str
+tz_unaware = datetime.now()
+query = Search().match().range(start=tz_unaware, zone_offset=-7) # we append UTC-7 to the tz_unaware object
+query = Search().match().range(start=tz_unaware, zone_offset="-07:00") # we parse and append UTC-7 to the tz_unaware object
+
+# 4. Manually creating the proper time (not recommended).
+tz_unaware = datetime.now()
+# Assuming local tz of Pacific time, PT is UTC-7, and so we add 7 hours to get UTC.
+utc_tz_unaware = tz_unaware + timedelta(hours=7)
+query = Search().match().range(start=utc_tz_unaware)
+```
+
+Take care when using the python datetime library function `astimezone()`, because it does an implicit conversion behind the scenes using the computer's local timezone if no tzinfo is provided as a parameter. To avoid this you can replace the tzinfo instead:
+```python
+unaware_day = datetime(year=2019, month=3, day=18, hour=0, minute=0, second=0)
+print(unaware_day.isoformat("T"))
+# Prints: 2019-03-18T00:00:00
+
+# using astimezone()
+as_timezone = unaware_day.astimezone(timezone(timedelta(hours=0))) # attempting to convert to UTC
+print(as_timezone.isoformat("T"))
+# Prints: 2019-03-18T07:00:00+00:00, which is 7 hours ahead of the anticipated time.
+
+# replacing tzinfo
+aware_day = unaware_day.replace(tzinfo=timezone(timedelta(hours=0))) # attempting to convert to UTC
+print(aware_day.isoformat("T"))
+# Prints: 2019-03-18T00:00:00-07:00
 ```
 
 #### Defaults
@@ -236,10 +315,11 @@ Under Search Range there is this default:
 # Search records based on when they were created or last modified
 key = "CREATED" # options: "CREATED"|"MODIFIED"
 
-# Default time provided is set to UTC.
-zone = "UTC" # options are "PST":"-08:00", "MST":"-07:00", "CST":"-06:00", "EST":"-05:00", "UTC":"+00:00"
-
-# Zone offset is None by default, but if provided it will override the default zone parameter
+# Zone offset is None by default, but if provided it will override provided datetime objects if they are timezone unaware
+# Accepts 
+#   - int denoting hours offset from UTC 
+#   - str in the format "[+|-]HH:MM" also denoting the time offset from UTC
+#       - for a more comprehensive list see https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
 zone_offset = None
 ```
 

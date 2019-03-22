@@ -12,11 +12,6 @@ from ..types import ClientDetails
 
 api_url = os.environ["DEFAULT_API_URL"]
 token = os.environ["REGISTRATION_TOKEN"]
-### Variables required for internal testing
-local_api_url = os.environ["LOCAL_API_URL"]
-local_boot_key = os.environ["LOCAL_BOOT_KEY"]
-local_boot_secret = os.environ["LOCAL_BOOT_SECRET"]
-local_register = os.environ["USE_LOCAL_REGISTER"]
 
 class TestSearchIntegration():
     @classmethod
@@ -56,38 +51,6 @@ class TestSearchIntegration():
         self.client2 = e3db.Client(client2_config())
 
     @classmethod
-    def internal_register_client(self):
-        """
-        Method for local testing only
-        """
-        client1_public_key, client1_private_key = e3db.Client.generate_keypair()
-
-        url = "{0}/{1}/{2}/{3}".format(local_api_url, 'v1', 'storage', 'clients')
-        email = "email_{0}@tozny.com".format(time.time())
-        payload = {
-            'email': email,
-            'public_key': {
-                'curve25519': client1_public_key
-            },
-            'private_key': {
-                'curve25519': client1_private_key
-            }
-        }
-        bootstrapAuth = E3DBAuth(local_boot_key, local_boot_secret, local_api_url)
-        response = requests.post(url=url, json=payload, auth=bootstrapAuth)
-        client_info = response.json()
-
-        client1_config = e3db.Config(
-            client_info["client_id"],
-            client_info["api_key_id"],
-            client_info["api_secret"],
-            client1_public_key,
-            client1_private_key,
-            api_url=local_api_url 
-        )
-        self.client1 = e3db.Client(client1_config())
-
-    @classmethod
     def wait_for_index_record(self, retries):
         """
         Instead of sleeping, delay tests until the latest record is found.
@@ -115,10 +78,7 @@ class TestSearchIntegration():
 
     @classmethod
     def setup_class(self):
-        if local_register == "true":
-            self.internal_register_client()
-        else:
-            self.register_client()
+        self.register_client()
         self.record_type = "SDK_integration_tests"
         self.record1 = self.client1.write(self.record_type, 
                                             {'time': str(time.time())}, 

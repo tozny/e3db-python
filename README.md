@@ -70,7 +70,23 @@ public_key, private_key = e3db.Client.generate_keypair()
 
 client_info = e3db.Client.register(token, client_name, public_key, private_key=private_key, backup=True)
 
-# Now run operations with the client's details in client_info
+api_key_id = client_info.api_key_id
+api_secret = client_info.api_secret
+client_id = client_info.client_id
+
+config = e3db.Config(
+    client_id,
+    api_key_id,
+    api_secret,
+    public_key,
+    private_key
+)
+
+# Optionally, if you want to save this Configuration to disk, do the following:
+config.write()
+
+# Now run operations with the client's details by instantiating a e3db client.
+client = e3db.Client(config())
 ```
 
 The private key must be passed to the registration handler when backing up credentials as it is used to cryptographically sign the encrypted backup file stored on the server. The private key never leaves the system, and the stored credentials will only be accessible to the newly-registered client itself or the account with which it is registered.
@@ -98,6 +114,32 @@ config = e3db.Config(
 # Pass the configuration when building a new client instance.
 
 client = e3db.Client(config())
+```
+
+### Options for Loading Credentials
+There are a number of options for instantiating an `e3db.Config` object. Shown above is the manual creation of the config option, but there are some convenience methods that can make this process easier when dealing with multiple client profiles. 
+
+Loading from `.tozny` profiles, takes advantage of the same profiles from the [e3db cli tool](https://github.com/tozny/e3db).
+```python
+# usage
+config = e3db.Config.load(profile_name)
+# path searched
+path = `~/.tozny/<profile_name>/e3db.json`
+
+# default path for no profile_name
+config = e3db.Config.load()
+path = `~/.tozny/e3db.json`
+
+# opposing method to save credentials to disk
+config.write(profile_name)
+```
+
+Loading from an arbitrary file that matches the credentials format, but may have a custom path.
+```python
+credentials_path = "credentials.json" # your e3db credentialss
+if os.path.exists(credentials_path):
+    client = e3db.Client(json.load(open(credentials_path)))
+    ...
 ```
 
 # Usage
@@ -135,6 +177,8 @@ These fields include the properties in the [Meta class](e3db/types/meta.py):
  - user_ids
  - record_types
  - plain
+    - keys
+    - values
 ```
 
 The values in the plain meta dictionary are expanded into keys and values for two additional query fields:
@@ -155,9 +199,6 @@ To further narrow your search, these a range can be provided for these fields:
  - created
  - last_modified
 ```
-
-#### Search Construction Logic
-
 
 #### Search Results
 
@@ -383,9 +424,74 @@ key = "CREATED" # options: "CREATED"|"MODIFIED"
 #       - for a more comprehensive list see https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
 zone_offset = None
 ```
-
 Since python datetime objects are zone agnostic, provide the proper timezone offset from UTC
 in zone_offset to search properly.
+
+### Boolean Searching
+
+Within each match or exclude call the internal search terms can either be joined with AND or OR. 
+
+The data for these examples can be found under [boolean_search](./examples/boolean_search.py)
+
+```python
+# The Search Method has two conditional options for constructing your queries: AND|OR
+# OR is used by default and does not have to be explicitly stated unlike below.
+server_1_or_server_2 = Search().match(condition="OR", strategy="WILDCARD", plain={"*server_1*":"*", "*server_2*":"*"})
+results = client.search(server_1_or_server_2)
+print_results("getting records with server_1 or server_2 in meta with the plain field", results)
+
+server_1_and_server_2 = Search().match(condition="AND", strategy="WILDCARD", plain={"*server_1*":"*", "*server_2*":"*"})
+results = client.search(server_1_and_server_2)
+print_results("getting records with server_1 and server_2 in meta with the plain field (returns nothing)", results)
+```
+
+Search fields can be intermingled
+
+```python
+# AND is the logical operator and returns records that match all conditions within the match parameters.
+record_and_plain_search = Search().match(condition="AND", strategy="WILDCARD", record_types=["flora"], plain={"*test*":"*dand*"})
+results = client.search(record_and_plain_search)
+# The results we see here is all records of record_type `flora`, and key `*test*` and value `*dand*`
+# We get the single record with meta "{'flora_test_12345':'dandelion'}"
+print_results("get records by record type 'flora' AND plain containing '*test*':'*dand*' ", results)
+```
+
+Combining match and exclude together will remove the exclude fields 
+```python
+# This means records that equal match terms AND do not equal exclude terms are returned.
+match_and_exclude = Search().match(record_types=["flora"]).exclude(strategy="WILDCARD", keys=["*test*"])
+results = client.search(match_and_exclude)
+print_results("get records of record type 'flora' and do not have keys `*test*`", results)
+```
+
+Chaining the match methods with match, and exclude methods with excludes are joined by the logical OR. In general, the two basic tenants of chaining these methods are as follows:
+1. more match calls expands your search, adding fields that match to your results
+1. more exclude callscontstricts your search, removing fields that match from your results
+```python
+# Chaining match terms with match or exclude terms with exclude are joined by the logical OR
+chain_match = Search().match(condition="AND", record_types=["flora"]).match(condition="AND", record_types=["fauna"])
+# the above search is equivalent to below.
+equivalent_to_chain_match = Search().match(condition="OR", record_types=["flora", "fauna"])
+```
+
+Nested chaining allows you to specify varying strategies for different fields 
+```python
+differing_strategies = Search().match(strategy="EXACT", record_types=["flora"])\
+                                .match(strategy="WILDCARD", keys=["*12345"])\
+                                .exclude(strategy="REGEXP", keys=[".*test.*"])\
+                                .exclude(strategy="REGEXP", keys=[".*server_2.*"])
+# results = (MATCH `flora` OR MATCH `*12345`) AND (EXCLUDE `.*test.*` OR EXCLUDE `.*server_2.*`)
+results = client.search(differing_strategies)
+print_results("Different matching strategies: this search will return an EXACT match to record_type `flora` OR WILDCARD match to keys `*12345`, and a REGEXP exclude to keys `.*test.*` OR REGEXP exclude to keys `.*server_2.*`", results)
+```
+
+Keep in mind that this chaining means your previous search object gets altered each time. 
+```python
+original_search = Search().exclude(record_types=["fauna"])
+modified_search = original_search.exclude(record_types=["flora"])
+results = client.search(modified_search)
+print_results("modified_search and original_search will exclude both flora and fauna", results)
+```
 
 ### Advanced Matching Strategies
 
@@ -411,6 +517,8 @@ wild_query = Search().match(strategy="WILDCARD", record_types=["season"], values
 # refer to the table below for more information
 regxp_query = Search().match(strategy="REGEXP", record_types=["season"], values=["sum.*"])
 ```
+
+Go to [Pattern Search Examples](./examples/pattern_search.py) for more examples.
 
 #### Regexp operators
 ```
@@ -457,9 +565,9 @@ while results.next_token:
 
 The `next_token` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query. 
 
-See [pagination example](examples/simple_paginate_results.py)
+See [pagination example](examples/simple_paginate_results.py) for full code example.
 
-### Search Restraints
+#### Search Count Restraints
 
 You aren't limited to a specific number of searches, however for single a single search the maximum amount of records returned in a single result page is 1000, and exceeding this limit will by reject your request. Pagination as shown above can be used to grab more than 1000 records.
 

@@ -16,7 +16,7 @@ def main():
         client = e3db.Client(e3db.Config.load(client_name))
 
     # comment me if using a custom client or data is already written
-    # write_data(client)
+    write_data(client)
 
     # Get all written records
     # By default Search(), the empty search, will match anything
@@ -46,7 +46,7 @@ def main():
     # We get the single record with meta "{'flora_test_12345':'dandelion'}"
     print_results("get records by record type 'flora' AND plain containing '*test*':'*dand*' ", results)
 
-    # Chaining match terms with match or exclude terms with exclude are joined by the logical OR
+    # Chained match clauses with match or exclude clauses with exclude are joined by the logical OR
     chain_match = Search().match(condition="AND", record_types=["flora"]).match(condition="AND", record_types=["fauna"])
     # the above search is equivalent to below.
     equivalent_to_chain_match = Search().match(condition="OR", record_types=["flora", "fauna"])
@@ -60,12 +60,12 @@ def main():
     equivalent_to_chain_exclude = Search().exclude(condition="OR", record_types=["flora", "fauna"])
 
     # Chaining match and exclude together will remove the exclude fields. 
-    # This means records that equal match terms AND do not equal exclude terms are returned.
+    # This means records that equal the match clause AND do not equal the exclude clause are returned.
     match_and_exclude = Search().match(record_types=["flora"]).exclude(strategy="WILDCARD", keys=["*test*"])
     results = client.search(match_and_exclude)
     print_results("get records of record type 'flora' and do not have keys `*test*`", results)
 
-    # Nested chaining allows you to specify varying strategies for different fields 
+    # Nested chaining allows you to specify varying strategies for different terms within a clause. 
     differing_strategies = Search().match(strategy="EXACT", record_types=["flora"])\
                                     .match(strategy="WILDCARD", keys=["*12345"])\
                                     .exclude(strategy="REGEXP", keys=[".*test.*"])\

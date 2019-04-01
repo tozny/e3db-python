@@ -130,7 +130,7 @@ path = `~/.tozny/<profile_name>/e3db.json`
 config = e3db.Config.load()
 path = `~/.tozny/e3db.json`
 
-# opposing method to save credentials to disk
+# provided method to save credentials to disk
 config.write(profile_name)
 ```
 
@@ -146,7 +146,7 @@ if os.path.exists(credentials_path):
 
 ## Writing a record
 
-To write new records to the database, call the `e3db.Client.write` method with a string describing the type of data to be written, along with an dictionary containing the fields of the record. `e3db.Client.write` returns the newly created record.
+To write new records to the database, call the `e3db.Client.write` method with a string describing the type of data to be written, along with an dictionary containing the terms of the record. `e3db.Client.write` returns the newly created record.
 
 ```python
 import e3db
@@ -170,7 +170,7 @@ print 'Wrote record {0}'.format(record.meta.record_id)
 ## Searching records
 
 E3DB supports complex search options for finding records based on the terms stored in record metadata. 
-These fields include the properties in the [Meta class](e3db/types/meta.py):
+These terms include the properties in the [Meta class](e3db/types/meta.py):
 ```
  - record_ids
  - writer_ids
@@ -181,7 +181,7 @@ These fields include the properties in the [Meta class](e3db/types/meta.py):
     - values
 ```
 
-The values in the plain meta dictionary are expanded into keys and values for two additional query fields:
+The values in the plain meta dictionary are expanded into keys and values for two additional query terms:
 
 ```
  - keys
@@ -194,7 +194,7 @@ WHERE
  values = ["value1", "value2"]
 ```
 
-To further narrow your search, these a range can be provided for these fields:
+A time range can be provided to limit search results based off one of these terms:
 ```
  - created
  - last_modified
@@ -405,10 +405,10 @@ include_data = False
 
 Under Search Params there are these defaults:
 ```python
-# Conditional OR when searching upon all fields within this Param object
+# Conditional OR when searching upon all terms within this clause (Param object)
 condition = "OR" # options: "OR"|"AND"
 
-# Exactly matches the search fields provided
+# Exactly matches the search terms provided
 strategy = "EXACT" # options "EXACT"|"FUZZY"|"WILDCARD"|"REGEXP"
 ```
 
@@ -429,7 +429,7 @@ in zone_offset to search properly.
 
 ### Boolean Searching
 
-Within each match or exclude call the internal search terms can either be joined with AND or OR. 
+Within each match or exclude clause the internal search terms can either be joined with AND or OR. 
 
 The data for these examples can be found under [boolean_search](./examples/boolean_search.py)
 
@@ -445,7 +445,7 @@ results = client.search(server_1_and_server_2)
 print_results("getting records with server_1 and server_2 in meta with the plain field (returns nothing)", results)
 ```
 
-Search fields can be intermingled
+Search terms can be intermingled
 
 ```python
 # AND is the logical operator and returns records that match all conditions within the match parameters.
@@ -456,25 +456,24 @@ results = client.search(record_and_plain_search)
 print_results("get records by record type 'flora' AND plain containing '*test*':'*dand*' ", results)
 ```
 
-Combining match and exclude together will remove the exclude fields 
+Combining match and exclude together will remove the terms in the exclude clause
 ```python
-# This means records that equal match terms AND do not equal exclude terms are returned.
+# This means records that equal the match clause AND do not equal the exclude clause are returned.
 match_and_exclude = Search().match(record_types=["flora"]).exclude(strategy="WILDCARD", keys=["*test*"])
 results = client.search(match_and_exclude)
 print_results("get records of record type 'flora' and do not have keys `*test*`", results)
 ```
 
-Chaining the match methods with match, and exclude methods with excludes are joined by the logical OR. In general, the two basic tenants of chaining these methods are as follows:
-1. more match calls expands your search, adding fields that match to your results
-1. more exclude callscontstricts your search, removing fields that match from your results
+Chaining match clauses with matches, and exclude clauses with excludes are joined by the logical OR. In general, the two basic tenants of chaining these clauses are as follows:
+1. more match clauses expands your search, adding terms that match your results
+1. more exclude clauses constricts your search, removing terms that match your results
 ```python
-# Chaining match terms with match or exclude terms with exclude are joined by the logical OR
 chain_match = Search().match(condition="AND", record_types=["flora"]).match(condition="AND", record_types=["fauna"])
 # the above search is equivalent to below.
 equivalent_to_chain_match = Search().match(condition="OR", record_types=["flora", "fauna"])
 ```
 
-Nested chaining allows you to specify varying strategies for different fields 
+Nested chaining allows you to specify varying strategies for different terms 
 ```python
 differing_strategies = Search().match(strategy="EXACT", record_types=["flora"])\
                                 .match(strategy="WILDCARD", keys=["*12345"])\
@@ -495,14 +494,14 @@ print_results("modified_search and original_search will exclude both flora and f
 
 ### Advanced Matching Strategies
 
-Search offers advanced queries that provide more flexibility than the default matching strategy of `EXACT`. The four options are `EXACT`, `FUZZY`, `WILDCARD`, and `REGEXP`. Depending on the matching strategy and the fields provided, these searches may be slower. 
+Search offers advanced queries that provide more flexibility than the default matching strategy of `EXACT`. These are the four options ordered from fastest to slowest: `EXACT`, `FUZZY`, `WILDCARD`, and `REGEXP`.
 
 To mirror some of the above queries with these matching strategies we get:
 ```python
 # e3db setup...
 
 # fuzzy
-# generates an edit distance and matches fields that are 1-2 edits away from the provided query.
+# generates an edit distance and matches terms that are 1-2 edits away from the provided query.
 # summer is 1 edit s-> b away from bummer
 fuzz_query = Search().match(strategy="FUZZY", record_types=["season"], values=["bummer"])
 
@@ -569,7 +568,7 @@ See [pagination example](examples/simple_paginate_results.py) for full code exam
 
 #### Search Count Restraints
 
-You aren't limited to a specific number of searches, however for single a single search the maximum amount of records returned in a single result page is 1000, and exceeding this limit will by reject your request. Pagination as shown above can be used to grab more than 1000 records.
+You aren't limited to a specific number of searches, however for a single search the maximum page size is 1000. Requesting for a larger page size than 1000 (`count=1001`) will result in a HTTP 400 Bad Request. The pagination example, shown above, can be used to grab more than 1000 records overall.
 
 ```
 query = Search(count=1000)
@@ -597,7 +596,7 @@ for i, r in enumerate(results):
 
 ## Querying records
 
-E3DB supports many options for querying records based on the fields stored in record metadata. Refer to the API documentation for the complete set of options that can be passed to `e3db.Client.query`.
+E3DB supports many options for querying records based on the terms stored in record metadata. Refer to the API documentation for the complete set of options that can be passed to `e3db.Client.query`.
 
 For example, to list all records of type `contact` and print a simple report containing names and phone numbers:
 

@@ -10,7 +10,7 @@ from .exceptions import APIError, LookupError, CryptoError, QueryError, Conflict
 import requests
 import shutil
 import hashlib
-
+import tempfile
 
 class Client:
     """
@@ -1378,7 +1378,7 @@ class Client:
         # until we decrypt it in the next steps
         # Uses efficient copy from storage server to filesystem courtesy of:
         # https://stackoverflow.com/a/39217788
-        encrypted_filename = "enc-{0}.bin".format(destination_filename)
+        encrypted_filename = tempfile.NamedTemporaryFile(prefix="enc",suffix=".bin", delete=False).name
         with requests.get(url=get_file_info.file_url, stream=True) as r:
             with open(encrypted_filename, 'wb+') as f:
                 shutil.copyfileobj(r.raw, f)

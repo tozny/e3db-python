@@ -6,6 +6,7 @@ import nacl.bindings
 import os.path
 import hashlib
 import base64
+import tempfile
 
 BLOCK_SIZE = 65536
 SECRET_STREAM_TAG_MESSAGE = 0x0
@@ -96,8 +97,8 @@ class SodiumCrypto(BaseCrypto):
             plaintext_file_handle.close()
             # create temporary file for encrypted data
         try:
-            encrypted_filename = "e2e-{0}.bin".format(plaintext_filename)
-            encrypted_file_handle = open(encrypted_filename, 'wb+')
+            encrypted_file_handle = tempfile.NamedTemporaryFile(prefix="e2e", suffix=".bin",delete=False)
+            encrypted_filename = encrypted_file_handle.name
         except IOError:
             encrypted_file_handle.close()
 

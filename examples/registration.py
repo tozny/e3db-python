@@ -1,11 +1,11 @@
 # This program provides a simple example illustrating how to programmatically
-# register a client with InnoVault and e3db. In some situations, it's preferable
+# register a client with Tozny and e3db. In some situations, it's preferable
 # to register a client from the server or system that will be using its
 # credentials (to ensure that all data is truly encrypted from end-to-end
 # with no possibilities of a credential leak). For more detailed information,
 # please see the documentation home page: https://tozny.com/documentation/e3db
 #
-# Copyright:: Copyright (c) 2017 Tozny, LLC
+# Copyright:: Copyright (c) 2020 Tozny, LLC
 # License::   Public Domain
 
 # ---------------------------------------------------------
@@ -30,7 +30,7 @@ print("Public Key: {0}".format(public_key))
 print("Private Key: {0}".format(private_key))
 
 # Clients must be registered with a name unique to your account to help
-# differentiate between different sets of credentials in the Admin Console.
+# differentiate between different sets of credentials in the Dashboard.
 # In this example, the name is set at random
 client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
 
@@ -40,7 +40,7 @@ print("Client Name: {0}".format(client_name))
 # a new client with the system. Remember to keep your private key private!
 
 # Optionally, you can automatically back up the credentials of the newly-created
-# client to your InnoVault account (accessible via https://console.tozny.com) by
+# client to your Tozny account (accessible via https://dashboard.tozny.com/login) by
 # passing your private key and a backup flag when registering. The private key is
 # not sent anywhere, but is used by the newly-created client to sign an encrypted
 # copy of its credentials that is itself stored in e3db for later use.

@@ -444,10 +444,10 @@ class Client:
         Parameters
         ----------
         registration_token : str
-            Token obtained from InnoVault console used for dynamic registration
+            Token obtained from the Tozny Dashboard used for dynamic registration
 
         client_name : str
-            Name of client to be registered with the InnoVault console
+            Name of client to be registered with the Tozny Dashboard
 
         public_key : str
             base64urlencoded public_key object obtained from
@@ -456,11 +456,11 @@ class Client:
         private_key : str
             base64urlencoded public_key object obtained from
             e3db.Client.generate_keypair(). Optional. Included in client
-            backup record for later key recovery in the InnoVault console,
+            backup record for later key recovery in the Tozny Dashboard,
             if desired.
 
         backup : bool
-            Whether to backup client credentials to the InnoVault console.
+            Whether to backup client credentials to the Tozny Dashboard.
             Optional.
 
         api_url : str
@@ -742,7 +742,7 @@ class Client:
 
     def backup(self, client_id, registration_token):
         """
-        Public Method to write backup credentials to InnoVault console
+        Public Method to write backup credentials to Tozny Dashboard
         for recovery, if desired during registration.
 
         Parameters
@@ -751,14 +751,14 @@ class Client:
             UUID of client
 
         registration_token: str
-            Token obtained from InnoVault console used for dynamic registration
+            Token obtained from Tozny Dashboard used for dynamic registration
 
         Returns
         -------
         None
         """
         # credentials must be json encoded in order to decode
-        # properly in the innovault console.
+        # properly in the Tozny Dashboard.
         credentials = {
             'version': '1',
             'client_id': "\"{0}\"".format(self.client_id),

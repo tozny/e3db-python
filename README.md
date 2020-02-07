@@ -163,8 +163,12 @@ data = {
 }
 
 record = client.write(record_type, data)
+print ('Wrote record ID {0}'.format(record.meta.record_id))
 
-print 'Wrote record {0}'.format(record.meta.record_id)
+# Read that record back from the server and print the name
+record2 = client.read(record.meta.record_id)
+print ('Read name: {0}'.format(record2.data['first_name']))
+
 ```
 
 ## Searching records

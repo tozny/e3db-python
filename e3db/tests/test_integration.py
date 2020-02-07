@@ -22,7 +22,7 @@ class TestIntegrationClient():
     def setup_class(self):
         """
         Setup where we create two clients using registration tokens to associate
-        them with out Innovault account. They will be used to test operations
+        them with our Tozny account. They will be used to test operations
         later in the integration tests where we don't want to create a new client
         every time.
         """
@@ -86,7 +86,7 @@ class TestIntegrationClient():
     def test_can_register_client(self):
         """
         Create and register a client using registration token to associate it
-        with our Innovault account.
+        with our Tozny account.
         """
         public_key, private_key = e3db.Client.generate_keypair()
         client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
@@ -110,7 +110,7 @@ class TestIntegrationClient():
 
         """
         Create and register a client using registration token to associate it
-        with our Innovault account. Also backup the client credentials to
+        with our Tozny account. Also backup the client credentials to
         the backup client for later key recovery.
         """
         public_key, private_key = e3db.Client.generate_keypair()

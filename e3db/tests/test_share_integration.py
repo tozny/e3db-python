@@ -22,7 +22,7 @@ class TestShareIntegration():
     def setup_class(self):
         """
         Setup where we create two clients using registration tokens to associate
-        them with out Innovault account. They will be used to test operations
+        them with out Tozny account. They will be used to test operations
         later in the integration tests where we don't want to create a new client
         every time.
         """

@@ -636,7 +636,7 @@ The NIST mode of operations will leverage:
 - ECDH over curve P-384 for public/private key exchange
 - SHA384 for hashing
 - ECDSA over curve P-384 for cryptographic signatures
-- AES265GCM for symmetric encryption operations
+- AES256GCM for symmetric encryption operations
 
 ## Documentation
 

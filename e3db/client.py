@@ -1337,6 +1337,7 @@ class Client:
         """
 
         # Check if destination file can be written to
+        destination_file_handle = None
         try:
             destination_file_handle = open(destination_filename, 'w+')
         except IOError:

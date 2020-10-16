@@ -1340,7 +1340,9 @@ class Client:
         try:
             destination_file_handle = open(destination_filename, 'w+')
         except IOError:
-            destination_file_handle.close()
+            if destination_file_handle is not None:
+                destination_file_handle.close()
+            raise IOError("Can't write to destination file")
         else:
             destination_file_handle.close()
 

@@ -1341,7 +1341,8 @@ class Client:
             destination_file_handle = open(destination_filename, 'w+')
         except IOError:
             destination_file_handle.close()
-        destination_file_handle.close()
+        else:
+            destination_file_handle.close()
 
         url = self.__get_url("v1", "storage", "files", str(record_id))
         response = requests.get(url=url, auth=self.e3db_auth)

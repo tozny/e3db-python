@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-version = "2.1.4"
+version = "2.1.5"
 setup(
   name="e3db",
   description="E3DB provides a familiar JSON-based NoSQL-style API for reading, writing, and querying end-to-end encrypted data in the cloud.",

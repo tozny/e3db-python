@@ -13,9 +13,14 @@ if os.path.exists(credentials_path):
     results = client.search(query)
 
     print(results.total_results) # Total results available for searching within TozStore. If this exceeds 10k narrow your search, as we do not return results past than 10k.
-
-    while results.next_token != 0: # Loop until we've hit found all records
-        results = client.search(query)
-        query.next_token = results.next_token
+    if results.total_results > 0:
+        # Print the the first set of search results
         for r in results:
-            print(r.to_json())
+                print(r.to_json())
+        while results.next_token != 0: # If there are more results to page through grab the next page
+            results = client.search(query)
+            query.next_token = results.next_token
+            for r in results:
+                print(r.to_json())
+    else:
+        print("No results found in search")

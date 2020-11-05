@@ -117,7 +117,7 @@ client = e3db.Client(config())
 ```
 
 ### Options for Loading Credentials
-There are a number of options for instantiating an `e3db.Config` object. Shown above is the manual creation of the config option, but there are some convenience methods that can make this process easier when dealing with multiple client profiles. 
+There are a number of options for instantiating an `e3db.Config` object. Shown above is the manual creation of the config option, but there are some convenience methods that can make this process easier when dealing with multiple client profiles.
 
 Loading from `.tozny` profiles, takes advantage of the same profiles from the [e3db cli tool](https://github.com/tozny/e3db).
 ```python
@@ -173,7 +173,7 @@ print ('Read name: {0}'.format(record2.data['first_name']))
 
 ## Searching records
 
-E3DB supports complex search options for finding records based on the terms stored in record metadata. 
+E3DB supports complex search options for finding records based on the terms stored in record metadata.
 These terms include the properties in the [Meta class](e3db/types/meta.py):
 ```
  - record_ids
@@ -216,19 +216,19 @@ query = Search(include_data=True)
 results = client.search(query)
 
 # Records found in your search
-results.records 
+results.records
 
 # Number of records returned from search
-len(results) 
+len(results)
 
 # Number of records present in E3db that match your search.
-# If there are more records to be retrieved this number will be greater than len(results), 
+# If there are more records to be retrieved this number will be greater than len(results),
 # and next_token will not be 0
-results.total_results 
+results.total_results
 
-# Token for paginating through queries, 
+# Token for paginating through queries,
 # this token will be 0 if there are no more records to be returned.
-results.next_token 
+results.next_token
 
 results.search_id # id for bulk searching of many records, currently not available
 ```
@@ -260,10 +260,10 @@ for record in results:
     print "{0} --- {1}".format(full_name, record.data['phone'])
 ```
 
-The full list of parameters you can search for are under `e3db.types.Params`. Searching gives you access to chaining more powerful queries such as conditional operators, exclusions, and date filters.     
+The full list of parameters you can search for are under `e3db.types.Params`. Searching gives you access to chaining more powerful queries such as conditional operators, exclusions, and date filters.
 
 To search for records of type `season` that have unencrypted metadata values of `summer` and `sunny`, create the following query:
-```python 
+```python
 # e3db setup...
 
 data = {"temp": "secret_temp"}
@@ -279,7 +279,7 @@ query = Search().match(condition="AND", record_types=["season"], keys=["name", "
 ```
 
 To search for records of type `jam` with values of `apricot`, but excluding values of `strawberry`, create the following query:
-```python 
+```python
 # e3db setup...
 
 apricot_data = {"recipe": "encrypted_secret_formula"}
@@ -422,8 +422,8 @@ Under Search Range there is this default:
 key = "CREATED" # options: "CREATED"|"MODIFIED"
 
 # Zone offset is None by default, but if provided it will override provided datetime objects if they are timezone unaware
-# Accepts 
-#   - int denoting hours offset from UTC 
+# Accepts
+#   - int denoting hours offset from UTC
 #   - str in the format "[+|-]HH:MM" also denoting the time offset from UTC
 #       - for a more comprehensive list see https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
 zone_offset = None
@@ -433,7 +433,7 @@ in zone_offset to search properly.
 
 ### Boolean Searching
 
-Within each match or exclude clause the internal search terms can either be joined with AND or OR. 
+Within each match or exclude clause the internal search terms can either be joined with AND or OR.
 
 The data for these examples can be found under [boolean_search](./examples/boolean_search.py)
 
@@ -477,7 +477,7 @@ chain_match = Search().match(condition="AND", record_types=["flora"]).match(cond
 equivalent_to_chain_match = Search().match(condition="OR", record_types=["flora", "fauna"])
 ```
 
-Nested chaining allows you to specify varying strategies for different terms 
+Nested chaining allows you to specify varying strategies for different terms
 ```python
 differing_strategies = Search().match(strategy="EXACT", record_types=["flora"])\
                                 .match(strategy="WILDCARD", keys=["*12345"])\
@@ -488,7 +488,7 @@ results = client.search(differing_strategies)
 print_results("Different matching strategies: this search will return an EXACT match to record_type `flora` OR WILDCARD match to keys `*12345`, and a REGEXP exclude to keys `.*test.*` OR REGEXP exclude to keys `.*server_2.*`", results)
 ```
 
-Keep in mind that this chaining means your previous search object gets altered each time. 
+Keep in mind that this chaining means your previous search object gets altered each time.
 ```python
 original_search = Search().exclude(record_types=["fauna"])
 modified_search = original_search.exclude(record_types=["flora"])
@@ -532,7 +532,7 @@ $ anchors expression to the end of the matched strings
 + used to match the preceding shortest pattern one or more times
 * used to match the preceding shortest pattern zero or more times
 | acts as an OR operator, matches this OR that
-{ } used to specify the min and max nubmer of times the preceding pattern can repeat. 
+{ } used to specify the min and max nubmer of times the preceding pattern can repeat.
     - {2} repeat twice, {2,} repeat at least twice, {2,3} repeat 2-3 times
 ( ) used to group sub patterns
     - (ab)+ repeat the value within parenthesis 'ab' one or more times
@@ -558,15 +558,18 @@ results = client.search(query)
 
 # Number of results in e3db
 total_results = results.total_results
-# Return records from this point onwards in next query
-
+# Process the first set of results
+if total_results > 0:
+    do_something(results) # process results
+# If there are more records to fetch, e.g. next_token != 0
+# make subsequent searches using the next token to grab the next set of results
 while results.next_token:
     query.next_token = results.next_token
     results = client.search(query)
     do_something(results) # process results
 ```
 
-The `next_token` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query. 
+The `next_token` returned from a query will be 0 if there are no more records to return. `total_results` represents the total number of records in e3db that match the executed query.
 
 See [pagination example](examples/simple_paginate_results.py) for full code example.
 

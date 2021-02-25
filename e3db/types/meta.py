@@ -43,11 +43,17 @@ class Meta():
         try:
             self.__created = datetime.strptime(json['created'], '%Y-%m-%dT%H:%M:%S.%fZ') if 'created' in json else None
         except ValueError:
-            self.__created = datetime.strptime(json['created'], '%Y-%m-%d %H:%M:%S.%f') if 'created' in json else None
+            try:
+                self.__created = datetime.strptime(json['created'], '%Y-%m-%d %H:%M:%S.%f') if 'created' in json else None
+            except Exception:
+                self.__created = datetime.strptime(json['created'], '%Y-%m-%dT%H:%M:%SZ') if 'created' in json else None
         try:
             self.__last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%dT%H:%M:%S.%fZ') if 'last_modified' in json else None
         except ValueError:
-            self.__last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%d %H:%M:%S.%f') if 'last_modified' in json else None
+            try:
+                self.__last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%d %H:%M:%S.%f') if 'last_modified' in json else None
+            except Exception:
+                self.__last_modified = datetime.strptime(json['last_modified'], '%Y-%m-%dT%H:%M:%SZ') if 'last_modified' in json else None
 
         self.__version = json['version'] if 'version' in json else None
 

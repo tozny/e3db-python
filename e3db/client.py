@@ -39,11 +39,14 @@ class Client:
         self.api_key_id = config['api_key_id']
         self.api_secret = config['api_secret']
         self.client_id = config['client_id']
-        self.client_email = config['client_email']
         self.public_key = config['public_key']
         self.private_key = config['private_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
         self.ak_cache = {}
+        if 'client_email' in config.keys():
+            self.client_email = config['client_email']
+        else:
+            self.client_email = ''
 
     @classmethod
     def __response_check(self, response):

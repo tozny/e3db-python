@@ -1,9 +1,10 @@
-FROM python:3.7-alpine
+FROM python:3.9-alpine
 
-RUN apk add --no-cache gcc musl-dev libffi-dev make openssl-dev
+RUN apk add --no-cache gcc cargo musl-dev libffi-dev make openssl-dev
 RUN mkdir -p /src
 WORKDIR /src/
 
+RUN pip install --upgrade pip
 RUN pip install -U pytest pytest-cov sphinx flake8
 
 COPY e3db/ /src/e3db/

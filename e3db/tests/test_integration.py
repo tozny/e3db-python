@@ -83,6 +83,40 @@ class TestIntegrationClient():
 
         self.client3 = e3db.Client(client3_config())
 
+    def test_client_email_optional(self):
+        """
+        Client created with the client_email contains the correct value; client 
+        created without it contains empty string.
+        """
+        client_public_key, client_private_key = e3db.Client.generate_keypair()
+        client_name = "client_email_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_client = e3db.Client.register(token, client_name, client_public_key, api_url=api_url)
+        client_api_key_id = test_client.api_key_id
+        client_api_secret = test_client.api_secret
+        client_id = test_client.client_id
+        client_no_email_config = {
+            'client_id': str(client_id),
+            'api_key_id': client_api_key_id,
+            'api_secret': client_api_secret,
+            'api_url': api_url,
+            'public_key': client_public_key,
+            'private_key': client_private_key
+        }
+        client_no_email = e3db.Client(client_no_email_config)
+        test_email = "test_{0}".format(binascii.hexlify(os.urandom(16)))
+        client_email_config = {
+            'client_id': str(client_id),
+            'api_key_id': client_api_key_id,
+            'api_secret': client_api_secret,
+            'api_url': api_url,
+            'public_key': client_public_key,
+            'private_key': client_private_key,
+            'client_email': test_email
+        }
+        client_with_email = e3db.Client(client_email_config)
+        assert(client_no_email.client_email == "")
+        assert(client_with_email.client_email == test_email)
+
     def test_can_register_client(self):
         """
         Create and register a client using registration token to associate it

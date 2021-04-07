@@ -117,9 +117,11 @@ client = e3db.Client(config())
 ```
 
 ### Options for Loading Credentials
+
 There are a number of options for instantiating an `e3db.Config` object. Shown above is the manual creation of the config option, but there are some convenience methods that can make this process easier when dealing with multiple client profiles.
 
 Loading from `.tozny` profiles, takes advantage of the same profiles from the [e3db cli tool](https://github.com/tozny/e3db).
+
 ```python
 # usage
 config = e3db.Config.load(profile_name)
@@ -135,6 +137,7 @@ config.write(profile_name)
 ```
 
 Loading from an arbitrary file that matches the credentials format, but may have a custom path.
+
 ```python
 credentials_path = "credentials.json" # your e3db credentialss
 if os.path.exists(credentials_path):
@@ -175,6 +178,7 @@ print ('Read name: {0}'.format(record2.data['first_name']))
 
 E3DB supports complex search options for finding records based on the terms stored in record metadata.
 These terms include the properties in the [Meta class](e3db/types/meta.py):
+
 ```
  - record_ids
  - writer_ids
@@ -199,6 +203,7 @@ WHERE
 ```
 
 A time range can be provided to limit search results based off one of these terms:
+
 ```
  - created
  - last_modified
@@ -263,6 +268,7 @@ for record in results:
 The full list of parameters you can search for are under `e3db.types.Params`. Searching gives you access to chaining more powerful queries such as conditional operators, exclusions, and date filters.
 
 To search for records of type `season` that have unencrypted metadata values of `summer` and `sunny`, create the following query:
+
 ```python
 # e3db setup...
 
@@ -279,6 +285,7 @@ query = Search().match(condition="AND", record_types=["season"], keys=["name", "
 ```
 
 To search for records of type `jam` with values of `apricot`, but excluding values of `strawberry`, create the following query:
+
 ```python
 # e3db setup...
 
@@ -327,6 +334,7 @@ results = client.search(query)
 ```
 
 The Range can be open ended if you want to, for example, see all records written before yesterday:
+
 ```python
 now = int(time.time())
 end = now - (60 * 60 * 24) # 60 seconds, 60 minutes, 24 hours == 1 day in seconds
@@ -350,6 +358,7 @@ results = client.search(query)
 The Search Range accepts Unix Epoch, datetime objects, and datetime timezone-unaware objects, for start and end times. In Python all datetime objects are `timezone naive` or `timezone-unaware` unless you are using a libary like pytz. So the Search Range will assume that you want a timezone of UTC unless otherwise specified.
 
 To target a specific timezone you have a couple options:
+
 ```python
 # 1. Go zone agnostic by providing a time based off of the Unix Epoch (recommended).
 unix_epoch = int(time.time()) # https://www.epochconverter.com/ for conversions
@@ -372,6 +381,7 @@ query = Search().match().range(start=utc_tz_unaware)
 ```
 
 Take care when using the python datetime library function `astimezone()`, because it does an implicit conversion behind the scenes using the computer's local timezone if no tzinfo is provided as a parameter. To avoid this you can replace the tzinfo instead:
+
 ```python
 unaware_day = datetime(year=2019, month=3, day=18, hour=0, minute=0, second=0)
 print(unaware_day.isoformat("T"))
@@ -393,6 +403,7 @@ print(aware_day.isoformat("T"))
 The Search method has a number of default parameters when searching, more detail can be found within the inline documentation.
 
 Under Search there are these defaults:
+
 ```python
 # Optional value that starts search from the first page of results, only required for paginated queries.
 next_token = 0
@@ -408,6 +419,7 @@ include_data = False
 ```
 
 Under Search Params there are these defaults:
+
 ```python
 # Conditional OR when searching upon all terms within this clause (Param object)
 condition = "OR" # options: "OR"|"AND"
@@ -417,6 +429,7 @@ strategy = "EXACT" # options "EXACT"|"FUZZY"|"WILDCARD"|"REGEXP"
 ```
 
 Under Search Range there is this default:
+
 ```python
 # Search records based on when they were created or last modified
 key = "CREATED" # options: "CREATED"|"MODIFIED"
@@ -428,6 +441,7 @@ key = "CREATED" # options: "CREATED"|"MODIFIED"
 #       - for a more comprehensive list see https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
 zone_offset = None
 ```
+
 Since python datetime objects are zone agnostic, provide the proper timezone offset from UTC
 in zone_offset to search properly.
 
@@ -461,6 +475,7 @@ print_results("get records by record type 'flora' AND plain containing '*test*':
 ```
 
 Combining match and exclude together will remove the terms in the exclude clause
+
 ```python
 # This means records that equal the match clause AND do not equal the exclude clause are returned.
 match_and_exclude = Search().match(record_types=["flora"]).exclude(strategy="WILDCARD", keys=["*test*"])
@@ -468,16 +483,34 @@ results = client.search(match_and_exclude)
 print_results("get records of record type 'flora' and do not have keys `*test*`", results)
 ```
 
-Chaining match clauses with matches, and exclude clauses with excludes are joined by the logical OR. In general, the two basic tenants of chaining these clauses are as follows:
+**Chaining match clauses with matches, and exclude clauses with excludes are joined by the logical OR**. In general, the two basic tenants of chaining these clauses are as follows:
+
 1. more match clauses expands your search, adding terms that match your results
-1. more exclude clauses constricts your search, removing terms that match your results
+1. more exclude clauses constricts your search, removing terms that match your results **excludes have priority over match clauses**
+
 ```python
 chain_match = Search().match(condition="AND", record_types=["flora"]).match(condition="AND", record_types=["fauna"])
 # the above search is equivalent to below.
 equivalent_to_chain_match = Search().match(condition="OR", record_types=["flora", "fauna"])
 ```
 
+Below is some psuedocode to make the boolean logic above clearer.
+
+```psuedocode
+# (B1 OR B2) AND (NOT (B3 OR B4))
+query = Search().match(B1).match(B2).exclude(B3).exclude(B4)
+
+
+# (B1 AND C1 AND C3) OR B2
+query = Search().match(condition="AND", B1, C1, C3).match(B2)
+
+
+# (B1 AND C1 AND C3) OR (B2 OR B3)
+query = Search().match(condition="AND", B1, C1, C3).match(condition="OR", B2, B3)
+```
+
 Nested chaining allows you to specify varying strategies for different terms
+
 ```python
 differing_strategies = Search().match(strategy="EXACT", record_types=["flora"])\
                                 .match(strategy="WILDCARD", keys=["*12345"])\
@@ -489,6 +522,7 @@ print_results("Different matching strategies: this search will return an EXACT m
 ```
 
 Keep in mind that this chaining means your previous search object gets altered each time.
+
 ```python
 original_search = Search().exclude(record_types=["fauna"])
 modified_search = original_search.exclude(record_types=["flora"])
@@ -501,6 +535,7 @@ print_results("modified_search and original_search will exclude both flora and f
 Search offers advanced queries that provide more flexibility than the default matching strategy of `EXACT`. These are the four options ordered from fastest to slowest: `EXACT`, `FUZZY`, `WILDCARD`, and `REGEXP`.
 
 To mirror some of the above queries with these matching strategies we get:
+
 ```python
 # e3db setup...
 
@@ -524,6 +559,7 @@ regxp_query = Search().match(strategy="REGEXP", record_types=["season"], values=
 Go to [Pattern Search Examples](./examples/pattern_search.py) for more examples.
 
 #### Regexp operators
+
 ```
 ^ anchors expression to the start of the matched strings
 $ anchors expression to the end of the matched strings
@@ -541,6 +577,7 @@ $ anchors expression to the end of the matched strings
     - within the square brackets a ^ negates the class: [^abc] excludes characters 'a', 'b', and 'c'
 \ is used to escape any of the previous special characters
 ```
+
 For more information look [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-regexp-query.html)
 
 See [the integration tests](e3db/tests/test_search_integration.py) or [examples folder](examples/) for more examples.
@@ -550,6 +587,7 @@ See [the integration tests](e3db/tests/test_search_integration.py) or [examples 
 The construction of the Search object offers a number of options for paging through your results: namely `next_token` and `count`.
 
 To page through a large number of results, you can loop like this:
+
 ```python
 # e3db setup...
 # limit number of results returned to 1000 at a time
@@ -636,10 +674,11 @@ export CRYPTO_SUITE=NIST
 ```
 
 The NIST mode of operations will leverage:
-- ECDH over curve P-384 for public/private key exchange
-- SHA384 for hashing
-- ECDSA over curve P-384 for cryptographic signatures
-- AES256GCM for symmetric encryption operations
+
+* ECDH over curve P-384 for public/private key exchange
+* SHA384 for hashing
+* ECDSA over curve P-384 for cryptographic signatures
+* AES256GCM for symmetric encryption operations
 
 ## Documentation
 
@@ -647,7 +686,7 @@ General E3DB documentation is [on our web site](https://tozny.com/documentation/
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/tozny/e3db-python.
+Bug reports and pull requests are welcome on GitHub at <https://github.com/tozny/e3db-python>.
 
 ## License
 

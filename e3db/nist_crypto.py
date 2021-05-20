@@ -8,7 +8,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-
 class NistCrypto(BaseCrypto):
 
     @classmethod
@@ -95,3 +94,7 @@ class NistCrypto(BaseCrypto):
         public_key = private_key.public_key()
 
         return public_key, private_key
+
+    @classmethod
+    def sign_string(self, string_to_sign: bytes, key: bytes):
+        raise NotImplementedError

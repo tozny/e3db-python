@@ -1,8 +1,11 @@
 import base64
+from hashlib import blake2b
+import nacl.hash
+import nacl.encoding
 
+BLAKE2B_HASHER = nacl.hash.blake2b
 
 class BaseCrypto:
-
     @classmethod
     def get_mode(self):
         pass
@@ -83,3 +86,35 @@ class BaseCrypto:
     @classmethod
     def decrypt_file(self, encrypted_file, destination_file, key):
         pass
+
+    @classmethod
+    def hashString(self, toHash: str) -> bytes:
+        """
+        Returns the raw encoded bytes of the hash of toHash string. 
+
+        Parameters
+        ----------
+        toHash : str
+
+        Returns
+        -------
+        bytes
+            Byte hash of string. 
+        """
+        return BLAKE2B_HASHER(toHash.encode("utf-8"), encoder=nacl.encoding.RawEncoder)
+
+    @classmethod
+    def base64HashString(self, toHash: str) -> bytes:
+        """
+        Returns the Base64 encoded bytes of the hash of toHash string. 
+
+        Parameters
+        ----------
+        toHash : str
+
+        Returns
+        -------
+        bytes
+            Byte hash of string. 
+        """
+        return BLAKE2B_HASHER(toHash.encode("utf-8"), encoder=nacl.encoding.Base64Encoder)

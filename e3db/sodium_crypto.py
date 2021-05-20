@@ -3,6 +3,7 @@ import nacl.utils
 import nacl.secret
 import nacl.public
 import nacl.bindings
+import nacl.signing
 import os.path
 import hashlib
 import base64
@@ -75,6 +76,61 @@ class SodiumCrypto(BaseCrypto):
         # return public, private
         key = nacl.public.PrivateKey.generate()
         return key.public_key, key
+
+    @classmethod
+    def generate_signing_key(self, key: bytes):
+        """
+        Generate a SigningKey object from a private signing key.
+
+        Parameters
+        ----------
+        key : bytes
+            Raw bytes of a private signing key. 
+
+        Returns:
+        nacl.signing.SigningKey
+            Instance of the SigningKey class.
+        """
+        return nacl.signing.SigningKey(key)
+
+    @classmethod
+    def derive_public_signing_key(self, key: bytes):
+        """
+        Derives a public signing key from a given private signing key.
+
+        Parameters
+        ----------
+        key : bytes
+            Raw bytes of a private signing key.
+
+        Returns
+        -------
+        VerifyKey
+            Instance of VerifyKey that holds the derived public signing key.
+        """
+        signing_key = self.generate_signing_key(key)
+        return signing_key.verify_key
+
+    @classmethod
+    def sign_string(self, string_to_sign: bytes, key: bytes) -> nacl.signing.SignedMessage:
+        """
+        Signs a message based on the signing key generated with a private signing key.
+
+        Parameters
+        ----------
+        string_to_sign : bytes
+            Raw bytes of the hash of the message being signed.
+        
+        key : bytes
+            Raw bytes of a private signing key.
+
+        Returns
+        -------
+        SignedMessage
+            Signed message.
+        """
+        signing_key = self.generate_signing_key(key)
+        return signing_key.sign(string_to_sign)
 
     @classmethod
     def encrypt_file(self, plaintext_filename, key):

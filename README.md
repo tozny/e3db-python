@@ -79,7 +79,9 @@ config = e3db.Config(
     api_key_id,
     api_secret,
     public_key,
-    private_key
+    private_key,
+    public_signing_key,
+    private_signing_key
 )
 
 # Optionally, if you want to save this Configuration to disk, do the following:
@@ -108,7 +110,9 @@ config = e3db.Config(
     os.environ["api_key_id"],
     os.environ["api_secret"],
     os.environ["public_key"],
-    os.environ["private_key"]
+    os.environ["private_key"],
+    os.environ["public_signing_key"],
+    os.environ["private_signing_key"]
 )
 
 # Pass the configuration when building a new client instance.
@@ -252,7 +256,9 @@ config = e3db.Config(
     os.environ["api_key_id"],
     os.environ["api_secret"],
     os.environ["public_key"],
-    os.environ["private_key"]
+    os.environ["private_key"],
+    os.environ["public_signing_key"],
+    os.environ["private_signing_key"]
 )
 
 client = e3db.Client(config())

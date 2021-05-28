@@ -1,4 +1,5 @@
 from .auth import E3DBAuth
+from .tsv1_auth import E3DBTSV1Auth
 import os
 if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
     from .nist_crypto import NistCrypto as Crypto
@@ -41,7 +42,10 @@ class Client:
         self.client_id = config['client_id']
         self.public_key = config['public_key']
         self.private_key = config['private_key']
+        self.public_signing_key = config['public_signing_key']
+        self.private_signing_key = config['private_signing_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
+        self.e3db_tsv1_auth = E3DBTSV1Auth(self.private_signing_key, self.client_id)
         self.ak_cache = {}
         if 'client_email' in config.keys():
             self.client_email = config['client_email']
@@ -763,13 +767,15 @@ class Client:
         # credentials must be json encoded in order to decode
         # properly in the Tozny Dashboard.
         credentials = {
-            'version': '1',
+            'version': '2',
             'client_id': "\"{0}\"".format(self.client_id),
             'api_key_id': "\"{0}\"".format(self.api_key_id),
             'api_secret': "\"{0}\"".format(self.api_secret),
             'client_email': "\"{0}\"".format(self.client_email),
             'public_key': "\"{0}\"".format(self.public_key),
             'private_key': "\"{0}\"".format(self.private_key),
+            'public_signing_key': "\"{0}\"".format(self.public_signing_key),
+            'private_signing_key': "\"{0}\"".format(self.private_signing_key),
             'api_url': "\"{0}\"".format(self.api_url)
         }
 

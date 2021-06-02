@@ -8,6 +8,7 @@ else:
 from .config import Config
 from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
+from .types.note_options import NoteOptions
 import requests
 import shutil
 import hashlib
@@ -1409,3 +1410,97 @@ class Client:
             version=response_json['meta']['version'],
             plain=response_json['meta']['plain']
         )
+
+    def write_note(data: dict, recipient_encryption_key: str, recipient_signing_key: str, options: NoteOptions):
+        """
+        Public Method to make a note, encrypt it locally, and send it
+        to the server.
+
+        Parameters
+        ----------
+        data : dict 
+
+
+        recipient_encryption_key : str
+
+
+        recipient_signing_key : str
+
+
+        options : types.NoteOptions
+
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted E3DB note
+        """
+        # Get encryption keys
+
+        # Get signing keys
+
+        # Return self.__write_note()
+
+        return NotImplementedError
+
+    def __write_note():
+        """
+        Private Method to create and encrypt a note object, fetch TSV1 authentication,
+        and return the signed note. 
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+        # Generate and then encrypt access key
+
+        # Generate UUID
+
+        # Create encrypted note (__create_encrypted_note)
+
+        # Fetch TSV1 authentication using encrypted note in body
+
+        # Set data of note and return the note
+
+        # Write the note to TozStore
+
+        return NotImplementedError
+
+
+    def __create_encrypted_note():
+        """
+        Create an encrypted Note object.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+        # Generate random access key
+
+        # Encrypt access key 
+
+        # Create NoteData and NoteKeys
+
+        # Build unencrypted note 
+
+        # Generate signature field for note 
+
+        # Encrypt each key in data dict
+        return NotImplementedError
+
+    def __sign_field():
+        """
+        Signs a data field.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+        return NotImplementedError

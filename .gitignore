@@ -102,3 +102,6 @@ ENV/
 .mypy_cache/
 
 _build/
+
+# Functional tests for note writing
+e3db/tests/test_note_writing.py

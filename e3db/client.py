@@ -6,7 +6,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
-from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, KeyPair
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 from .types.note_options import NoteOptions
 import requests
@@ -1411,7 +1411,7 @@ class Client:
             plain=response_json['meta']['plain']
         )
 
-    def write_note(data: dict, recipient_encryption_key: str, recipient_signing_key: str, options: NoteOptions):
+    def write_note(self, data: dict, recipient_encryption_key: str, recipient_signing_key: str, options: NoteOptions):
         """
         Public Method to make a note, encrypt it locally, and send it
         to the server.
@@ -1435,15 +1435,21 @@ class Client:
         e3db.Note
             Decrypted E3DB note
         """
-        # Get encryption keys
+        serialized_options = options.to_json()
+        serialized_options['note_writer_client_id'] = self.client_id
 
-        # Get signing keys
+        # Do we need a KeyPair object to store a Base64URL encoded representation? 
+        # I think it makes it cleaner, but would agree if it was determined that it 
+        # did not need to be its own type. 
+        signing_keys = KeyPair(self.public_signing_key, self.private_signing_key)
 
-        # Return self.__write_note()
+        encryption_keys = KeyPair(self.public_key, self.private_key)
 
-        return NotImplementedError
+        return self.__write_note(data, serialized_options, recipient_signing_key, signing_keys,
+                                recipient_encryption_key, encryption_keys)
 
-    def __write_note():
+    def __write_note(self, data, serialized_options, recipient_signing_key, signing_keys,
+                     recipient_encryption_key, encryption_keys):
         """
         Private Method to create and encrypt a note object, fetch TSV1 authentication,
         and return the signed note. 

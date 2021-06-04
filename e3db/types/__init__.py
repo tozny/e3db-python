@@ -15,3 +15,4 @@ from .search import Range
 from .note import Note
 from .note_keys import NoteKeys
 from .note_options import NoteOptions
+from .key_pair import KeyPair

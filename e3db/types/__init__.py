@@ -12,3 +12,6 @@ from .search_result import SearchResult
 from .search import Search
 from .search import Params
 from .search import Range
+from .note import Note
+from .note_keys import NoteKeys
+from .note_options import NoteOptions

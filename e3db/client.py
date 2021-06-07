@@ -1432,3 +1432,38 @@ class Client:
             version=response_json['meta']['version'],
             plain=response_json['meta']['plain']
         )
+
+    @classmethod
+    def decrypt_note_eak(self, reader_key, encrypted_ak, writer_key):
+        public_key = Crypto.base64decode(writer_key)
+        private_key = Crypto.base64decode(reader_key)
+        eak_fields = encrypted_ak.split(".")
+        eak = Crypto.base64decode(eak_fields[0])
+        nonce = Crypto.base64decode(eak_fields[1])
+        return Crypto.decrypt_eak(private_key, public_key, eak, nonce)
+
+    # will leave here for now, but might need to move this elsewhere (up? to crypto?)
+    # should it be __decrypt_note instead ??
+    @classmethod
+    def decrypt_note(self, note, private_key, public_key, public_signing_key):
+        """
+        Parameters
+        ----------
+        note : e3db.Note
+            Encrypted note
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note
+        """
+
+        encrypted_note = note.to_json()
+        eak = encrypted_note['encrypted_access_key']
+        # decrypt the eak to get ak
+        ak = self.decrypt_note_eak(private_key, eak, public_key)
+
+
+    @classmethod
+    def decrypt_note_with_key(self, ):
+        print('decrypt the note here')

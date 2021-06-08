@@ -29,11 +29,11 @@ class NoteKeys():
         """
 
         # These may need to be typed properly! (see e.g. meta.py)
-        self.__mode                     = mode
+        self.__mode                          = mode
         self.__note_recipient_signing_key    = note_recipient_signing_key
         self.__note_writer_signing_key       = note_writer_signing_key
         self.__note_writer_encryption_key    = note_writer_encryption_key
-        self.__encrypted_access_key     = encrypted_access_key
+        self.__encrypted_access_key          = encrypted_access_key
 
     def to_json(self) -> dict:
         """

@@ -24,30 +24,26 @@ class Note():
         None
 
         """
-        self.__note_writer_client_id         = note_options.__note_writer_client_id
-        self.__mode                          = note_keys.__mode # "Sodium" or "NIST"
-        self.__note_recipient_signing_key    = note_keys.__note_recipient_signing_key
-        self.__note_writer_signing_key       = note_keys.__note_writer_signing_key
-        self.__note_writer_encryption_key    = note_keys.__note_writer_encryption_key
-        self.__encrypted_access_key          = note_keys.__encrypted_access_key
-        self.__type                          = note_options.__type
-        self.__plain                         = note_options.__plain
-        self.__file_meta                     = note_options.__file_meta
-        self.__max_views                     = note_options.__max_views
-        self.__expiration                    = note_options.__expiration
-        self.__expires                       = note_options.__expires
-        self.__id_string                     = note_options.__id_string
-        self.__eacp                          = None 
-        self.__views                         = None
-        self.__note_id                       = None
-        self.__created_at                    = None 
-        self.data                            = copy.deepcopy(data)
+        if note_keys and (not isinstance(note_keys, NoteKeys)):
+            raise TypeError(f"NoteKey object is not e3db.NoteKeys type. Given type: {type(note_keys)}")
+        else:
+            self.__note_keys = note_keys
 
+        if note_options and (not isinstance(note_options, NoteOptions)):
+            raise TypeError(f"NoteOptions object is not e3db.NoteOptions type. Given type: {type(note_options)}")
+        else:
+            self.__note_options = note_options
+
+        self.data              = copy.deepcopy(data)
+        self.__eacp            = None 
+        self.__views           = None
+        self.__note_id         = None
+        self.__created_at      = None 
 
         # Signing makes sense to do after Note creation from a user's perspective.
         # Makes less sense to, say, "create this note with a signature you already have"
         # rather than "create a note, then sign it when you want to write it". 
-        self.__signature                = "" 
+        self.__signature       = "" 
 
     def to_json(self):
         """
@@ -65,24 +61,13 @@ class Note():
 
         # Do key names need to match other SDKs to guarantee interoperability?
         to_serialize = {
-            'note_writer_client_id': self.__note_writer_client_id,
-            'mode': self.__mode,
-            'note_recipient_signing_key': self.__note_recipient_signing_key,
-            'note_writer_signing_key': self.__note_writer_signing_key,
-            'note_writer_encryption_key': self.__note_writer_encryption_key,
-            'encrypted_access_key': self.__encrypted_access_key,
-            'type': self.__type,
-            'data': self.data,
-            'plain': self.__plain,
-            'file_meta': self.__file_meta,
+            'note_keys': self.__note_keys.to_json(),
+            'note_options': self.__note_options.to_json(),
             'signature': self.__signature,
-            'max_views': self.__max_views,
-            'expiration': self.__expiration,
-            'expires': self.__expires,
+            'note_id': self.__note_id,
             'eacp': self.__eacp,
             'created_at': self.__created_at,
-            'id_string': self.__id_string,
-            'note_id': self.__note_id
+            'data': self.data
         }
 
         return to_serialize

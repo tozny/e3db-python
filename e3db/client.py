@@ -23,7 +23,6 @@ class Client:
     """
     DEFAULT_QUERY_COUNT = 100
     DEFAULT_API_URL = "https://api.e3db.com"
-    SIGNATURE_VERSION = "e7737e7c-1637-511e-8bab-93c4f3e26fd9"
 
     def __init__(self, config):
         """
@@ -1503,7 +1502,8 @@ class Client:
         """
 
         parts = value.split(";")
-        if parts[0] != self.SIGNATURE_VERSION:
+        # if the field doesn't have the correct signature version as a prefix, assume it's not signed & return without validating
+        if parts[0] != Crypto.get_signature_version():
             return value
         # if the salt was provided but doesn't match the header of the field, throw an error
         if salt != None and parts[1] != salt:

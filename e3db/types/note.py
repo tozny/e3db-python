@@ -24,19 +24,14 @@ class Note():
         None
 
         """
-        self.__note_writer_client_id         = note_options.__note_writer_client_id
-        self.__mode                          = note_keys.__mode # "Sodium" or "NIST"
-        self.__note_recipient_signing_key    = note_keys.__note_recipient_signing_key
-        self.__note_writer_signing_key       = note_keys.__note_writer_signing_key
-        self.__note_writer_encryption_key    = note_keys.__note_writer_encryption_key
-        self.__encrypted_access_key          = note_keys.__encrypted_access_key
-        self.__type                          = note_options.__type
-        self.__plain                         = note_options.__plain
-        self.__file_meta                     = note_options.__file_meta
-        self.__max_views                     = note_options.__max_views
-        self.__expiration                    = note_options.__expiration
-        self.__expires                       = note_options.__expires
-        self.__id_string                     = note_options.__id_string
+        if note_keys and (not isinstance(note_keys, NoteKeys)):
+            raise TypeError(f"NoteKey object is not e3db.NoteKeys type. Given type: {type(note_keys)}")
+        else:
+            self.__note_keys = note_keys
+        if note_options and (not isinstance(note_options, NoteOptions)):
+            raise TypeError(f"NoteOptions object is not e3db.NoteOptions type. Given type: {type(note_options)}")
+        else:
+            self.__note_options = note_options
         self.__eacp                          = None 
         self.__views                         = None
         self.__note_id                       = None
@@ -65,24 +60,13 @@ class Note():
 
         # Do key names need to match other SDKs to guarantee interoperability?
         to_serialize = {
-            'note_writer_client_id': self.__note_writer_client_id,
-            'mode': self.__mode,
-            'note_recipient_signing_key': self.__note_recipient_signing_key,
-            'note_writer_signing_key': self.__note_writer_signing_key,
-            'note_writer_encryption_key': self.__note_writer_encryption_key,
-            'encrypted_access_key': self.__encrypted_access_key,
-            'type': self.__type,
             'data': self.data,
-            'plain': self.__plain,
-            'file_meta': self.__file_meta,
             'signature': self.__signature,
-            'max_views': self.__max_views,
-            'expiration': self.__expiration,
-            'expires': self.__expires,
             'eacp': self.__eacp,
             'created_at': self.__created_at,
-            'id_string': self.__id_string,
-            'note_id': self.__note_id
+            'note_id': self.__note_id,
+            'note_keys': self.__note_keys.to_json(),
+            'note_options': self.__note_options.to_json()
         }
 
         return to_serialize
@@ -226,7 +210,7 @@ class Note():
         recipient_signing_key : str
 
         """
-        return self.__recipient_signing_key
+        return self.__note_keys.note_recipient_signing_key
 
     def get_writer_signing_key(self) -> str:
         """
@@ -241,9 +225,9 @@ class Note():
         writer_signing_key : str
 
         """
-        return self.__writer_signing_key
+        return self.__note_keys.note_writer_signing_key
 
-    def get_writer_encrpytion_key(self) -> str:
+    def get_writer_encryption_key(self) -> str:
         """
         Get the writer's encryption key associated with the Note. 
 
@@ -256,7 +240,7 @@ class Note():
         writer_encryption_key : str
 
         """
-        return self.__writer_encryption_key
+        return self.__note_keys.note_writer_encryption_key
 
     def get_eak(self) -> str:
         """
@@ -271,7 +255,7 @@ class Note():
         encrypted_access_key : str
 
         """
-        return self.__encrypted_access_key
+        return self.__note_keys.encrypted_access_key
 
     def get_type(self) -> str:
         """
@@ -286,7 +270,7 @@ class Note():
         type : str
 
         """
-        return self.__type
+        return self.__note_options.type
 
     def get_data(self) -> dict:
         """
@@ -301,7 +285,7 @@ class Note():
         data : dict
             JSON-style dictionary
         """
-        return self.__data
+        return self.data
 
     def get_plain(self) -> dict:
         """
@@ -316,7 +300,7 @@ class Note():
         plain : dict
             JSON-style dictionary
         """
-        return self.__plain
+        return self.__note_options.plain
 
     def get_file_meta(self) -> dict:
         """
@@ -331,7 +315,7 @@ class Note():
         file_meta : dict
             JSON-style dictionary
         """
-        return self.__file_meta
+        return self.__note_options.file_meta
         
     def get_signature(self) -> str:
         """
@@ -361,7 +345,7 @@ class Note():
         max_views : int
 
         """
-        return self.__max_views
+        return self.__note_options.max_views
 
     def get_views(self) -> int:
         """
@@ -390,9 +374,9 @@ class Note():
         expiration : str
             RFC3339 String 
         """
-        return self.__expiration
+        return self.__note_options.expiration
 
-    def is_expires(self) -> bool:
+    def is_expired(self) -> bool:
         """
         Checks whether the note has expired.
 
@@ -405,7 +389,7 @@ class Note():
         expires : bool
             Truth value determining whether the note has expired
         """
-        return self.__expires
+        return self.__note_options.expires
         
     def get_eacp(self):
         return NotImplementedError

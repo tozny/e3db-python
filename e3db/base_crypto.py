@@ -118,3 +118,55 @@ class BaseCrypto:
             Byte hash of string. 
         """
         return BLAKE2B_HASHER(toHash.encode("utf-8"), encoder=nacl.encoding.Base64Encoder)
+
+    @classmethod
+    def hashMessage(self, toHash):
+        """
+        Returns the Base64 encoded bytes of the hash of toHash string. 
+
+        Parameters
+        ----------
+        toHash : str
+
+        Returns
+        -------
+        bytes
+            Base64 encoded hash of string. 
+        """
+
+        hashed_message = self.hashString(toHash)
+        return self.base64encode(hashed_message)
+
+    @classmethod
+    def verify(self, signature, message, public_key):
+        pass
+
+    @classmethod
+    def decrypt_field(self, encrypted_field, ak):
+        pass
+
+    @classmethod
+    def decrypt_note_eak(self, reader_key, encrypted_ak, writer_key):
+        """
+        Returns the decrypted access key as bytes. 
+
+        Parameters
+        ----------
+        reader_key : str
+
+        encrypted_ak : str
+
+        writer_key : str
+
+        Returns
+        -------
+        bytes
+            Raw access key which is used for decryption. 
+        """
+
+        public_key = self.decode_public_key(writer_key)
+        private_key = self.decode_private_key(reader_key)
+        eak_fields = encrypted_ak.split(".")
+        eak = self.base64decode(eak_fields[0])
+        nonce = self.base64decode(eak_fields[1])
+        return self.decrypt_eak(private_key, public_key, eak, nonce)

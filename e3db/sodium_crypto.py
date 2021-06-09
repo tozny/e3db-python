@@ -291,3 +291,53 @@ class SodiumCrypto(BaseCrypto):
 
         encrypted_file_handle.close()
         destination_file_handle.close()
+
+    @classmethod
+    def verify(self, signature, message, public_key):
+        """
+        Validates the signature on a message.
+
+        Parameters
+        ----------
+        signature : bytes
+            Raw bytes of the signature for the message.
+        
+        message : bytes
+            Raw bytes of the hashed message.
+        
+        public_key : bytes
+            Raw bytes of the public signing key.
+
+        Returns
+        -------
+        str
+            If verify succeeds, the message is returned. Otherwise, an error occurs.
+        """
+        verify_key = nacl.signing.VerifyKey(public_key)
+        return verify_key.verify(message, signature)
+
+    @classmethod
+    def decrypt_field(self, encrypted_field, ak):
+        """
+        Decrypt a field using Libsodium.
+
+        Parameters
+        ----------
+        encryped_field : str
+            Encrypted string.
+        
+        ak : bytes
+            Raw bytes of the access key to be used as the decryption key.
+
+        Returns
+        -------
+        str
+            Decrypted field as a UTF-8 string.
+        """
+        fields = encrypted_field.split(".")
+        edk = self.base64decode(fields[0])
+        edkN = self.base64decode(fields[1])
+        ef = self.base64decode(fields[2])
+        efN = self.base64decode(fields[3])
+        dk = self.decrypt_secret(ak, edk, edkN)
+        return self.decrypt_secret(dk, ef, efN).decode("utf-8")

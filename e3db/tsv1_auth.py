@@ -1,5 +1,4 @@
 from uuid import UUID
-from e3db.tests.test_tsv1_auth import PUBLIC_KEY_BYTES
 from nacl import public
 import requests
 from requests import auth

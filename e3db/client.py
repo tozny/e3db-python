@@ -6,12 +6,13 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
-from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range
-from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, Note
+from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError, NoteValidationError
 import requests
 import shutil
 import hashlib
 import tempfile
+import copy
 
 class Client:
     """
@@ -22,6 +23,7 @@ class Client:
     """
     DEFAULT_QUERY_COUNT = 100
     DEFAULT_API_URL = "https://api.e3db.com"
+    SIGNATURE_VERSION = "e7737e7c-1637-511e-8bab-93c4f3e26fd9"
 
     def __init__(self, config):
         """
@@ -1411,23 +1413,17 @@ class Client:
         )
 
     @classmethod
-    def decrypt_note_eak(self, reader_key, encrypted_ak, writer_key):
-        public_key = Crypto.base64decode(writer_key)
-        private_key = Crypto.base64decode(reader_key)
-        eak_fields = encrypted_ak.split(".")
-        eak = Crypto.base64decode(eak_fields[0])
-        nonce = Crypto.base64decode(eak_fields[1])
-        return Crypto.decrypt_eak(private_key, public_key, eak, nonce)
-
-    # will leave here for now, but might need to move this elsewhere (up? to crypto?)
-    # should it be __decrypt_note instead ??
-    @classmethod
-    def decrypt_note(self, note, private_key, public_key, public_signing_key):
+    def decrypt_note(self, note, private_key):
         """
+        Decrypt and validate a note response from TozStore using the proper keys.
+
         Parameters
         ----------
         note : e3db.Note
             Encrypted note
+
+        private_key : str
+            Private encryption key for the reader.
 
         Returns
         -------
@@ -1435,12 +1431,98 @@ class Client:
             Decrypted note
         """
 
-        encrypted_note = note.to_json()
-        eak = encrypted_note['encrypted_access_key']
+        eak = note.get_eak()
+        public_key = note.get_writer_encryption_key()
+        public_signing_key = note.get_writer_signing_key()
         # decrypt the eak to get ak
-        ak = self.decrypt_note_eak(private_key, eak, public_key)
-
+        ak = Crypto.decrypt_note_eak(private_key, eak, public_key)
+        decrypted_note = self.decrypt_note_with_key(note, ak, public_signing_key)
+        # if the note isn't signed, throw an error
+        if decrypted_note.get_signature() == '':
+            raise NoteValidationError('Decrypted note does not include a signature.')
+        return decrypted_note
 
     @classmethod
-    def decrypt_note_with_key(self, ):
-        print('decrypt the note here')
+    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key):
+        """
+        Decrypt and validate every field within a note.
+
+        Parameters
+        ----------
+        note : e3db.Note
+            Encrypted note with signed data
+        ak :
+            Raw access key which is used for decryption
+        verifying_key : 
+            Base64 encoded public signing key which is used for validation
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note
+        """
+
+        # verify the signature from the note
+        verified_salt = self.verify_field('signature', encrypted_note.get_signature(), verifying_key)
+        if verified_salt == encrypted_note.get_signature():
+            signature_salt = None
+        else:
+            signature_salt = verified_salt
+        # copy all of the contents from the encrypted note into a new decrypted note
+        decrypted_note = copy.deepcopy(encrypted_note)
+        decrypted_data = {}
+        # decrypt and verify the signature of each field in data
+        for key in encrypted_note.data:
+            raw_field = Crypto.decrypt_field(encrypted_note.data[key], ak)
+            decrypted_data[key] = self.verify_field(key, raw_field, verifying_key, signature_salt)
+        # replace the data in the new note with the decrypted data
+        decrypted_note.data = decrypted_data
+        return decrypted_note
+
+    @classmethod
+    def verify_field(self, key, value, verifying_key, salt = None):
+        """
+        Verify the key, value & the salt, if it's provided using the verifying key
+
+        Parameters
+        ----------
+        key : 
+            The key for the field which corresponds to the value
+        value :
+            Signed string that needs to be validated
+        verifying_key : 
+            Base64 encoded public signing key which is used for validation
+        salt :
+            A UUID which has already been verified as the salt. If not provided, the salt
+            found in value is used instead
+
+        Returns
+        -------
+        str
+            If verified, the plaintext from the field is returned. Otherwise, an error is thrown.
+        """
+
+        parts = value.split(";")
+        if parts[0] != self.SIGNATURE_VERSION:
+            return value
+        # if the salt was provided but doesn't match the header of the field, throw an error
+        if salt != None and parts[1] != salt:
+            raise NoteValidationError("Provided salt does not match the header. Provided: {} Expected: {}".format(salt, parts[1]))
+        if salt == None:
+            salt = parts[1]
+        header_length = len(parts[0]) + len(parts[1]) + len(parts[2]) + 3
+        signature_length = int(parts[2])
+        signature_index = header_length
+        plaintext_index = header_length + signature_length
+        # get the signature from the field
+        signature = value[signature_index:plaintext_index]
+        # get the plaintext from the field
+        plaintext = value[plaintext_index:]
+        message = Crypto.hashMessage("{}{}{}".format(salt, key, plaintext))
+        raw_signature = Crypto.base64decode(signature)
+        raw_key = Crypto.base64decode(verifying_key)
+        valid_message = Crypto.verify(raw_signature, message, raw_key)
+        if valid_message != message:
+            raise NoteValidationError("Message does not match the expected. Received: {} Expected: {}".format(valid_message, message))
+        return plaintext
+

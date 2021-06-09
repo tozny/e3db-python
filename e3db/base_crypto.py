@@ -11,6 +11,19 @@ class BaseCrypto:
         pass
 
     @classmethod
+    def get_signature_version(self):
+        """
+        Gets the signature version that is supported for Crypto. 
+
+        Returns
+        -------
+        str
+            The current signature version is uuid-v5 format. 
+        """   
+
+        return 'e7737e7c-1637-511e-8bab-93c4f3e26fd9' 
+
+    @classmethod
     def encrypt_secret(self, ak, plain, nonce):
         pass
 

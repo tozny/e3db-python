@@ -21,3 +21,7 @@ class ConflictError(APIError):
 class CryptoError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during Crypto operation: {0}".format(text))
+
+class NoteValidationError(Exception):
+    def __init__(self, text):
+        Exception.__init__(self, "Error during note handling: {0}".format(text))

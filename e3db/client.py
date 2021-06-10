@@ -1435,7 +1435,7 @@ class Client:
         )
 
     @classmethod
-    def decrypt_note(self, note, private_key):
+    def decrypt_note(self, note, private_key, verify_signature=True):
         """
         Decrypt and validate a note response from TozStore using the proper keys.
 
@@ -1446,6 +1446,11 @@ class Client:
 
         private_key : str
             Private encryption key for the reader.
+
+        verify_signature : boolean
+             Flag to indicate whether signature verification is intended. Default
+             value is true, in which case an unverified signature will result in a
+             NoteValidationError. Othewise the error is ignored.
 
         Returns
         -------
@@ -1458,14 +1463,14 @@ class Client:
         public_signing_key = note.get_writer_signing_key()
         # decrypt the eak to get ak
         ak = Crypto.decrypt_note_eak(private_key, eak, public_key)
-        decrypted_note = self.decrypt_note_with_key(note, ak, public_signing_key)
+        decrypted_note = self.decrypt_note_with_key(note, ak, public_signing_key, verify_signature)
         # if the note isn't signed, throw an error
-        if decrypted_note.get_signature() == '':
+        if verify_signature & (decrypted_note.get_signature() == ''):
             raise NoteValidationError('Decrypted note does not include a signature.')
         return decrypted_note
 
     @classmethod
-    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key):
+    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True):
         """
         Decrypt and validate every field within a note.
 
@@ -1473,10 +1478,17 @@ class Client:
         ----------
         note : e3db.Note
             Encrypted note with signed data
+
         ak :
             Raw access key which is used for decryption
+
         verifying_key : 
             Base64 encoded public signing key which is used for validation
+
+        verify_signature : boolean
+             Flag to indicate whether signature verification is intended. Default
+             value is true, in which case an unverified signature will result in a
+             ValidationError 
 
         Returns
         -------
@@ -1485,7 +1497,7 @@ class Client:
         """
 
         # verify the signature from the note
-        verified_salt = self.verify_field('signature', encrypted_note.get_signature(), verifying_key)
+        verified_salt = self.verify_field('signature', encrypted_note.get_signature(), verifying_key, verify_signature=verify_signature)
         if verified_salt == encrypted_note.get_signature():
             signature_salt = None
         else:
@@ -1496,13 +1508,13 @@ class Client:
         # decrypt and verify the signature of each field in data
         for key in encrypted_note.data:
             raw_field = Crypto.decrypt_field(encrypted_note.data[key], ak)
-            decrypted_data[key] = self.verify_field(key, raw_field, verifying_key, signature_salt)
+            decrypted_data[key] = self.verify_field(key, raw_field, verifying_key, signature_salt, verify_signature=verify_signature)
         # replace the data in the new note with the decrypted data
         decrypted_note.data = decrypted_data
         return decrypted_note
 
     @classmethod
-    def verify_field(self, key, value, verifying_key, salt = None):
+    def verify_field(self, key, value, verifying_key, salt = None, verify_signature=True):
         """
         Verify the key, value & the salt, if it's provided using the verifying key
 
@@ -1517,6 +1529,9 @@ class Client:
         salt :
             A UUID which has already been verified as the salt. If not provided, the salt
             found in value is used instead
+        verify_signature :
+            Boolean flag controlling error behavior. When True, will throw NoteVerificationError
+            if signature is invalid. True by default.  
 
         Returns
         -------
@@ -1545,7 +1560,7 @@ class Client:
         raw_signature = Crypto.base64decode(signature)
         raw_key = Crypto.base64decode(verifying_key)
         valid_message = Crypto.verify(raw_signature, message, raw_key)
-        if valid_message != message:
+        if verify_signature & (valid_message != message):
             raise NoteValidationError("Message does not match the expected. Received: {} Expected: {}".format(valid_message, message))
         return plaintext
 

@@ -39,8 +39,7 @@ def test_public_signing_key_derivation():
     is equivalent to the known public signing key. 
     """
     private_b64_decoded = BaseCrypto.base64decode(CREDS["private_signing_key"])
-    priv_key = private_b64_decoded[:SECRET_KEY_BYTES]
-    signing_key = SodiumCrypto.generate_signing_key(priv_key)
+    signing_key = SodiumCrypto.generate_signing_key(private_b64_decoded[:SECRET_KEY_BYTES])
     derived_public_signing_key = signing_key.verify_key
     public_signing_key_encoded = BaseCrypto.base64encode(derived_public_signing_key).decode("utf-8")
     assert(public_signing_key_encoded == CREDS["public_signing_key"])

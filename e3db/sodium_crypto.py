@@ -78,27 +78,6 @@ class SodiumCrypto(BaseCrypto):
         return key.public_key, key
 
     @classmethod
-    def generate_signing_keypair(self):
-        """
-        Generates a SigningKey object and returns the associated public and
-        private signing keys.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        public_signing_key : nacl.signing.SigningKey.VerifyKey
-            Public component of signing key.
-
-        private_signing_key : nacl.signing.SigningKey.
-            Private component of signing key. 
-        """
-        signing_key = nacl.signing.SigningKey.generate()
-        return signing_key.verify_key, signing_key._signing_key
-
-    @classmethod
     def generate_signing_key(self, key: bytes):
         """
         Generate a SigningKey object from a private signing key.

@@ -73,9 +73,8 @@ class NoteOptions():
             JSON-style document containing the Note elements
         """
 
-        # Do key names need to match other SDKs to guarantee interoperability?
         to_serialize = {
-            'note_writer_client_id': self.__note_writer_client_id,
+            'client_id': self.__note_writer_client_id,
             'max_views': self.__max_views,
             'expiration': self.__expiration,
             'expires': self.__expires,

@@ -1,11 +1,10 @@
 import uuid
 import requests
-from requests import auth
-from requests.api import request
 from requests.auth import AuthBase
 from .sodium_crypto import SodiumCrypto
 from .base_crypto import BaseCrypto
 import time
+from urllib.parse import urlparse, parse_qsl, urlencode
 
 class E3DBTSV1Auth(AuthBase):
     HASHING_ALGORITHM = "BLAKE2B"
@@ -67,11 +66,15 @@ class E3DBTSV1Auth(AuthBase):
 
         # Generate header values
         header_string = f"{self.AUTHENTICATION_METHOD}; {public_b64}; {timestamp}; {nonce}; uid:{client_id}"
+        
+        # Parse and sort query parameters
+        url_components = urlparse(r.url)
+        query_components = parse_qsl(url_components.query)
+        query_components.sort()
+        query_string = urlencode(query_components)
 
-        call_path = r.path_url
+        call_path = url_components.path
 
-        # Use urllib to parse out query params from path_url, then convert and order.
-        query_string = "" # Cannot access params from request.PrepraredRequest object
         call_method = r.method
 
         # Hash header values

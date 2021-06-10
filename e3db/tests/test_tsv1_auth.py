@@ -3,8 +3,8 @@ from e3db.sodium_crypto import SodiumCrypto
 
 # Credentials
 CREDS = {
-	"private_signing_key": "d55u6bLR9tkMVA4OwYIPepOOeXVSHHEit8VoXGRMQiaf5wKRk9gooP9pN3LBJ28BIW9fZ9-ZZPLVsHtuPqkRSQ",
-	"public_signing_key": "n-cCkZPYKKD_aTdywSdvASFvX2ffmWTy1bB7bj6pEUk",
+    "private_signing_key": "d55u6bLR9tkMVA4OwYIPepOOeXVSHHEit8VoXGRMQiaf5wKRk9gooP9pN3LBJ28BIW9fZ9-ZZPLVsHtuPqkRSQ",
+    "public_signing_key": "n-cCkZPYKKD_aTdywSdvASFvX2ffmWTy1bB7bj6pEUk",
 	"private_key": "hZ-7-YM149qi2OXxdmFyUPKuLIItmmwSuvk5ZJ64JKo",
 	"api_secret": "87accc0775dd5613574e4b67e85a6b4505d4ceeb879e573f4561c79adaeeebc1",
 	"client_id": "0e8eb8c6-839f-46ca-9843-801c539e490f",
@@ -39,7 +39,8 @@ def test_public_signing_key_derivation():
     is equivalent to the known public signing key. 
     """
     private_b64_decoded = BaseCrypto.base64decode(CREDS["private_signing_key"])
-    signing_key = SodiumCrypto.generate_signing_key(private_b64_decoded[:SECRET_KEY_BYTES])
+    priv_key = private_b64_decoded[:SECRET_KEY_BYTES]
+    signing_key = SodiumCrypto.generate_signing_key(priv_key)
     derived_public_signing_key = signing_key.verify_key
     public_signing_key_encoded = BaseCrypto.base64encode(derived_public_signing_key).decode("utf-8")
     assert(public_signing_key_encoded == CREDS["public_signing_key"])

@@ -16,5 +16,5 @@ class KeyPair():
         -------
         None
         """
-        self.public_key = public_key
+        self.public_key  = public_key
         self.private_key = private_key

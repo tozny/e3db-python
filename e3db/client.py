@@ -550,6 +550,29 @@ class Client:
             Crypto.encode_public_key(public_key).decode("utf-8"),
             Crypto.encode_private_key(private_key).decode("utf-8"))
 
+    @classmethod
+    def generate_signing_keypair(self):
+        """
+        Public Method to generate a public and private signing keypair.
+
+        Used for dynamic registration where SDK generates its own signing keys.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        tuple
+            (public_signing_key, private_signing_key) tuple. Keys are Base64URLEncoded strings
+            of bytes. 
+        """
+        public_signing_key, private_signing_key = Crypto.generate_signing_keypair()
+        return (
+            Crypto.encode_public_key(public_signing_key).decode("utf-8"),
+            Crypto.encode_private_key(private_signing_key).decode("utf-8"))
+
+
     def client_info(self, client_id):
         """
         Public Method to retrieve client info from the server based on client id.

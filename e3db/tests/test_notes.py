@@ -50,17 +50,26 @@ class TestNoteSupport():
     decrypted_note = e3db.Client.decrypt_note(encrypted_note, private_key)
     assert(decrypted_note.data['secret'] == 'data')
 
-  def test_decrypt_note_without_signature_fails(self):
+  def test_decrypt_note_without_signature_fails_by_default(self):
     '''
     Asserts that decryption of a note without a signature fails.
     '''
     encrypted_note.signature = ''
     with pytest.raises(NoteValidationError):
       e3db.Client.decrypt_note(encrypted_note, private_key)
-  
+
+  def test_decrypt_note_without_signature_not_error_if_verify_signature_set_to_false(self):
+    '''
+    Asserts that decryption fo a not without a signature will not fail if
+    the boolean flag verify_signature is set to False
+    '''
+    encrypted_note.signature = ''
+    decrypted_note = e3db.Client.decrypt_note(encrypted_note, private_key, verify_signature=False)
+    assert(decrypted_note.data['secret'] == 'data')
+
   def test_decrypt_note_invalid_signing_key_fails(self):
     '''
-    Asserrs that decryption fails when the wrong private key is provided.
+    Asserts that decryption fails when the wrong private key is provided.
     '''
     encrypted_note.signature = signature
     with pytest.raises(Exception):

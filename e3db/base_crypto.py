@@ -4,6 +4,7 @@ import nacl.hash
 import nacl.encoding
 
 BLAKE2B_HASHER = nacl.hash.blake2b
+SIGNATURE_VERSION = 'e7737e7c-1637-511e-8bab-93c4f3e26fd9'  
 
 class BaseCrypto:
     @classmethod
@@ -21,7 +22,7 @@ class BaseCrypto:
             The current signature version is uuid-v5 format. 
         """   
 
-        return 'e7737e7c-1637-511e-8bab-93c4f3e26fd9' 
+        return SIGNATURE_VERSION
 
     @classmethod
     def encrypt_secret(self, ak, plain, nonce):

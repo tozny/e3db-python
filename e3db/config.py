@@ -59,7 +59,7 @@ class Config:
         """
 
         if private_signing_key == "":
-            self.version = 1
+            self.version = "1"
         else: 
             self.version = version
         self.client_id = client_id

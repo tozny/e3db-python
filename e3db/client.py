@@ -43,11 +43,14 @@ class Client:
         self.client_id = config['client_id']
         self.public_key = config['public_key']
         self.private_key = config['private_key']
-        self.public_signing_key = config['public_signing_key']
-        self.private_signing_key = config['private_signing_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
-        if config['version'] == 2:
+        if config['version'] == "2":
+            self.public_signing_key = config['public_signing_key']
+            self.private_signing_key = config['private_signing_key']
             self.e3db_tsv1_auth = E3DBTSV1Auth(self.private_signing_key, self.client_id)
+        else:
+            self.public_signing_key = ""
+            self.private_signing_key = ""
         self.ak_cache = {}
         if 'client_email' in config.keys():
             self.client_email = config['client_email']
@@ -519,7 +522,7 @@ class Client:
                 client_info['api_secret'],
                 public_key,
                 private_key,
-                api_url=api_url
+                api_url=api_url,
             )
 
             client = Client(config())

@@ -27,6 +27,7 @@ class TestIntegrationClient():
         every time.
         """
         client1_public_key, client1_private_key = e3db.Client.generate_keypair()
+        client1_public_signing_key, client1_private_signing_key = e3db.Client.generate_signing_keypair()
         client1_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client1 = e3db.Client.register(token, client1_name, client1_public_key, api_url=api_url)
         self.test_client1 = test_client1
@@ -40,12 +41,16 @@ class TestIntegrationClient():
             client1_api_secret,
             client1_public_key,
             client1_private_key,
+            client1_public_signing_key,
+            client1_private_signing_key,
             api_url=api_url
         )
 
         self.client1 = e3db.Client(client1_config())
 
         client2_public_key, client2_private_key = e3db.Client.generate_keypair()
+        client2_public_signing_key, client2_private_signing_key = e3db.Client.generate_signing_keypair()
+
         client2_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client2 = e3db.Client.register(token, client2_name, client2_public_key, api_url=api_url)
         self.test_client2 = test_client2
@@ -59,12 +64,15 @@ class TestIntegrationClient():
             client2_api_secret,
             client2_public_key,
             client2_private_key,
+            client2_public_signing_key,
+            client2_private_signing_key,
             api_url=api_url
         )
 
         self.client2 = e3db.Client(client2_config())
 
         client3_public_key, client3_private_key = e3db.Client.generate_keypair()
+        client3_public_signing_key, client3_private_signing_key = e3db.Client.generate_signing_keypair()
         client3_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client3 = e3db.Client.register(token, client3_name, client3_public_key, api_url=api_url)
         self.test_client3 = test_client3
@@ -78,6 +86,8 @@ class TestIntegrationClient():
             client3_api_secret,
             client3_public_key,
             client3_private_key,
+            client3_public_signing_key,
+            client3_private_signing_key,
             api_url=api_url
         )
 
@@ -89,6 +99,7 @@ class TestIntegrationClient():
         created without it contains empty string.
         """
         client_public_key, client_private_key = e3db.Client.generate_keypair()
+        client_public_signing_key, client_private_signing_key = e3db.Client.generate_signing_keypair()
         client_name = "client_email_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client = e3db.Client.register(token, client_name, client_public_key, api_url=api_url)
         client_api_key_id = test_client.api_key_id
@@ -100,7 +111,9 @@ class TestIntegrationClient():
             'api_secret': client_api_secret,
             'api_url': api_url,
             'public_key': client_public_key,
-            'private_key': client_private_key
+            'private_key': client_private_key,
+            'public_signing_key': client_public_signing_key,
+            'private_signing_key': client_private_signing_key
         }
         client_no_email = e3db.Client(client_no_email_config)
         test_email = "test_{0}".format(binascii.hexlify(os.urandom(16)))
@@ -111,6 +124,8 @@ class TestIntegrationClient():
             'api_url': api_url,
             'public_key': client_public_key,
             'private_key': client_private_key,
+            'public_signing_key': client_public_signing_key,
+            'private_signing_key': client_private_signing_key,
             'client_email': test_email
         }
         client_with_email = e3db.Client(client_email_config)
@@ -859,6 +874,7 @@ class TestIntegrationClient():
         """
 
         config_client_public_key, config_client_private_key = e3db.Client.generate_keypair()
+        config_client_public_signing_key, config_client_private_signing_key = e3db.Client.generate_signing_keypair()
         config_client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_config_client = e3db.Client.register(token, config_client_name, config_client_public_key, api_url=api_url)
         config_client_api_key_id = test_config_client.api_key_id
@@ -871,6 +887,8 @@ class TestIntegrationClient():
             config_client_api_secret,
             config_client_public_key,
             config_client_private_key,
+            config_client_public_signing_key,
+            config_client_private_signing_key,
             api_url=api_url
         )
         config_name = "integration_config_{0}".format(binascii.hexlify(os.urandom(16)))
@@ -895,6 +913,8 @@ class TestIntegrationClient():
             read_config_profile['api_secret'],
             read_config_profile['public_key'],
             read_config_profile['private_key'],
+            read_config_profile['public_signing_key'],
+            read_config_profile['private_signing_key'],
             read_config_profile['client_email'],
             read_config_profile['version'],
             read_config_profile['api_url']

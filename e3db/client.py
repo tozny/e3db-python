@@ -6,7 +6,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
-from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, KeyPair, Note, NoteKeys, NoteOptions
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, Note, NoteKeys, NoteOptions, SigningKeyPair, EncryptionKeyPair
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
 import requests
 import shutil
@@ -51,6 +51,9 @@ class Client:
             self.client_email = config['client_email']
         else:
             self.client_email = ''
+
+        self.signing_keys = SigningKeyPair(self.public_signing_key, self.private_signing_key)
+        self.encryption_keys = EncryptionKeyPair(self.public_key, self.private_key)
 
     @classmethod
     def __response_check(self, response):
@@ -1434,18 +1437,11 @@ class Client:
         e3db.Note
             Decrypted E3DB note
         """
-        # Do we need a KeyPair object? 
-        # I think it makes it cleaner, but would agree if it was determined that it 
-        # did not need to be its own type. 
-        signing_keys = KeyPair(self.public_signing_key, self.private_signing_key)
+        return self.__write_note(data, options, recipient_signing_key, self.signing_keys,
+                                recipient_encryption_key, self.encryption_keys)
 
-        encryption_keys = KeyPair(self.public_key, self.private_key)
-
-        return self.__write_note(data, options, recipient_signing_key, signing_keys,
-                                recipient_encryption_key, encryption_keys)
-
-    def __write_note(self, data, options: NoteOptions, recipient_signing_key, signing_keys: KeyPair,
-                     recipient_encryption_key, encryption_keys: KeyPair):      
+    def __write_note(self, data, options: NoteOptions, recipient_signing_key, signing_keys: SigningKeyPair,
+                     recipient_encryption_key, encryption_keys: EncryptionKeyPair):      
         """
         Private Method to create and encrypt a note object, fetch TSV1 authentication,
         and return the signed note. 
@@ -1457,7 +1453,8 @@ class Client:
         -------
         """
         url = self.__get_url("v2", "storage", "notes")
-        note_keys = NoteKeys(None, recipient_signing_key, signing_keys.public_key, encryption_keys.public_key, None)
+        note_keys = NoteKeys(None, recipient_signing_key, signing_keys.public_signing_key, encryption_keys.public_encryption_key, None)
         note = Note(data, note_keys, options)
         response = requests.post(url, data=note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
+        # Assign signature from response to Note here
         return response.status_code

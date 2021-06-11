@@ -35,7 +35,6 @@ class Note():
             self.__note_options = note_options
 
         self.data              = copy.deepcopy(data)
-        self.__eacp            = None 
         self.__views           = None
         self.__note_id         = None
         self.__created_at      = None 
@@ -59,15 +58,28 @@ class Note():
             JSON-style document containing the Note elements
         """
 
-        # Do key names need to match other SDKs to guarantee interoperability?
+        note_keys_decoded = self.__note_keys.to_json()
+        note_options_decoded = self.__note_options.to_json()
+
         to_serialize = {
-            'note_keys': self.__note_keys.to_json(),
-            'note_options': self.__note_options.to_json(),
+            'data': self.data,
             'signature': self.__signature,
             'note_id': self.__note_id,
-            'eacp': self.__eacp,
             'created_at': self.__created_at,
-            'data': self.data
+            'mode': note_keys_decoded['mode'],
+            'note_recipient_signing_key': note_keys_decoded['note_recipient_signing_key'],
+            'note_writer_signing_key': note_keys_decoded['note_writer_signing_key'],
+            'note_writer_encryption_key': note_keys_decoded['note_writer_encryption_key'],
+            'encrypted_access_key': note_keys_decoded['encrypted_access_key'],
+            'client_id': note_options_decoded['client_id'],
+            'type': note_options_decoded['type'],
+            'plain': note_options_decoded['plain'],
+            'file_meta': note_options_decoded['plain'],
+            'max_views': note_options_decoded['max_views'],
+            'expiration': note_options_decoded['expiration'],
+            'expires': note_options_decoded['expires'],
+            'eacp': note_options_decoded['eacp'],
+            'id_string': note_options_decoded['id_string']
         }
 
         return to_serialize

@@ -21,7 +21,7 @@ class NoteKeys():
             Writer's public encryption key
 
         encrypted_access_key : str
-            Encrypted private access key
+            Encrypted access key
 
         Returns
         -------
@@ -49,7 +49,6 @@ class NoteKeys():
             JSON-style document containing the Note elements
         """
 
-        # Do key names need to match other SDKs to guarantee interoperability?
         to_serialize = {
             'mode': self.__mode,
             'note_recipient_signing_key': self.__note_recipient_signing_key,

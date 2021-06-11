@@ -15,4 +15,5 @@ from .search import Range
 from .note import Note
 from .note_keys import NoteKeys
 from .note_options import NoteOptions
-from .key_pair import KeyPair
+from .signing_key_pair import SigningKeyPair
+from .encyption_key_pair import EncryptionKeyPair

@@ -1,4 +1,4 @@
-class KeyPair(): 
+class EncryptionKeyPair(): 
     
     def __init__(self, public_key, private_key):
         """

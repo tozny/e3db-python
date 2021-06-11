@@ -41,9 +41,9 @@ class TestIntegrationClient():
             client1_api_secret,
             client1_public_key,
             client1_private_key,
-            client1_public_signing_key,
-            client1_private_signing_key,
-            api_url=api_url
+            api_url=api_url,
+            public_signing_key=client1_public_signing_key,
+            private_signing_key=client1_private_signing_key
         )
 
         self.client1 = e3db.Client(client1_config())
@@ -64,9 +64,9 @@ class TestIntegrationClient():
             client2_api_secret,
             client2_public_key,
             client2_private_key,
-            client2_public_signing_key,
-            client2_private_signing_key,
-            api_url=api_url
+            api_url=api_url,
+            public_signing_key=client2_public_signing_key,
+            private_signing_key=client2_private_signing_key
         )
 
         self.client2 = e3db.Client(client2_config())
@@ -86,9 +86,9 @@ class TestIntegrationClient():
             client3_api_secret,
             client3_public_key,
             client3_private_key,
-            client3_public_signing_key,
-            client3_private_signing_key,
-            api_url=api_url
+            api_url=api_url,
+            public_signing_key=client3_public_signing_key,
+            private_signing_key=client3_private_signing_key
         )
 
         self.client3 = e3db.Client(client3_config())
@@ -113,7 +113,8 @@ class TestIntegrationClient():
             'public_key': client_public_key,
             'private_key': client_private_key,
             'public_signing_key': client_public_signing_key,
-            'private_signing_key': client_private_signing_key
+            'private_signing_key': client_private_signing_key,
+            'version': 2
         }
         client_no_email = e3db.Client(client_no_email_config)
         test_email = "test_{0}".format(binascii.hexlify(os.urandom(16)))
@@ -126,7 +127,8 @@ class TestIntegrationClient():
             'private_key': client_private_key,
             'public_signing_key': client_public_signing_key,
             'private_signing_key': client_private_signing_key,
-            'client_email': test_email
+            'client_email': test_email,
+            'version': 2
         }
         client_with_email = e3db.Client(client_email_config)
         assert(client_no_email.client_email == "")
@@ -923,3 +925,42 @@ class TestIntegrationClient():
         # If this doesn't throw an exception during instantiation, we loaded
         # the configuration properly
         config_client = e3db.Client(read_client_config())
+
+    def test_client_signing_keys_optional(self):
+        """
+        Client created without signing keys contains correct value; client 
+        created without it contains empty string.
+        """
+        client_public_key, client_private_key = e3db.Client.generate_keypair()
+        client_name = "client_no_signing_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_client = e3db.Client.register(token, client_name, client_public_key, api_url=api_url)
+        client_api_key_id = test_client.api_key_id
+        client_api_secret = test_client.api_secret
+        client_id = test_client.client_id
+        client_no_signing_config = e3db.Config(
+            client_id,
+            client_api_key_id,
+            client_api_secret,
+            client_public_key,
+            client_private_key,
+            api_url=api_url,
+        )
+        client_no_signing_keys = e3db.Client(client_no_signing_config())
+
+        client_public_signing_key, client_private_signing_key = e3db.Client.generate_signing_keypair()
+        client_signing_config = e3db.Config(
+            client_id,
+            client_api_key_id,
+            client_api_secret,
+            client_public_key,
+            client_private_key,
+            api_url=api_url,
+            public_signing_key=client_public_signing_key,
+            private_signing_key=client_private_signing_key
+        )
+
+        client_signing_keys = e3db.Client(client_signing_config())
+        assert(client_no_signing_keys.private_signing_key == "")
+        assert(client_no_signing_keys.public_signing_key == "")
+        assert(client_signing_keys.private_signing_key == client_private_signing_key)
+        assert(client_signing_keys.public_signing_key == client_public_signing_key)

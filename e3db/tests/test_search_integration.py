@@ -17,6 +17,7 @@ class TestSearchIntegration():
     @classmethod
     def register_client(self):
         client1_public_key, client1_private_key = e3db.Client.generate_keypair()
+        client1_public_signing_key, client1_private_signing_key = e3db.Client.generate_signing_keypair()
         client1_name = "email_{0}@tozny.com".format(time.time())
         test_client1 = e3db.Client.register(token, client1_name, client1_public_key, api_url=api_url)
         client1_api_key_id = test_client1.api_key_id
@@ -29,11 +30,14 @@ class TestSearchIntegration():
             client1_api_secret,
             client1_public_key,
             client1_private_key,
+            client1_public_signing_key,
+            client1_private_signing_key,
             api_url=api_url 
         )
         self.client1 = e3db.Client(client1_config())
 
         client2_public_key, client2_private_key = e3db.Client.generate_keypair()
+        client2_public_signing_key, client2_private_signing_key = e3db.Client.generate_signing_keypair()
         client2_name = "email_{0}@tozny.com".format(time.time())
         test_client2 = e3db.Client.register(token, client2_name, client2_public_key, api_url=api_url)
         client2_api_key_id = test_client2.api_key_id
@@ -46,6 +50,8 @@ class TestSearchIntegration():
             client2_api_secret,
             client2_public_key,
             client2_private_key,
+            client2_public_signing_key,
+            client2_private_signing_key,
             api_url=api_url 
         )
         self.client2 = e3db.Client(client2_config())

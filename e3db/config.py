@@ -12,7 +12,7 @@ class Config:
 
     DEFAULT_API_URL = "https://api.e3db.com"
 
-    def __init__(self, client_id, api_key_id, api_secret, public_key, private_key, public_signing_key, private_signing_key, client_email="", version="2", api_url=DEFAULT_API_URL):
+    def __init__(self, client_id, api_key_id, api_secret, public_key, private_key, client_email="", version="2", api_url=DEFAULT_API_URL, public_signing_key="", private_signing_key=""):
         """
         Initialize the Config class.
 
@@ -59,7 +59,7 @@ class Config:
         """
 
         if private_signing_key == "":
-            self.version = 1
+            self.version = "1"
         else: 
             self.version = version
         self.client_id = client_id

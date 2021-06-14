@@ -21,7 +21,7 @@ class NoteKeys():
             Writer's public encryption key
 
         encrypted_access_key : str
-            Encrypted private access key
+            Encrypted access key
 
         Returns
         -------
@@ -29,11 +29,11 @@ class NoteKeys():
         """
 
         # These may need to be typed properly! (see e.g. meta.py)
-        self.__mode                     = mode
+        self.__mode                          = mode
         self.__note_recipient_signing_key    = note_recipient_signing_key
         self.__note_writer_signing_key       = note_writer_signing_key
         self.__note_writer_encryption_key    = note_writer_encryption_key
-        self.__encrypted_access_key     = encrypted_access_key
+        self.__encrypted_access_key          = encrypted_access_key
 
     def to_json(self) -> dict:
         """
@@ -49,7 +49,6 @@ class NoteKeys():
             JSON-style document containing the Note elements
         """
 
-        # Do key names need to match other SDKs to guarantee interoperability?
         to_serialize = {
             'mode': self.__mode,
             'note_recipient_signing_key': self.__note_recipient_signing_key,

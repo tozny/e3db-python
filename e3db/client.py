@@ -6,7 +6,7 @@ if 'CRYPTO_SUITE' in os.environ and os.environ['CRYPTO_SUITE'] == 'NIST':
 else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
-from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, Note
+from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, Note, NoteKeys, NoteOptions, SigningKeyPair, EncryptionKeyPair
 from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError, NoteValidationError
 import requests
 import shutil
@@ -56,6 +56,9 @@ class Client:
             self.client_email = config['client_email']
         else:
             self.client_email = ''
+
+        self.signing_keys = SigningKeyPair(self.public_signing_key, self.private_signing_key)
+        self.encryption_keys = EncryptionKeyPair(self.public_key, self.private_key)
 
     @classmethod
     def __response_check(self, response):
@@ -1438,6 +1441,51 @@ class Client:
             plain=response_json['meta']['plain']
         )
 
+    def write_note(self, data: dict, recipient_encryption_key: str, recipient_signing_key: str, options: NoteOptions):
+        """
+        Public Method to make a note, encrypt it locally, and send it
+        to the server.
+
+        Parameters
+        ----------
+        data : dict 
+
+
+        recipient_encryption_key : str
+
+
+        recipient_signing_key : str
+
+
+        options : types.NoteOptions
+      
+        Returns
+        -------
+        e3db.Note
+            Decrypted E3DB note
+        """
+        return self.__write_note(data, options, recipient_signing_key, self.signing_keys,
+                                recipient_encryption_key, self.encryption_keys)
+      
+    def __write_note(self, data, options: NoteOptions, recipient_signing_key, signing_keys: SigningKeyPair,
+                     recipient_encryption_key, encryption_keys: EncryptionKeyPair):      
+        """
+        Private Method to create and encrypt a note object, fetch TSV1 authentication,
+        and return the signed note. 
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+        url = self.__get_url("v2", "storage", "notes")
+        note_keys = NoteKeys(None, recipient_signing_key, signing_keys.public_signing_key, encryption_keys.public_encryption_key, None)
+        note = Note(data, note_keys, options)
+        response = requests.post(url, data=note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
+        # Assign signature from response to Note here
+        return response.status_code
+
     @classmethod
     def decrypt_note(self, note, private_key, verify_signature=True):
         """
@@ -1493,7 +1541,7 @@ class Client:
              Flag to indicate whether signature verification is intended. Default
              value is true, in which case an unverified signature will result in a
              ValidationError 
-
+        
         Returns
         -------
         e3db.Note
@@ -1567,4 +1615,3 @@ class Client:
         if verify_signature & (valid_message != message):
             raise NoteValidationError("Message does not match the expected. Received: {} Expected: {}".format(valid_message, message))
         return plaintext
-

@@ -1,11 +1,10 @@
-from uuid import UUID
-from nacl import public
+import uuid
 import requests
-from requests import auth
 from requests.auth import AuthBase
 from .sodium_crypto import SodiumCrypto
 from .base_crypto import BaseCrypto
-import datetime 
+import time
+from urllib.parse import urlparse, parse_qsl, urlencode
 
 class E3DBTSV1Auth(AuthBase):
     HASHING_ALGORITHM = "BLAKE2B"
@@ -21,10 +20,10 @@ class E3DBTSV1Auth(AuthBase):
         self.private_b64_decoded = BaseCrypto.base64decode(self.private_signing_key)[:self.SECRET_KEY_BYTES]
         self.signing_key = SodiumCrypto.generate_signing_key(self.private_b64_decoded)
         self.public_signing_key = self.signing_key.verify_key
-        self.public_b64 = BaseCrypto.base64encode(self.public_signing_key).decode("utf-8") 
 
+        self.public_b64 = BaseCrypto.base64encode(self.public_signing_key).decode("utf-8")
 
-    def __call__(self, r: requests.Request):
+    def __call__(self, r: requests.PreparedRequest):
         """
         TSV1 authentication of requests. Sets the authorization header of a request
         to be the client's signature. 
@@ -42,13 +41,13 @@ class E3DBTSV1Auth(AuthBase):
         requests.Request
             Request with authentication headers set with signature. 
         """
-        timestamp = datetime.datetime.now()
-        nonce = SodiumCrypto.random_nonce()
-        self.create_tsv1_signature(r, nonce, timestamp)
+        timestamp = int(time.time())
+        nonce = str(uuid.uuid4())
+        self.create_tsv1_signature(r, self.public_b64, self.private_b64_decoded, self.client_id, nonce, timestamp)
         return r
 
     @classmethod
-    def create_tsv1_signature(self, r: requests.Request, nonce: UUID, timestamp: int):
+    def create_tsv1_signature(self, r: requests.models.PreparedRequest, public_b64: str, private_b64_decoded: bytes, client_id: str, nonce: str, timestamp: int):
         """
         Creates a TSV1 Signature and sets the request's authorization header.
 
@@ -66,10 +65,16 @@ class E3DBTSV1Auth(AuthBase):
         """
 
         # Generate header values
-        header_string = f"{self.AUTHENTICATION_METHOD}; {self.public_b64}; {timestamp}; {nonce}; uid:{self.client_id}"
+        header_string = f"{self.AUTHENTICATION_METHOD}; {public_b64}; {timestamp}; {nonce}; uid:{client_id}"
+        
+        # Parse and sort query parameters
+        url_components = urlparse(r.url)
+        query_components = parse_qsl(url_components.query)
+        query_components.sort()
+        query_string = urlencode(query_components)
 
-        call_path = r.url
-        query_string = r.params
+        call_path = url_components.path
+
         call_method = r.method
 
         # Hash header values
@@ -77,7 +82,7 @@ class E3DBTSV1Auth(AuthBase):
 
         # Sign hash
         string_to_sign = BaseCrypto.hashString(string_to_hash)
-        full_signature = SodiumCrypto.sign_string(string_to_sign, self.private_b64_decoded)
+        full_signature = SodiumCrypto.sign_string(string_to_sign, private_b64_decoded)
         signature_b64 = BaseCrypto.base64encode(full_signature.signature).decode("utf-8")
 
         # Add authorization headers to request

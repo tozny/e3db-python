@@ -31,7 +31,9 @@ class TestIntegrationClient():
         client1_public_key, client1_private_key = e3db.Client.generate_keypair()
         client1_public_signing_key, client1_private_signing_key = e3db.Client.generate_signing_keypair()
         client1_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
-        test_client1 = e3db.Client.register(token, client1_name, client1_public_key, api_url=api_url)
+        test_client1 = e3db.Client.register(token, client1_name, client1_public_key, api_url=api_url, 
+                                            public_signing_key=client1_public_signing_key,
+                                            private_signing_key=client1_private_signing_key)
         self.test_client1 = test_client1
         client1_api_key_id = test_client1.api_key_id
         client1_api_secret = test_client1.api_secret
@@ -54,7 +56,10 @@ class TestIntegrationClient():
         client2_public_signing_key, client2_private_signing_key = e3db.Client.generate_signing_keypair()
 
         client2_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
-        test_client2 = e3db.Client.register(token, client2_name, client2_public_key, api_url=api_url)
+        test_client2 = e3db.Client.register(token, client2_name, client2_public_key, api_url=api_url,
+                                            public_signing_key=client2_public_signing_key,
+                                            private_signing_key=client2_private_signing_key)
+
         self.test_client2 = test_client2
         client2_api_key_id = test_client2.api_key_id
         client2_api_secret = test_client2.api_secret
@@ -76,7 +81,10 @@ class TestIntegrationClient():
         client3_public_key, client3_private_key = e3db.Client.generate_keypair()
         client3_public_signing_key, client3_private_signing_key = e3db.Client.generate_signing_keypair()
         client3_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
-        test_client3 = e3db.Client.register(token, client3_name, client3_public_key, api_url=api_url)
+        test_client3 = e3db.Client.register(token, client3_name, client3_public_key, api_url=api_url,
+                                            public_signing_key=client1_public_signing_key,
+                                            private_signing_key=client1_private_signing_key)
+
         self.test_client3 = test_client3
         client3_api_key_id = test_client3.api_key_id
         client3_api_secret = test_client3.api_secret
@@ -180,6 +188,64 @@ class TestIntegrationClient():
         assert(api_secret != "")
         assert(client_id != "")
         assert(public_key == test_client_public_key)
+        assert(client_name == test_name)
+
+    def test_can_register_v2_client(self):
+        """
+        Create and register a v2 client using registration token to associate it
+        with our Tozny account. Sends signing keys in payload to v2
+        client register URL.
+        """
+        public_key, private_key = e3db.Client.generate_keypair()
+        public_signing_key, private_signing_key = e3db.Client.generate_signing_keypair()
+        client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_client = e3db.Client.register(token, client_name, public_key, api_url=api_url,
+                                           public_signing_key=public_signing_key)
+        api_key_id = test_client.api_key_id
+        api_secret = test_client.api_secret
+        test_client_public_key = test_client.public_key
+        test_client_public_signing_key = test_client.public_signing_key
+        test_name = test_client.name
+        client_id = test_client.client_id
+
+        assert(api_key_id != "")
+        assert(api_secret != "")
+        assert(client_id != "")
+        assert(public_key == test_client_public_key)
+        assert(public_signing_key == test_client_public_signing_key)
+        assert(client_name == test_name)
+
+    def test_can_register_v2_client_backup(self):
+        # This test is skipped if crypto mode is 'nist', as is does in test_can_register_client_backup(). 
+        # Why is this? What is the "wierdness"?
+        if crypto_mode() == 'nist':
+            pytest.skip("Skipping client backup to avoid Sodium/NIST interaction weirdness")
+
+        """
+        Create and register a v2 client using registration token to associate it
+        with our Tozny account. Sends signing keys in payload to v2
+        client register URL. Also backup the credentials to the backup client 
+        for later key recovery.
+        """
+        public_key, private_key = e3db.Client.generate_keypair()
+        public_signing_key, private_signing_key = e3db.Client.generate_signing_keypair()
+        client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_client = e3db.Client.register(token, client_name, public_key, private_key=private_key, backup=True,
+                                           api_url=api_url,
+                                           public_signing_key=public_signing_key,
+                                           private_signing_key=private_signing_key)
+        api_key_id = test_client.api_key_id
+        api_secret = test_client.api_secret
+        test_client_public_key = test_client.public_key
+        test_client_public_signing_key = test_client.public_signing_key
+        test_name = test_client.name
+        client_id = test_client.client_id
+
+        assert(api_key_id != "")
+        assert(api_secret != "")
+        assert(client_id != "")
+        assert(public_key == test_client_public_key)
+        assert(public_signing_key == test_client_public_signing_key)
         assert(client_name == test_name)
 
     def test_get_client_info(self):
@@ -1035,7 +1101,7 @@ class TestIntegrationClient():
         Later, assert correct response note instead of status code. 
         """
         conf = ''
-        path = "./test_client.json" 
+        path = "./test_client.json"
         if os.path.exists(path): # Must run pytest in /e3db/tests/ directory to find .json with this path
                 conf = json.load(open(path))
         else:
@@ -1043,7 +1109,7 @@ class TestIntegrationClient():
             sys.exit()
         client = e3db.Client(conf)
 
-        note_data = {} # Empty stub 
+        note_data = {} # Empty stub
 
         # Optional values, but for this test it gives a convenient way of getting the client_id
         note_options = e3db.types.NoteOptions(client.client_id, 3, None, None, None, None, None, None)

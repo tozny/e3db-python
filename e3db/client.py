@@ -7,11 +7,12 @@ else:
     from .sodium_crypto import SodiumCrypto as Crypto
 from .config import Config
 from .types import ClientDetails, ClientInfo, IncomingSharingPolicy, OutgoingSharingPolicy, Meta, QueryResult, Query, Record, AuthorizerPolicy, File, Search, SearchResult, Params, Range, Note, NoteKeys, NoteOptions, SigningKeyPair, EncryptionKeyPair
-from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError
+from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError, NoteValidationError
 import requests
 import shutil
 import hashlib
 import tempfile
+import copy
 
 class Client:
     """
@@ -42,10 +43,14 @@ class Client:
         self.client_id = config['client_id']
         self.public_key = config['public_key']
         self.private_key = config['private_key']
-        self.public_signing_key = config['public_signing_key']
-        self.private_signing_key = config['private_signing_key']
         self.e3db_auth = E3DBAuth(self.api_key_id, self.api_secret, self.api_url)
-        self.e3db_tsv1_auth = E3DBTSV1Auth(self.private_signing_key, self.client_id)
+        if config['version'] == "2":
+            self.public_signing_key = config['public_signing_key']
+            self.private_signing_key = config['private_signing_key']
+            self.e3db_tsv1_auth = E3DBTSV1Auth(self.private_signing_key, self.client_id)
+        else:
+            self.public_signing_key = ""
+            self.private_signing_key = ""
         self.ak_cache = {}
         if 'client_email' in config.keys():
             self.client_email = config['client_email']
@@ -520,7 +525,7 @@ class Client:
                 client_info['api_secret'],
                 public_key,
                 private_key,
-                api_url=api_url
+                api_url=api_url,
             )
 
             client = Client(config())
@@ -552,6 +557,29 @@ class Client:
         return (
             Crypto.encode_public_key(public_key).decode("utf-8"),
             Crypto.encode_private_key(private_key).decode("utf-8"))
+
+    @classmethod
+    def generate_signing_keypair(self):
+        """
+        Public Method to generate a public and private signing keypair.
+
+        Used for dynamic registration where SDK generates its own signing keys.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        tuple
+            (public_signing_key, private_signing_key) tuple. Keys are Base64URLEncoded strings
+            of bytes. 
+        """
+        public_signing_key, private_signing_key = Crypto.generate_signing_keypair()
+        return (
+            Crypto.encode_public_key(public_signing_key).decode("utf-8"),
+            Crypto.encode_private_key(private_signing_key).decode("utf-8"))
+
 
     def client_info(self, client_id):
         """
@@ -1430,8 +1458,7 @@ class Client:
 
 
         options : types.NoteOptions
-
-
+      
         Returns
         -------
         e3db.Note
@@ -1439,7 +1466,7 @@ class Client:
         """
         return self.__write_note(data, options, recipient_signing_key, self.signing_keys,
                                 recipient_encryption_key, self.encryption_keys)
-
+      
     def __write_note(self, data, options: NoteOptions, recipient_signing_key, signing_keys: SigningKeyPair,
                      recipient_encryption_key, encryption_keys: EncryptionKeyPair):      
         """
@@ -1458,3 +1485,133 @@ class Client:
         response = requests.post(url, data=note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
         # Assign signature from response to Note here
         return response.status_code
+
+    @classmethod
+    def decrypt_note(self, note, private_key, verify_signature=True):
+        """
+        Decrypt and validate a note response from TozStore using the proper keys.
+
+        Parameters
+        ----------
+        note : e3db.Note
+            Encrypted note
+
+        private_key : str
+            Private encryption key for the reader.
+
+        verify_signature : boolean
+             Flag to indicate whether signature verification is intended. Default
+             value is true, in which case an unverified signature will result in a
+             NoteValidationError. Othewise the error is ignored.
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note
+        """
+
+        eak = note.get_eak()
+        public_key = note.get_writer_encryption_key()
+        public_signing_key = note.get_writer_signing_key()
+        # decrypt the eak to get ak
+        ak = Crypto.decrypt_note_eak(private_key, eak, public_key)
+        decrypted_note = self.decrypt_note_with_key(note, ak, public_signing_key, verify_signature)
+        # if the note isn't signed, throw an error
+        if verify_signature & (decrypted_note.get_signature() == ''):
+            raise NoteValidationError('Decrypted note does not include a signature.')
+        return decrypted_note
+
+    @classmethod
+    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True):
+        """
+        Decrypt and validate every field within a note.
+
+        Parameters
+        ----------
+        note : e3db.Note
+            Encrypted note with signed data
+
+        ak :
+            Raw access key which is used for decryption
+
+        verifying_key : 
+            Base64 encoded public signing key which is used for validation
+
+        verify_signature : boolean
+             Flag to indicate whether signature verification is intended. Default
+             value is true, in which case an unverified signature will result in a
+             ValidationError 
+        
+        Returns
+        -------
+        e3db.Note
+            Decrypted note
+        """
+
+        # verify the signature from the note
+        verified_salt = self.verify_field('signature', encrypted_note.get_signature(), verifying_key, verify_signature=verify_signature)
+        if verified_salt == encrypted_note.get_signature():
+            signature_salt = None
+        else:
+            signature_salt = verified_salt
+        # copy all of the contents from the encrypted note into a new decrypted note
+        decrypted_note = copy.deepcopy(encrypted_note)
+        decrypted_data = {}
+        # decrypt and verify the signature of each field in data
+        for key in encrypted_note.data:
+            raw_field = Crypto.decrypt_field(encrypted_note.data[key], ak)
+            decrypted_data[key] = self.verify_field(key, raw_field, verifying_key, signature_salt, verify_signature=verify_signature)
+        # replace the data in the new note with the decrypted data
+        decrypted_note.data = decrypted_data
+        return decrypted_note
+
+    @classmethod
+    def verify_field(self, key, value, verifying_key, salt = None, verify_signature=True):
+        """
+        Verify the key, value & the salt, if it's provided using the verifying key
+
+        Parameters
+        ----------
+        key : 
+            The key for the field which corresponds to the value
+        value :
+            Signed string that needs to be validated
+        verifying_key : 
+            Base64 encoded public signing key which is used for validation
+        salt :
+            A UUID which has already been verified as the salt. If not provided, the salt
+            found in value is used instead
+        verify_signature :
+            Boolean flag controlling error behavior. When True, will throw NoteVerificationError
+            if signature is invalid. True by default.  
+
+        Returns
+        -------
+        str
+            If verified, the plaintext from the field is returned. Otherwise, an error is thrown.
+        """
+
+        parts = value.split(";")
+        # if the field doesn't have the correct signature version as a prefix, assume it's not signed & return without validating
+        if parts[0] != Crypto.get_signature_version():
+            return value
+        # if the salt was provided but doesn't match the header of the field, throw an error
+        if salt != None and parts[1] != salt:
+            raise NoteValidationError("Provided salt does not match the header. Provided: {} Expected: {}".format(salt, parts[1]))
+        if salt == None:
+            salt = parts[1]
+        header_length = len(parts[0]) + len(parts[1]) + len(parts[2]) + 3
+        signature_length = int(parts[2])
+        signature_index = header_length
+        plaintext_index = header_length + signature_length
+        # get the signature from the field
+        signature = value[signature_index:plaintext_index]
+        # get the plaintext from the field
+        plaintext = value[plaintext_index:]
+        message = Crypto.hashMessage("{}{}{}".format(salt, key, plaintext))
+        raw_signature = Crypto.base64decode(signature)
+        raw_key = Crypto.base64decode(verifying_key)
+        valid_message = Crypto.verify(raw_signature, message, raw_key)
+        if verify_signature & (valid_message != message):
+            raise NoteValidationError("Message does not match the expected. Received: {} Expected: {}".format(valid_message, message))
+        return plaintext

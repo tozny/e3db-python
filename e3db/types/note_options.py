@@ -86,3 +86,39 @@ class NoteOptions():
         }
 
         return to_serialize
+
+    @property
+    def note_writer_client_id(self):
+        return self.__note_writer_client_id
+
+    @property
+    def max_views(self):
+        return self.__max_views
+
+    @property
+    def expiration(self):
+        return self.__expiration
+
+    @property
+    def expires(self):
+        return self.__expires
+
+    @property
+    def eacp(self):
+        return self.__eacp
+
+    @property
+    def id_string(self):
+        return self.__id_string
+
+    @property
+    def type(self):
+        return self.__type
+
+    @property
+    def plain(self):
+        return self.__plain
+
+    @property
+    def file_meta(self):
+        return self.__file_meta

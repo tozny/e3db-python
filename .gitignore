@@ -102,3 +102,7 @@ ENV/
 .mypy_cache/
 
 _build/
+
+.vscode
+10mb.txt
+decrypted-10mb.txt

@@ -28,21 +28,20 @@ class Note():
             raise TypeError(f"NoteKey object is not e3db.NoteKeys type. Given type: {type(note_keys)}")
         else:
             self.__note_keys = note_keys
-
         if note_options and (not isinstance(note_options, NoteOptions)):
             raise TypeError(f"NoteOptions object is not e3db.NoteOptions type. Given type: {type(note_options)}")
         else:
             self.__note_options = note_options
-
-        self.data              = copy.deepcopy(data)
-        self.__views           = None
-        self.__note_id         = None
-        self.__created_at      = None 
+        self.__eacp                          = None 
+        self.__views                         = None
+        self.__note_id                       = None
+        self.__created_at                    = None 
+        self.data                            = copy.deepcopy(data)
 
         # Signing makes sense to do after Note creation from a user's perspective.
         # Makes less sense to, say, "create this note with a signature you already have"
         # rather than "create a note, then sign it when you want to write it". 
-        self.__signature       = "" 
+        self.__signature                     = "" 
 
     def to_json(self):
         """
@@ -223,7 +222,7 @@ class Note():
         recipient_signing_key : str
 
         """
-        return self.__recipient_signing_key
+        return self.__note_keys.note_recipient_signing_key
 
     def get_writer_signing_key(self) -> str:
         """
@@ -238,9 +237,9 @@ class Note():
         writer_signing_key : str
 
         """
-        return self.__writer_signing_key
+        return self.__note_keys.note_writer_signing_key
 
-    def get_writer_encrpytion_key(self) -> str:
+    def get_writer_encryption_key(self) -> str:
         """
         Get the writer's encryption key associated with the Note. 
 
@@ -253,7 +252,7 @@ class Note():
         writer_encryption_key : str
 
         """
-        return self.__writer_encryption_key
+        return self.__note_keys.note_writer_encryption_key
 
     def get_eak(self) -> str:
         """
@@ -268,7 +267,7 @@ class Note():
         encrypted_access_key : str
 
         """
-        return self.__encrypted_access_key
+        return self.__note_keys.encrypted_access_key
 
     def get_type(self) -> str:
         """
@@ -283,7 +282,7 @@ class Note():
         type : str
 
         """
-        return self.__type
+        return self.__note_options.type
 
     def get_data(self) -> dict:
         """
@@ -298,7 +297,7 @@ class Note():
         data : dict
             JSON-style dictionary
         """
-        return self.__data
+        return self.data
 
     def get_plain(self) -> dict:
         """
@@ -313,7 +312,7 @@ class Note():
         plain : dict
             JSON-style dictionary
         """
-        return self.__plain
+        return self.__note_options.plain
 
     def get_file_meta(self) -> dict:
         """
@@ -328,7 +327,7 @@ class Note():
         file_meta : dict
             JSON-style dictionary
         """
-        return self.__file_meta
+        return self.__note_options.file_meta
         
     def get_signature(self) -> str:
         """
@@ -358,7 +357,7 @@ class Note():
         max_views : int
 
         """
-        return self.__max_views
+        return self.__note_options.max_views
 
     def get_views(self) -> int:
         """
@@ -387,9 +386,9 @@ class Note():
         expiration : str
             RFC3339 String 
         """
-        return self.__expiration
+        return self.__note_options.expiration
 
-    def is_expires(self) -> bool:
+    def is_expired(self) -> bool:
         """
         Checks whether the note has expired.
 
@@ -402,7 +401,7 @@ class Note():
         expires : bool
             Truth value determining whether the note has expired
         """
-        return self.__expires
+        return self.__note_options.expires
         
     def get_eacp(self):
         return NotImplementedError

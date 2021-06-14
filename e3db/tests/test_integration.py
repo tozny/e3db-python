@@ -29,6 +29,7 @@ class TestIntegrationClient():
         every time.
         """
         client1_public_key, client1_private_key = e3db.Client.generate_keypair()
+        client1_public_signing_key, client1_private_signing_key = e3db.Client.generate_signing_keypair()
         client1_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client1 = e3db.Client.register(token, client1_name, client1_public_key, api_url=api_url)
         self.test_client1 = test_client1
@@ -42,12 +43,16 @@ class TestIntegrationClient():
             client1_api_secret,
             client1_public_key,
             client1_private_key,
-            api_url=api_url
+            api_url=api_url,
+            public_signing_key=client1_public_signing_key,
+            private_signing_key=client1_private_signing_key
         )
 
         self.client1 = e3db.Client(client1_config())
 
         client2_public_key, client2_private_key = e3db.Client.generate_keypair()
+        client2_public_signing_key, client2_private_signing_key = e3db.Client.generate_signing_keypair()
+
         client2_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client2 = e3db.Client.register(token, client2_name, client2_public_key, api_url=api_url)
         self.test_client2 = test_client2
@@ -61,12 +66,15 @@ class TestIntegrationClient():
             client2_api_secret,
             client2_public_key,
             client2_private_key,
-            api_url=api_url
+            api_url=api_url,
+            public_signing_key=client2_public_signing_key,
+            private_signing_key=client2_private_signing_key
         )
 
         self.client2 = e3db.Client(client2_config())
 
         client3_public_key, client3_private_key = e3db.Client.generate_keypair()
+        client3_public_signing_key, client3_private_signing_key = e3db.Client.generate_signing_keypair()
         client3_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client3 = e3db.Client.register(token, client3_name, client3_public_key, api_url=api_url)
         self.test_client3 = test_client3
@@ -80,7 +88,9 @@ class TestIntegrationClient():
             client3_api_secret,
             client3_public_key,
             client3_private_key,
-            api_url=api_url
+            api_url=api_url,
+            public_signing_key=client3_public_signing_key,
+            private_signing_key=client3_private_signing_key
         )
 
         self.client3 = e3db.Client(client3_config())
@@ -91,6 +101,7 @@ class TestIntegrationClient():
         created without it contains empty string.
         """
         client_public_key, client_private_key = e3db.Client.generate_keypair()
+        client_public_signing_key, client_private_signing_key = e3db.Client.generate_signing_keypair()
         client_name = "client_email_{0}".format(binascii.hexlify(os.urandom(16)))
         test_client = e3db.Client.register(token, client_name, client_public_key, api_url=api_url)
         client_api_key_id = test_client.api_key_id
@@ -102,7 +113,10 @@ class TestIntegrationClient():
             'api_secret': client_api_secret,
             'api_url': api_url,
             'public_key': client_public_key,
-            'private_key': client_private_key
+            'private_key': client_private_key,
+            'public_signing_key': client_public_signing_key,
+            'private_signing_key': client_private_signing_key,
+            'version': 2
         }
         client_no_email = e3db.Client(client_no_email_config)
         test_email = "test_{0}".format(binascii.hexlify(os.urandom(16)))
@@ -113,7 +127,10 @@ class TestIntegrationClient():
             'api_url': api_url,
             'public_key': client_public_key,
             'private_key': client_private_key,
-            'client_email': test_email
+            'public_signing_key': client_public_signing_key,
+            'private_signing_key': client_private_signing_key,
+            'client_email': test_email,
+            'version': 2
         }
         client_with_email = e3db.Client(client_email_config)
         assert(client_no_email.client_email == "")
@@ -861,6 +878,7 @@ class TestIntegrationClient():
         """
 
         config_client_public_key, config_client_private_key = e3db.Client.generate_keypair()
+        config_client_public_signing_key, config_client_private_signing_key = e3db.Client.generate_signing_keypair()
         config_client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
         test_config_client = e3db.Client.register(token, config_client_name, config_client_public_key, api_url=api_url)
         config_client_api_key_id = test_config_client.api_key_id
@@ -873,6 +891,8 @@ class TestIntegrationClient():
             config_client_api_secret,
             config_client_public_key,
             config_client_private_key,
+            config_client_public_signing_key,
+            config_client_private_signing_key,
             api_url=api_url
         )
         config_name = "integration_config_{0}".format(binascii.hexlify(os.urandom(16)))
@@ -897,6 +917,8 @@ class TestIntegrationClient():
             read_config_profile['api_secret'],
             read_config_profile['public_key'],
             read_config_profile['private_key'],
+            read_config_profile['public_signing_key'],
+            read_config_profile['private_signing_key'],
             read_config_profile['client_email'],
             read_config_profile['version'],
             read_config_profile['api_url']
@@ -905,6 +927,103 @@ class TestIntegrationClient():
         # If this doesn't throw an exception during instantiation, we loaded
         # the configuration properly
         config_client = e3db.Client(read_client_config())
+
+    def test_client_signing_keys_optional(self):
+        """
+        Client created without signing keys contains correct value; client 
+        created without it contains empty string.
+        """
+        client_public_key, client_private_key = e3db.Client.generate_keypair()
+        client_name = "client_no_signing_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_client = e3db.Client.register(token, client_name, client_public_key, api_url=api_url)
+        client_api_key_id = test_client.api_key_id
+        client_api_secret = test_client.api_secret
+        client_id = test_client.client_id
+        client_no_signing_config = e3db.Config(
+            client_id,
+            client_api_key_id,
+            client_api_secret,
+            client_public_key,
+            client_private_key,
+            api_url=api_url
+        )
+        client_no_signing_keys = e3db.Client(client_no_signing_config())
+
+        client_public_signing_key, client_private_signing_key = e3db.Client.generate_signing_keypair()
+        client_signing_config = e3db.Config(
+            client_id,
+            client_api_key_id,
+            client_api_secret,
+            client_public_key,
+            client_private_key,
+            api_url=api_url,
+            public_signing_key=client_public_signing_key,
+            private_signing_key=client_private_signing_key
+        )
+        client_signing_keys = e3db.Client(client_signing_config())
+
+        assert(client_no_signing_keys.private_signing_key == "")
+        assert(client_no_signing_keys.public_signing_key == "")
+        assert(client_signing_keys.private_signing_key == client_private_signing_key)
+        assert(client_signing_keys.public_signing_key == client_public_signing_key)
+
+    def test_read_config_no_signing_keys(self):
+        """
+        Register a client without signing keys with a registration token.
+        Read config from storage to instantiate a client showing config 
+        without signing keys is able to be used in client instantiation. 
+        """
+
+        config_client_public_key, config_client_private_key = e3db.Client.generate_keypair()
+        config_client_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+        test_config_client = e3db.Client.register(token, config_client_name, config_client_public_key, api_url=api_url)
+        config_client_api_key_id = test_config_client.api_key_id
+        config_client_api_secret = test_config_client.api_secret
+        config_client_id = test_config_client.client_id
+
+        config_client_config = e3db.Config(
+            config_client_id,
+            config_client_api_key_id,
+            config_client_api_secret,
+            config_client_public_key,
+            config_client_private_key,
+            api_url=api_url
+        )
+        config_name = "integration_config_no_signing{0}".format(binascii.hexlify(os.urandom(16)))
+        # write config with profile 'config_name' ~/.tozny/<profile>/e3db.json
+        config_client_config.write(config_name)
+
+        read_config_profile = e3db.Config.load(config_name)
+
+        # Remove signing keys from config. 
+        read_config_profile.pop("public_signing_key", None)
+        read_config_profile.pop("private_signing_key", None)
+
+        # Assert config does not have signing keys
+        assert('public_signing_key' not in read_config_profile)
+        assert('private_signing_key' not in read_config_profile)
+
+        read_client_config = e3db.Config(
+            read_config_profile['client_id'],
+            read_config_profile['api_key_id'],
+            read_config_profile['api_secret'],
+            read_config_profile['public_key'],
+            read_config_profile['private_key'],
+            read_config_profile['client_email'],
+            read_config_profile['version'],
+            read_config_profile['api_url']
+        )
+
+        # Assert Config version defaults to 1 given no signing keys
+        assert(read_client_config.version == "1")
+
+        # If this doesn't throw an exception during instantiation, we loaded
+        # the configuration properly
+        config_client = e3db.Client(read_client_config())
+
+        # Assert signing keys defaulted to empty strings
+        assert(config_client.public_signing_key == "")
+        assert(config_client.private_signing_key == "")
 
     def test_tsv1_with_note_write(self):
         """

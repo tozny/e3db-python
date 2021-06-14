@@ -58,3 +58,23 @@ class NoteKeys():
         }
 
         return to_serialize
+
+    @property
+    def mode(self):
+        return self.__mode
+
+    @property
+    def note_recipient_signing_key(self):
+        return self.__note_recipient_signing_key
+
+    @property
+    def note_writer_signing_key(self):
+        return self.__note_writer_signing_key
+
+    @property
+    def note_writer_encryption_key(self):
+        return self.__note_writer_encryption_key
+
+    @property
+    def encrypted_access_key(self):
+        return self.__encrypted_access_key

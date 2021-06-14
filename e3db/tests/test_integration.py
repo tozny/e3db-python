@@ -988,20 +988,18 @@ class TestIntegrationClient():
             api_url=api_url
         )
         config_name = "integration_config_no_signing{0}".format(binascii.hexlify(os.urandom(16)))
-        # write to default location at ~/.tozny/e3db.json, with no profile
-        config_client_config.write()
         # write config with profile 'config_name' ~/.tozny/<profile>/e3db.json
         config_client_config.write(config_name)
 
-        with pytest.raises(IOError):
-            # Try to write over existing config file.
-            # SDK will prevent key loss and throw an error
-            config_client_config.write()
-
-        read_config = e3db.Config.load()
         read_config_profile = e3db.Config.load(config_name)
-        # Check both config files were written properly, and able to be loaded
-        assert(read_config == read_config_profile)
+
+        # Remove signing keys from config. 
+        read_config_profile.pop("public_signing_key", None)
+        read_config_profile.pop("private_signing_key", None)
+
+        # Assert config does not have signing keys
+        assert('public_signing_key' not in read_config_profile)
+        assert('private_signing_key' not in read_config_profile)
 
         read_client_config = e3db.Config(
             read_config_profile['client_id'],
@@ -1014,6 +1012,13 @@ class TestIntegrationClient():
             read_config_profile['api_url']
         )
 
+        # Assert Config version defaults to 1 given no signing keys
+        assert(read_client_config.version == "1")
+
         # If this doesn't throw an exception during instantiation, we loaded
         # the configuration properly
         config_client = e3db.Client(read_client_config())
+
+        # Assert signing keys defaulted to empty strings
+        assert(config_client.public_signing_key == "")
+        assert(config_client.private_signing_key == "")

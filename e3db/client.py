@@ -497,54 +497,29 @@ class Client:
             server, client name, and client public key.
         """
         url = "{0}/{1}/{2}/{3}/{4}/{5}".format(api_url, 'v1', 'account', 'e3db', 'clients', 'register')
-        if public_signing_key is None:
-            if Crypto.get_mode() == 'nist':
-                payload = {
-                    'token': registration_token,
-                    'client': {
-                        'name': client_name,
-                        'public_key': {
-                            'p384': public_key
-                        }
+        if Crypto.get_mode() == 'nist':
+            payload = {
+                'token': registration_token,
+                'client': {
+                    'name': client_name,
+                    'public_key': {
+                        'p384': public_key
                     }
                 }
-            else:
-                payload = {
-                    'token': registration_token,
-                    'client': {
-                        'name': client_name,
-                        'public_key': {
-                            'curve25519': public_key
-                        }
-                    }
-                }
+            }
         else:
-            if Crypto.get_mode() == 'nist':
-                payload = {
-                    'token': registration_token,
-                    'client': {
-                        'name': client_name,
-                        'public_key': {
-                            'p384': public_key
-                        },
-                        'signing_key': {
-                            'ed25519': public_signing_key
-                        }
+            payload = {
+                'token': registration_token,
+                'client': {
+                    'name': client_name,
+                    'public_key': {
+                        'curve25519': public_key
                     }
                 }
-            else:
-                payload = {
-                    'token': registration_token,
-                    'client': {
-                        'name': client_name,
-                        'public_key': {
-                            'curve25519': public_key
-                        },
-                        'signing_key': {
-                            'ed25519': public_signing_key
-                        }                    
-                    }
-                }
+            }
+        if public_signing_key is not None:
+            payload['client']['signing_key'] = {'ed25519': public_signing_key}
+
         response = requests.post(url=url, json=payload)
         self.__response_check(response)
         client_info = response.json()

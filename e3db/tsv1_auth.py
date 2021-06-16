@@ -83,7 +83,7 @@ class E3DBTSV1Auth(AuthBase):
         # Sign hash
         string_to_sign = BaseCrypto.hashString(string_to_hash)
         full_signature = SodiumCrypto.sign_string(string_to_sign, private_b64_decoded)
-        signature_b64 = BaseCrypto.base64encode(full_signature.signature).decode("utf-8")
+        signature_b64 = BaseCrypto.base64encode(full_signature).decode("utf-8")
 
         # Add authorization headers to request
         auth_header = f"{header_string}; {signature_b64}"

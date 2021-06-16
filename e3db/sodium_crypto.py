@@ -136,6 +136,8 @@ class SodiumCrypto(BaseCrypto):
     def sign_string(self, string_to_sign: bytes, key: bytes) -> nacl.signing.SignedMessage:
         """
         Signs a message based on the signing key generated with a private signing key.
+        The signed message can be accessed from the field of the returned object.
+        For example: returned_obj.signature
 
         Parameters
         ----------
@@ -150,7 +152,7 @@ class SodiumCrypto(BaseCrypto):
         SignedMessage
             Signed message.
         """
-        signing_key = self.generate_signing_key(key)
+        signing_key = self.generate_signing_key(key[:32])
         return signing_key.sign(string_to_sign)
 
     @classmethod
@@ -344,7 +346,7 @@ class SodiumCrypto(BaseCrypto):
 
         Parameters
         ----------
-        encryped_field : str
+        encrypted_field : str
             Encrypted string.
         
         ak : bytes
@@ -362,3 +364,29 @@ class SodiumCrypto(BaseCrypto):
         efN = self.base64decode(fields[3])
         dk = self.decrypt_secret(ak, edk, edkN)
         return self.decrypt_secret(dk, ef, efN).decode("utf-8")
+
+    @classmethod
+    def encrypt_field(self, field, access_key):
+        """
+        Encrypt a string into the standard Tozny quad format using Libsodium's secretbox.
+
+        Parameters
+        ----------
+        field : string  
+            The string of data to encrypt as a data field.
+        access_key : bytes
+            The access key bytes to encrypt the field with.
+    
+        Returns
+        -------
+        str
+         The Tozny dotted quad encrypted field 
+        """
+        dk = self.random_key()
+        efN = self.random_nonce()
+        ef = self.encrypt_secret(dk, field, efN)
+        edkN = self.random_nonce()
+        edk = self.encrypt_secret(access_key, dk, edkN)
+        encrypted_byte_strings = (edk.ciphertext, edk.nonce, ef.ciphertext, ef.nonce)
+        encrypted_strings = map(lambda x: self.base64encode(x).decode('utf-8'), encrypted_byte_strings)
+        return ".".join(encrypted_strings)

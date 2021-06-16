@@ -1607,7 +1607,7 @@ class Client:
         # get the signature from the field
         signature = value[signature_index:plaintext_index]
         # get the plaintext from the field
-        plaintext = value[plaintext_index:]
+        plaintext = value[plaintext_index:] 
         message = Crypto.hashMessage("{}{}{}".format(salt, key, plaintext))
         raw_signature = Crypto.base64decode(signature)
         raw_key = Crypto.base64decode(verifying_key)
@@ -1615,3 +1615,64 @@ class Client:
         if verify_signature & (valid_message != message):
             raise NoteValidationError("Message does not match the expected. Received: {} Expected: {}".format(valid_message, message))
         return plaintext
+
+    @classmethod
+    def create_encrypted_note(self,
+                    data,
+                    recipient_public_key,
+                    recipient_public_signing_key,
+                    writer_key_pair,
+                    writer_signing_key_pair,
+                    note_options):
+        """ 
+        Creates a signed and encrypted note.
+
+        Parameters
+        ----------
+        data : dict
+            a dictionary of key value pairs. The values will be signed and encrypted
+
+        recipient_public_key : Base64URLEncoded string of bytes
+        
+        recipient_public_signing_key : Base64URLEncoded string of bytes
+
+        writer_key_pair : Tuple of Base64URLEncoded string of bytes
+            Contains the public and private encryption keys for the note writer
+        
+        writer_signing_key_pair : Tuple of Base64URLEncoded string of bytes
+            Contains the pulic and private signing keys for the note writer
+        
+        note_options : note_options.NoteOptions
+            Instance of the NoteOptions class that contains optional values that are not required
+            to create a note but provide additional functionalit
+
+        Returns
+        -------
+        e3db.Note
+            Encrypted note object with all fields encrypted and signed
+        """
+
+        access_key = Crypto.random_key()
+        # TODO: Update with Key Pair Class
+        encrypted_access_key = Crypto.encrypt_note_ak(writer_key_pair['private'], recipient_public_key, access_key)
+        
+        #create NoteKeys object
+        note_keys = NoteKeys(
+            mode=Crypto.get_mode(),
+            note_recipient_signing_key=recipient_public_signing_key,
+            note_writer_signing_key=writer_signing_key_pair['public'],
+            note_writer_encryption_key=writer_key_pair['public'],
+            encrypted_access_key=encrypted_access_key
+        )
+        unencrypted_note = Note(data, note_keys, note_options)
+
+        encrypted_note = Crypto.encrypt_note(
+            unencrypted_note,
+            access_key,
+            writer_signing_key_pair['private']
+        )
+
+        if not encrypted_note.signature:
+            raise NoteValidationError('Signature was not attached during encryption')
+
+        return encrypted_note

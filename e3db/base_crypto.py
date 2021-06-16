@@ -1,5 +1,8 @@
 import base64
+import copy
 from hashlib import blake2b
+from os import system
+from uuid import uuid4
 import nacl.hash
 import nacl.encoding
 
@@ -184,3 +187,72 @@ class BaseCrypto:
         eak = self.base64decode(eak_fields[0])
         nonce = self.base64decode(eak_fields[1])
         return self.decrypt_eak(private_key, public_key, eak, nonce)
+
+    @classmethod
+    def encrypt_note_ak(self, private_key, public_key, ak):
+        """ A Wrapper function for obtaining an encrypted access key, generates a nonce
+        and then calls the library specific version of encrypt_ak, and composes the expected 
+        return type.
+
+        Parameters
+        ----------
+        private_key : Base64UrlEncoded String of Bytes
+            The sender's private encryption key
+        public_key : Base54UrlEncoded String of Bytes
+            The reader's public encryption key
+        ak : str
+            The access key to be encrypted
+
+        Returns
+        -------
+        bytes
+            The encrypted access key which is used for decryption, base64 encoded,
+            in the form {nonce}.{eak}
+        """
+        nonce = self.random_nonce()
+        mssg_obj = self.encrypt_ak(self.decode_private_key(private_key),
+                               self.decode_public_key(public_key),
+                               ak,
+                               nonce)
+        encoded_nonce = self.base64encode(mssg_obj.nonce).decode('utf-8')
+        encoded_ciphertext = self.base64encode(mssg_obj.ciphertext).decode('utf-8')
+        return f'{encoded_ciphertext}.{encoded_nonce}'
+
+    @classmethod
+    def encrypt_note(self, note, access_key, signing_key):
+        """Encrypt and sign all of the data fields in a note object.
+
+        Parameters
+        ----------
+        note : Note
+            The note object that has un-encrypted data.
+        access_key : str 
+            The raw access key to use in encryption
+        signing_key : str 
+            The base64url encoded singing key used to sign each field.
+   
+        Returns
+        -------
+            a new note object with all the data fields encrypted and signed.
+        """
+        encrypted_note = copy.deepcopy(note)
+        signature_salt = uuid4()
+        # Note the salt is the payload in this field
+        note_signature = self.sign_field('signature', signature_salt, signing_key)
+        encrypted_note.signature = note_signature
+        for key, value in note.data.items():
+            signed_field = self.sign_field(key, value, signing_key, signature_salt)
+            encrypted_note.data[key] = self.encrypt_field(signed_field, access_key)
+        return encrypted_note
+
+    @classmethod
+    def sign_field(self, key, value, signing_key, object_salt=None):
+        """ Returns a base64 encoded string """
+        salt = object_salt if object_salt else uuid4()
+        message = self.hashMessage("{}{}{}".format(salt, key, value))
+        raw_key = self.base64decode(signing_key)
+        signed_obj = self.sign_string(message, raw_key)
+        raw_signature = signed_obj.signature
+        signature = self.base64encode(raw_signature).decode('utf-8')
+        length = len(signature)
+        return f'{SIGNATURE_VERSION};{salt};{length};{signature}{value}'

@@ -30,6 +30,8 @@ class ClientDetails():
         self.__api_key_id = str(json['api_key_id'])
         self.__api_secret = str(json['api_secret'])
         self.__public_key = dict(json['public_key'])
+        if json['signing_key']:
+            self.__public_signing_key = dict(json['signing_key'])
         self.__name = str(json['name'])
 
     # client_id getters
@@ -102,6 +104,23 @@ class ClientDetails():
             return self.__public_key['p384']
         else:
             return self.__public_key['curve25519']
+
+    # public_signing_key getters
+    @property
+    def public_signing_key(self):
+        """
+        Get public_signing_key of Client.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        str
+            Base64 URLencoded public_signing_key of Client.
+        """
+        return self.__public_signing_key['ed25519']
 
     # name getters and setters
     @property

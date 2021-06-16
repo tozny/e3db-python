@@ -251,8 +251,7 @@ class BaseCrypto:
         salt = object_salt if object_salt else uuid4()
         message = self.hashMessage("{}{}{}".format(salt, key, value))
         raw_key = self.base64decode(signing_key)
-        signed_obj = self.sign_string(message, raw_key)
-        raw_signature = signed_obj.signature
+        raw_signature = self.sign_string(message, raw_key)
         signature = self.base64encode(raw_signature).decode('utf-8')
         length = len(signature)
         return f'{SIGNATURE_VERSION};{salt};{length};{signature}{value}'

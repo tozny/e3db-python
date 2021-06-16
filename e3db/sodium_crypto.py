@@ -133,11 +133,9 @@ class SodiumCrypto(BaseCrypto):
         return signing_key.verify_key
 
     @classmethod
-    def sign_string(self, string_to_sign: bytes, key: bytes) -> nacl.signing.SignedMessage:
+    def sign_string(self, string_to_sign: bytes, key: bytes) -> bytes:
         """
         Signs a message based on the signing key generated with a private signing key.
-        The signed message can be accessed from the field of the returned object.
-        For example: returned_obj.signature
 
         Parameters
         ----------
@@ -149,11 +147,11 @@ class SodiumCrypto(BaseCrypto):
 
         Returns
         -------
-        SignedMessage
-            Signed message.
+        signature : bytes
+            Signature in raw bytes
         """
         signing_key = self.generate_signing_key(key[:32])
-        return signing_key.sign(string_to_sign)
+        return signing_key.sign(string_to_sign).signature
 
     @classmethod
     def encrypt_file(self, plaintext_filename, key):

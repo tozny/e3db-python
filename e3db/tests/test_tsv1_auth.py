@@ -72,5 +72,5 @@ def test_signature():
     string_to_sign = BaseCrypto.hashString(string_to_hash)
     private_b64_decoded = BaseCrypto.base64decode(CREDS["private_signing_key"])[:SECRET_KEY_BYTES]
     full_signature = SodiumCrypto.sign_string(string_to_sign, private_b64_decoded)
-    signature_64 = BaseCrypto.base64encode(full_signature.signature).decode("utf-8")
+    signature_64 = BaseCrypto.base64encode(full_signature).decode("utf-8")
     assert(signature_64 == KNOWN_SIGNATURE)

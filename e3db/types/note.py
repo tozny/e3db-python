@@ -66,11 +66,11 @@ class Note():
             'note_id': self.__note_id,
             'created_at': self.__created_at,
             'mode': note_keys_decoded['mode'],
-            'note_recipient_signing_key': note_keys_decoded['note_recipient_signing_key'],
-            'note_writer_signing_key': note_keys_decoded['note_writer_signing_key'],
-            'note_writer_encryption_key': note_keys_decoded['note_writer_encryption_key'],
+            'recipient_signing_key': note_keys_decoded['note_recipient_signing_key'],
+            'writer_signing_key': note_keys_decoded['note_writer_signing_key'],
+            'writer_encryption_key': note_keys_decoded['note_writer_encryption_key'],
             'encrypted_access_key': note_keys_decoded['encrypted_access_key'],
-            'client_id': note_options_decoded['client_id'],
+            'client_id': str(note_options_decoded['client_id']),
             'type': note_options_decoded['type'],
             'plain': note_options_decoded['plain'],
             'file_meta': note_options_decoded['plain'],
@@ -83,8 +83,25 @@ class Note():
 
         return to_serialize
 
+    @staticmethod
+    def decode(json):
+        """
+        """
+        data = json['data'] if 'data' in json else None
+        note_options = NoteOptions.decode(json)
+        note_keys = NoteKeys.decode(json)
+        note = Note(data=data, note_keys=note_keys, note_options=note_options)
+
+        signature = json['signature'] if 'signature' in json else None
+        created_at = json['created_at'] if 'created_at' in json else None
+        note_id = json['note_id'] if 'note_id' in json else None
+        note.signature = signature
+        note.created_at = created_at
+        note.note_id = note_id
+        return note
+
     @property 
-    def signature(self):
+    def signature(self) -> str:
         """
         Get signature.
 

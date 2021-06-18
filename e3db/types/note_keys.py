@@ -59,6 +59,25 @@ class NoteKeys():
 
         return to_serialize
 
+    @staticmethod
+    def decode(json):
+        """
+        """
+        mode = json['mode'] if 'mode' in json else None
+        note_recipient_signing_key = json['recipient_signing_key'] if 'recipient_signing_key' in json else None
+        note_writer_signing_key = json['writer_signing_key'] if 'writer_signing_key' in json else None
+        note_writer_encryption_key = json['writer_encryption_key'] if 'writer_encryption_key' in json else None
+        encrypted_access_key = json['encrypted_access_key'] if 'encrypted_access_key' in json else None
+        return NoteKeys(
+            mode=mode,
+            note_recipient_signing_key=note_recipient_signing_key,
+            note_writer_signing_key=note_writer_signing_key,
+            note_writer_encryption_key=note_writer_encryption_key,
+            encrypted_access_key=encrypted_access_key
+        )
+        
+        return NotImplementedError
+
     @property
     def mode(self):
         return self.__mode

@@ -87,6 +87,31 @@ class NoteOptions():
 
         return to_serialize
 
+    @staticmethod
+    def decode(json):
+        """
+        """
+        client_id = json['client_id'] if 'client_id' in json else None
+        max_views = json['max_views'] if 'max_views' in json else None
+        expiration = json['expiration'] if 'expiration' in json else None
+        expires = json['expires'] if 'expires' in json else None
+        eacp = json['eacp'] if 'eacp' in json else None
+        id_string = json['id_string'] if 'id_string' in json else None
+        type = json['type'] if 'type' in json else None
+        plain = json['plain'] if 'plain' in json else None
+        file_meta = json['file_meta'] if 'file_meta' in json else None
+        return NoteOptions(
+            note_writer_client_id=client_id,
+            max_views=max_views,
+            id_string=id_string,
+            expiration=expiration,
+            expires=expires,
+            type=type,
+            plain=plain,
+            file_meta=file_meta,
+            eacp=eacp
+        )
+
     @property
     def note_writer_client_id(self):
         return self.__note_writer_client_id

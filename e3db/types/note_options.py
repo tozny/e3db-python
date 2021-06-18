@@ -90,6 +90,17 @@ class NoteOptions():
     @staticmethod
     def decode(json):
         """
+        Decodes a JSON response into a NoteOptions object. 
+
+        Parameters
+        ----------
+        json : dict
+            JSON data to be decoded into a NoteOptions object
+
+        Returns
+        -------
+        note : e3db.NoteOptions
+            A NoteOptions object that contains the contents from json 
         """
         client_id = json['client_id'] if 'client_id' in json else None
         max_views = json['max_views'] if 'max_views' in json else None

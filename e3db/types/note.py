@@ -86,6 +86,17 @@ class Note():
     @staticmethod
     def decode(json):
         """
+        Decodes a JSON response into a Note object. 
+
+        Parameters
+        ----------
+        json : dict
+            JSON data to be decoded into a Note object
+
+        Returns
+        -------
+        note : e3db.Note
+            A Note object that contains the contents from json 
         """
         data = json['data'] if 'data' in json else None
         note_options = NoteOptions.decode(json)

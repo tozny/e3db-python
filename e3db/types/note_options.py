@@ -105,7 +105,7 @@ class NoteOptions():
         client_id = json['client_id'] if 'client_id' in json else None
         max_views = json['max_views'] if 'max_views' in json else None
         expiration = json['expiration'] if 'expiration' in json else None
-        expires = json['expires'] if 'expires' in json else None
+        expires = json['expires'] if 'expires' in json else False
         eacp = json['eacp'] if 'eacp' in json else None
         id_string = json['id_string'] if 'id_string' in json else None
         type = json['type'] if 'type' in json else None

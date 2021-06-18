@@ -69,7 +69,7 @@ class E3DBTSV1Auth(AuthBase):
         
         # Parse and sort query parameters
         url_components = urlparse(r.url)
-        query_components = parse_qsl(url_components.query)
+        query_components = parse_qsl(url_components.query, keep_blank_values=True)
         query_components.sort()
         query_string = urlencode(query_components)
 

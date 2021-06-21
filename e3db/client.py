@@ -1510,8 +1510,39 @@ class Client:
         # Assign signature from response to Note here
         return response.status_code
 
+    def read_note(self, note_id, auth_params={}, auth_headers={}) -> Note:
+        """
+        Public method to read a note by note_id.
+
+        Parameters
+        ----------
+        note_id : str
+            UUID assigned by Tozstore, used to identify a note.
+
+        auth_params : dict
+            Extra request parameters for EACP authorizations. Optional.
+
+        auth_headers : dict
+            Extra request headers for EACP authorizations. Optional
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note
+        """
+        auth_params['note_id'] = note_id
+        return self.__read_note(auth_params, auth_headers)
+
+    def __read_note(self, params: dict, headers: dict) -> Note:
+        url = self.__get_url("v2", "storage", "notes")
+        response = requests.get(url=url, auth=self.e3db_tsv1_auth, params=params, headers=headers)
+        self.__response_check(response)
+        note = Note.decode(response.json())
+        decrypted_note = self.decrypt_note(note, self.encryption_keys.private_key)
+        return decrypted_note
+
     @classmethod
-    def decrypt_note(self, note, private_key, verify_signature=True):
+    def decrypt_note(self, note: Note, private_key: str, verify_signature=True) -> Note:
         """
         Decrypt and validate a note response from TozStore using the proper keys.
 
@@ -1546,7 +1577,7 @@ class Client:
         return decrypted_note
 
     @classmethod
-    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True):
+    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True) -> Note:
         """
         Decrypt and validate every field within a note.
 
@@ -1645,9 +1676,9 @@ class Client:
                     data,
                     recipient_public_key,
                     recipient_public_signing_key,
-                    writer_key_pair,
-                    writer_signing_key_pair,
-                    note_options):
+                    writer_key_pair: EncryptionKeyPair,
+                    writer_signing_key_pair: SigningKeyPair,
+                    note_options) -> Note:
         """ 
         Creates a signed and encrypted note.
 
@@ -1660,15 +1691,17 @@ class Client:
         
         recipient_public_signing_key : Base64URLEncoded string of bytes
 
-        writer_key_pair : Tuple of Base64URLEncoded string of bytes
+        writer_key_pair : types.EncryptionKeyPair
+            Tuple of Base64URLEncoded string of bytes
             Contains the public and private encryption keys for the note writer
         
-        writer_signing_key_pair : Tuple of Base64URLEncoded string of bytes
+        writer_signing_key_pair : types.SigningKeyPair
+            Tuple of Base64URLEncoded string of bytes
             Contains the pulic and private signing keys for the note writer
         
         note_options : note_options.NoteOptions
             Instance of the NoteOptions class that contains optional values that are not required
-            to create a note but provide additional functionalit
+            to create a note but provide additional functionality
 
         Returns
         -------
@@ -1677,15 +1710,14 @@ class Client:
         """
 
         access_key = Crypto.random_key()
-        # TODO: Update with Key Pair Class
-        encrypted_access_key = Crypto.encrypt_note_ak(writer_key_pair['private'], recipient_public_key, access_key)
+        encrypted_access_key = Crypto.encrypt_note_ak(writer_key_pair.private_key, recipient_public_key, access_key)
         
         #create NoteKeys object
         note_keys = NoteKeys(
             mode=Crypto.get_mode(),
             note_recipient_signing_key=recipient_public_signing_key,
-            note_writer_signing_key=writer_signing_key_pair['public'],
-            note_writer_encryption_key=writer_key_pair['public'],
+            note_writer_signing_key=writer_signing_key_pair.public_key,
+            note_writer_encryption_key=writer_key_pair.public_key,
             encrypted_access_key=encrypted_access_key
         )
         unencrypted_note = Note(data, note_keys, note_options)
@@ -1693,7 +1725,7 @@ class Client:
         encrypted_note = Crypto.encrypt_note(
             unencrypted_note,
             access_key,
-            writer_signing_key_pair['private']
+            writer_signing_key_pair.private_key
         )
 
         if not encrypted_note.signature:

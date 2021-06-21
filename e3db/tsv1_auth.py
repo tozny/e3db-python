@@ -41,6 +41,8 @@ class E3DBTSV1Auth(AuthBase):
         requests.Request
             Request with authentication headers set with signature. 
         """
+        if self.public_signing_key == "":
+            raise RuntimeError("Cannot make a tsv1 request without a signing key.")
         timestamp = int(time.time())
         nonce = str(uuid.uuid4())
         self.create_tsv1_signature(r, self.public_b64, self.private_b64_decoded, self.client_id, nonce, timestamp)

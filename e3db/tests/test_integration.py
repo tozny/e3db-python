@@ -1115,3 +1115,21 @@ class TestIntegrationClient():
         note_options = e3db.types.NoteOptions(client.client_id, 3, None, None, None, None, None, None)
         status_code = client.write_note(note_data, None, None, note_options)
         assert(status_code == 400)
+
+    def test_read_note_fails_and_raises_exception(self):
+        """
+        Test client will receive correct error responses when 
+        attempting to read notes with a malformed note id, or accessing
+        a note that does not exist. 
+        """
+        with pytest.raises(Exception) as e:
+            # Malformed note id
+            id = "aaaaaaaa-aaaa-aaaa-aaaa-aa"
+            note = self.client1.read_note(note_id=id)
+        assert(str(e.value) == "Error during API operation: Invalid request: HTTP 400")
+
+        with pytest.raises(Exception) as e:
+            # Correctly formatted note id, but note not found
+            id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+            note = self.client1.read_note(note_id=id)
+        assert(str(e.value) == "Error during API operation: Requested item not found: HTTP 404")

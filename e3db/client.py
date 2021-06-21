@@ -1512,7 +1512,7 @@ class Client:
 
     def read_note(self, note_id, auth_params={}, auth_headers={}) -> Note:
         """
-        Pubic method to make a read a note by note_id.
+        Pubic method to read a note by note_id.
 
         Parameters
         ----------
@@ -1528,26 +1528,18 @@ class Client:
         Returns
         -------
         e3db.Note
-            Decrypted E3DB note
-
+            Decrypted note
         """
-        if self.public_signing_key == "":
-            raise RuntimeError("Cannot read notes without a signing key!")
         auth_params['note_id'] = note_id
         return self.__read_note(auth_params, auth_headers)
 
-    def __read_note(self, params: dict, headers: dict):
+    def __read_note(self, params: dict, headers: dict) -> Note:
         url = self.__get_url("v2", "storage", "notes")
-        
-        # Is there a case in which client has signing keys but no tsv1_auth, or vice versa? 
-        # Could error here if passing in uninstantiated auth. 
         response = requests.get(url=url, auth=self.e3db_tsv1_auth, params=params, headers=headers)
         self.__response_check(response)
         note = Note.decode(response.json())
         decrypted_note = self.decrypt_note(note, self.encryption_keys.private_key)
-        note = Note.decode(decrypted_note.to_json())
-
-        return note
+        return decrypted_note
 
     @classmethod
     def decrypt_note(self, note: Note, private_key: str, verify_signature=True) -> Note:
@@ -1585,7 +1577,7 @@ class Client:
         return decrypted_note
 
     @classmethod
-    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True):
+    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True) -> Note:
         """
         Decrypt and validate every field within a note.
 

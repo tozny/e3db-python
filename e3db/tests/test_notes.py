@@ -1,3 +1,5 @@
+from e3db.types.signing_key_pair import SigningKeyPair
+from e3db.types.encyption_key_pair import EncryptionKeyPair
 from cryptography.hazmat.primitives.asymmetric.ec import generate_private_key
 from e3db import base_crypto, sodium_crypto
 from e3db.exceptions import NoteValidationError
@@ -48,15 +50,10 @@ encrypted_note = Note(
 
 # Encrypt a Note: Needs writer key pair, writer signing key pair, and unencoded options
 writer_public_key_A, writer_private_key_A = e3db.Client.generate_keypair()
-writer_key_pair_A = {
-  'public': writer_public_key_A,
-  'private': writer_private_key_A
-}
+
+writer_key_pair_A = EncryptionKeyPair(writer_public_key_A, writer_private_key_A)
 writer_public_signing_key_A, writer_private_signing_key_A = e3db.Client.generate_signing_keypair()
-writer_signing_key_pair_A = {
-  'public': writer_public_signing_key_A,
-  'private': writer_private_signing_key_A
-}
+writer_signing_key_pair_A = SigningKeyPair(writer_public_signing_key_A, writer_private_signing_key_A)
 reader_public_key_A, reader_private_key_A = e3db.Client.generate_keypair()
 reader_public_signing_key_A, reader_private_signing_key_A = e3db.Client.generate_signing_keypair()
 unencrypted_data_A = {

@@ -1512,7 +1512,7 @@ class Client:
 
     def read_note(self, note_id, auth_params={}, auth_headers={}) -> Note:
         """
-        Pubic method to read a note by note_id.
+        Public method to read a note by note_id.
 
         Parameters
         ----------

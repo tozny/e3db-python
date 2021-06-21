@@ -1,3 +1,4 @@
+from e3db.types import note_options
 from .auth import E3DBAuth
 from .tsv1_auth import E3DBTSV1Auth
 import os
@@ -1440,9 +1441,14 @@ class Client:
         # Uses efficient copy from storage server to filesystem courtesy of:
         # https://stackoverflow.com/a/39217788
         encrypted_filename = tempfile.NamedTemporaryFile(prefix="enc",suffix=".bin", delete=False).name
-        with requests.get(url=get_file_info.file_url, stream=True) as r:
-            with open(encrypted_filename, 'wb+') as f:
-                shutil.copyfileobj(r.raw, f)
+        #TODO: SWITCH BACK
+        url = get_file_info.file_url
+        response = requests.get(url=url, stream=True)
+        file = open(encrypted_filename, "wb+")
+        shutil.copyfileobj(response.raw, file)
+        # with requests.get(url=get_file_info.file_url, stream=True) as r:
+        #     with open(encrypted_filename, 'wb+') as f:
+        #         shutil.copyfileobj(r.raw, f)
 
         # Now we have the file locally, but it is still encrypted. We will now
         # decrypt the file with our AK retrieved earlier
@@ -1488,27 +1494,16 @@ class Client:
         e3db.Note
             Decrypted E3DB note
         """
-        return self.__write_note(data, options, recipient_signing_key, self.signing_keys,
-                                recipient_encryption_key, self.encryption_keys)
-      
-    def __write_note(self, data, options: NoteOptions, recipient_signing_key, signing_keys: SigningKeyPair,
-                     recipient_encryption_key, encryption_keys: EncryptionKeyPair):      
-        """
-        Private Method to create and encrypt a note object, fetch TSV1 authentication,
-        and return the signed note. 
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        """
+ 
         url = self.__get_url("v2", "storage", "notes")
-        note_keys = NoteKeys(None, recipient_signing_key, signing_keys.public_key, encryption_keys.public_key, None)
-        note = Note(data, note_keys, options)
-        response = requests.post(url, data=note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
-        # Assign signature from response to Note here
-        return response.status_code
+        # note_keys = NoteKeys(None, recipient_signing_key, signing_keys.public_key, encryption_keys.public_key, None)
+        encrypted_note = self.create_encrypted_note(data, recipient_encryption_key, recipient_signing_key, self.encryption_keys, self.signing_keys, options)
+        response = requests.post(url, json=encrypted_note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
+        self.__response_check(response)
+        response_note = Note.decode(response.json())
+        # reattach unencrypted data for user convenience
+        response_note.data = data
+        return response_note
 
     def read_note(self, note_id, auth_params={}, auth_headers={}) -> Note:
         """
@@ -1678,7 +1673,7 @@ class Client:
                     recipient_public_signing_key,
                     writer_key_pair: EncryptionKeyPair,
                     writer_signing_key_pair: SigningKeyPair,
-                    note_options) -> Note:
+                    note_options: NoteOptions) -> Note:
         """ 
         Creates a signed and encrypted note.
 
@@ -1691,12 +1686,12 @@ class Client:
         
         recipient_public_signing_key : Base64URLEncoded string of bytes
 
-        writer_key_pair : types.EncryptionKeyPair
-            Tuple of Base64URLEncoded string of bytes
+        writer_key_pair :  EncryptionKeyPair
+            Base64URLEncoded string of bytes
             Contains the public and private encryption keys for the note writer
         
-        writer_signing_key_pair : types.SigningKeyPair
-            Tuple of Base64URLEncoded string of bytes
+        writer_signing_key_pair : SigningKeyPair
+            Base64URLEncoded string of bytes
             Contains the pulic and private signing keys for the note writer
         
         note_options : note_options.NoteOptions

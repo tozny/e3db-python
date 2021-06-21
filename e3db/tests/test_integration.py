@@ -1,3 +1,4 @@
+from uuid import uuid4
 import e3db
 import os
 import binascii
@@ -936,7 +937,6 @@ class TestIntegrationClient():
 
         assert(pre_encrypt_md5 == post_decrypt_md5)
 
-    def test_read_write_config(self):
         """
         Register a client with a registration token.
         Write that config to disk storage. Read config from storage to
@@ -1091,30 +1091,6 @@ class TestIntegrationClient():
         assert(config_client.public_signing_key == "")
         assert(config_client.private_signing_key == "")
 
-    def test_tsv1_with_note_write(self):
-        """
-        Test client can write a note. 
-        
-        Making sure that the returned status code is 400, indicating a
-        successful authentication.
-
-        Later, assert correct response note instead of status code. 
-        """
-        conf = ''
-        path = "./test_client.json"
-        if os.path.exists(path): # Must run pytest in /e3db/tests/ directory to find .json with this path
-                conf = json.load(open(path))
-        else:
-            print("Error opening credentials!")
-            sys.exit()
-        client = e3db.Client(conf)
-
-        note_data = {} # Empty stub
-
-        # Optional values, but for this test it gives a convenient way of getting the client_id
-        note_options = e3db.types.NoteOptions(client.client_id, 3, None, None, None, None, None, None)
-        status_code = client.write_note(note_data, None, None, note_options)
-        assert(status_code == 400)
 
     def test_read_note_fails_and_raises_exception(self):
         """

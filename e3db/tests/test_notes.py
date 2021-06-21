@@ -1,13 +1,19 @@
+from datetime import datetime, timedelta
 from e3db.types.signing_key_pair import SigningKeyPair
 from e3db.types.encyption_key_pair import EncryptionKeyPair
-from cryptography.hazmat.primitives.asymmetric.ec import generate_private_key
 from e3db import base_crypto, sodium_crypto
 from e3db.exceptions import NoteValidationError
 import e3db
 import e3db.types as types
 from e3db.types import Note, NoteKeys, NoteOptions
 import pytest
-from uuid import uuid4
+from uuid import UUID, uuid4
+import binascii
+import os
+
+
+token = os.environ["REGISTRATION_TOKEN"]
+api_url = os.environ["DEFAULT_API_URL"]
 
 # these are placeholder values for testing & can be removed on ReadNote is functional.
 public_key = '88ph_j2dytMVTBsgCm-9hU608WyJgpB51BuWDQa9AGI'
@@ -50,7 +56,6 @@ encrypted_note = Note(
 
 # Encrypt a Note: Needs writer key pair, writer signing key pair, and unencoded options
 writer_public_key_A, writer_private_key_A = e3db.Client.generate_keypair()
-
 writer_key_pair_A = EncryptionKeyPair(writer_public_key_A, writer_private_key_A)
 writer_public_signing_key_A, writer_private_signing_key_A = e3db.Client.generate_signing_keypair()
 writer_signing_key_pair_A = SigningKeyPair(writer_public_signing_key_A, writer_private_signing_key_A)
@@ -62,6 +67,33 @@ unencrypted_data_A = {
 
 
 class TestNoteSupport():
+
+  @classmethod
+  def setup_class(self):
+    client1_public_key, client1_private_key = e3db.Client.generate_keypair()
+    client1_public_signing_key, client1_private_signing_key = e3db.Client.generate_signing_keypair()
+    client1_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+    test_client1 = e3db.Client.register(token, client1_name, client1_public_key, backup=False, api_url=api_url, 
+                                        public_signing_key=client1_public_signing_key,
+                                        private_signing_key=client1_private_signing_key)
+    # self.test_client1 = test_client1
+    client1_api_key_id = test_client1.api_key_id
+    client1_api_secret = test_client1.api_secret
+    client1_id = test_client1.client_id
+
+    client1_config = e3db.Config(
+        client1_id,
+        client1_api_key_id,
+        client1_api_secret,
+        client1_public_key,
+        client1_private_key,
+        api_url=api_url,
+        public_signing_key=client1_public_signing_key,
+        private_signing_key=client1_private_signing_key
+    )
+
+    self.client1 = e3db.Client(client1_config())
+
   def test_decrypt_valid_note_succeeds(self):
     '''
     Asserts that a note with the correct decrypted data is returned.
@@ -120,13 +152,17 @@ class TestNoteSupport():
   def test_encrypt_valid_note_suceeds(self):
     '''Asserts that a note with the correct encrypted data is returned'''
     
-    note_options_A = note_options # to be made test specific later
-    
+    note_options_A = NoteOptions(
+      note_writer_client_id=self.client1.client_id,
+      max_views=3,
+      id_string=f"globalNoteName-${uuid4()}",
+      expiration='0001-01-01T00:00:00Z',
+      expires=False,
+      type='',
+      plain={},
+      file_meta={}
+    )
     # NOTE: KEYS ARE BASE64URLENCODED string of bytes
-
-    print(f'private signing key: {writer_private_signing_key_A}')
-    print(f'length of private key base64 encoded: {len(writer_private_signing_key_A)}')
-
     encrypted_note_A = e3db.Client.create_encrypted_note(unencrypted_data_A, 
                              reader_public_key_A,
                              reader_public_signing_key_A, 
@@ -134,8 +170,59 @@ class TestNoteSupport():
                              writer_signing_key_pair_A,
                              note_options_A)
 
-    print(f'reader private key: {reader_private_key_A}')
-    print(f'writer public signing key: {writer_public_signing_key_A}, writer private signing key: {writer_private_signing_key_A}')
     decrypted_note_A = e3db.Client.decrypt_note(encrypted_note_A, reader_private_key_A)
     assert(decrypted_note_A.data == unencrypted_data_A)
     
+  def test_write_note(self):
+    """Asserts that the write note method returns a note with a signature, a note_id and unencrypted data"""
+
+    note_options = NoteOptions(
+      note_writer_client_id=self.client1.client_id,
+      max_views=-1,
+      id_string=f"globalNoteName-${uuid4()}",
+      expiration='0001-01-01T00:00:00Z',
+      expires=False,
+      type='',
+      plain={},
+      file_meta={}
+    )
+
+    data1 = {
+      "data" : "WRITE NOTE TEST"
+    }
+    # Write note from client1 to client1
+    returned_note = self.client1.write_note(data1, 
+                                              self.client1.encryption_keys.public_key, 
+                                              self.client1.signing_keys.public_key,
+                                              note_options)
+    assert(type(returned_note) == Note)
+    assert(returned_note.note_id) is not None
+    assert(returned_note.signature) is not None
+    # Assert the data is returned unencrypted
+    assert(returned_note.data == data1)
+
+    def write_and_read_a_note(self):
+      """Asserts that writing and reading a note returns the original data"""
+
+      note_options2 = NoteOptions(
+        note_writer_client_id=self.client1.client_id,
+        max_views=-1,
+        id_string=f"globalNoteName-${uuid4()}",
+        expiration='0001-01-01T00:00:00Z',
+        expires=False,
+        type='',
+        plain={},
+        file_meta={}
+      )
+
+      data2_value = uuid4()
+      data2 = {
+        "data" : data2_value
+      }
+      # Write note from client1 to client1
+      returned_note = self.client1.write_note(data2, 
+                                                self.client1.encryption_keys.public_key, 
+                                                self.client1.signing_keys.public_key,
+                                                note_options2)
+      assert(returned_note.note_id) is not None
+      # TODO: rebase and use read_note

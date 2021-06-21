@@ -84,7 +84,7 @@ class Note():
         return to_serialize
 
     @staticmethod
-    def decode(json):
+    def decode(json: dict):
         """
         Decodes a JSON response into a Note object. 
 
@@ -432,30 +432,4 @@ class Note():
         return self.__note_options.expires
         
     def get_eacp(self):
-        return NotImplementedError
-
-    def sign(self):
-        """
-        Signs the note.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-        return NotImplementedError
-
-    def encrypt(self):
-        """
-        Encrypts the note. 
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
         return NotImplementedError

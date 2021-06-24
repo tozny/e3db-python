@@ -1441,14 +1441,9 @@ class Client:
         # Uses efficient copy from storage server to filesystem courtesy of:
         # https://stackoverflow.com/a/39217788
         encrypted_filename = tempfile.NamedTemporaryFile(prefix="enc",suffix=".bin", delete=False).name
-        #TODO: SWITCH BACK
-        url = get_file_info.file_url
-        response = requests.get(url=url, stream=True)
-        file = open(encrypted_filename, "wb+")
-        shutil.copyfileobj(response.raw, file)
-        # with requests.get(url=get_file_info.file_url, stream=True) as r:
-        #     with open(encrypted_filename, 'wb+') as f:
-        #         shutil.copyfileobj(r.raw, f)
+        with requests.get(url=get_file_info.file_url, stream=True) as r:
+            with open(encrypted_filename, 'wb+') as f:
+                shutil.copyfileobj(r.raw, f)
 
         # Now we have the file locally, but it is still encrypted. We will now
         # decrypt the file with our AK retrieved earlier

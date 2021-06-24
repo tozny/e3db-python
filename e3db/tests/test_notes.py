@@ -229,3 +229,4 @@ class TestNoteSupport():
     assert(read_note.note_id) is not None
     assert(read_note.note_id == returned_note.note_id)
     assert(read_note.data == data2)
+    

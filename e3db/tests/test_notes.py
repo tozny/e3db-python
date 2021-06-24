@@ -70,13 +70,13 @@ class TestNoteSupport():
 
   @classmethod
   def setup_class(self):
+    """This code runs before the tests and assigns a dynamically configured client"""
     client1_public_key, client1_private_key = e3db.Client.generate_keypair()
     client1_public_signing_key, client1_private_signing_key = e3db.Client.generate_signing_keypair()
     client1_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
     test_client1 = e3db.Client.register(token, client1_name, client1_public_key, backup=False, api_url=api_url, 
                                         public_signing_key=client1_public_signing_key,
                                         private_signing_key=client1_private_signing_key)
-    # self.test_client1 = test_client1
     client1_api_key_id = test_client1.api_key_id
     client1_api_secret = test_client1.api_secret
     client1_id = test_client1.client_id

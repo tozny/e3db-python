@@ -77,7 +77,9 @@ export LOCAL_BOOT_KEY=
 export LOCAL_BOOT_SECRET=
 ```
 
-Locally, tests with client2 large files does not function, and so this flow should only be used to run specific tests of search not the entire suite.
+**WARNING #1: Locally, tests with client2 large files does not function, and so this flow should only be used to run specific tests of search not the entire suite.**
+
+**WARNING #2: Also, when running locally, if you have an existing e3db client config stored at `~/.tozny/e3db.json`, the config read write test will also fail. To test this functionality locally you will need to delete your config before running the test.**
 
 # Build Docker containers
 

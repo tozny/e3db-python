@@ -1491,7 +1491,6 @@ class Client:
         """
  
         url = self.__get_url("v2", "storage", "notes")
-        # note_keys = NoteKeys(None, recipient_signing_key, signing_keys.public_key, encryption_keys.public_key, None)
         encrypted_note = self.create_encrypted_note(data, recipient_encryption_key, recipient_signing_key, self.encryption_keys, self.signing_keys, options)
         response = requests.post(url, json=encrypted_note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
         self.__response_check(response)

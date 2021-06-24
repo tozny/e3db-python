@@ -589,6 +589,8 @@ class TestIntegrationClient():
         """
         Write a record slightly smaller than the record size limit imposed by
         to check we can write larger records to E3DB.
+
+        Note: This test will fail when run locally
         """
         record_type = "record_type_{0}".format(binascii.hexlify(os.urandom(16)))
         # 32 chars * 32 = 1KB
@@ -937,10 +939,14 @@ class TestIntegrationClient():
 
         assert(pre_encrypt_md5 == post_decrypt_md5)
 
+    def test_client_config_read_and_write(self):
         """
         Register a client with a registration token.
         Write that config to disk storage. Read config from storage to
         instantiate a client showing config can be read and used later.
+
+        Note: This test will fail if a file `~/.tozny/e3db.json`
+        already exists
         """
 
         config_client_public_key, config_client_private_key = e3db.Client.generate_keypair()
@@ -993,6 +999,7 @@ class TestIntegrationClient():
         # If this doesn't throw an exception during instantiation, we loaded
         # the configuration properly
         config_client = e3db.Client(read_client_config())
+        assert(config_client) is not none
 
     def test_client_signing_keys_optional(self):
         """

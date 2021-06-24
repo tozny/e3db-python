@@ -201,28 +201,31 @@ class TestNoteSupport():
     # Assert the data is returned unencrypted
     assert(returned_note.data == data1)
 
-    def write_and_read_a_note(self):
-      """Asserts that writing and reading a note returns the original data"""
+  def test_write_and_read_a_note(self):
+    """Asserts that writing and reading a note returns the original data"""
 
-      note_options2 = NoteOptions(
-        note_writer_client_id=self.client1.client_id,
-        max_views=-1,
-        id_string=f"globalNoteName-${uuid4()}",
-        expiration='0001-01-01T00:00:00Z',
-        expires=False,
-        type='',
-        plain={},
-        file_meta={}
-      )
+    note_options2 = NoteOptions(
+      note_writer_client_id=self.client1.client_id,
+      max_views=-1,
+      id_string=f"globalNoteName-${uuid4()}",
+      expiration='0001-01-01T00:00:00Z',
+      expires=False,
+      type='',
+      plain={},
+      file_meta={}
+    )
 
-      data2_value = uuid4()
-      data2 = {
-        "data" : data2_value
-      }
-      # Write note from client1 to client1
-      returned_note = self.client1.write_note(data2, 
-                                                self.client1.encryption_keys.public_key, 
-                                                self.client1.signing_keys.public_key,
-                                                note_options2)
-      assert(returned_note.note_id) is not None
-      # TODO: rebase and use read_note
+    data2 = {
+      "data" : str(uuid4())
+    }
+    # Write note from client1 to client1
+    returned_note = self.client1.write_note(data2, 
+                                              self.client1.encryption_keys.public_key, 
+                                              self.client1.signing_keys.public_key,
+                                              note_options2)
+    assert(returned_note.note_id) is not None
+    # Read the note from the server
+    read_note = self.client1.read_note(note_id=returned_note.note_id)
+    assert(read_note.note_id) is not None
+    assert(read_note.note_id == returned_note.note_id)
+    assert(read_note.data == data2)

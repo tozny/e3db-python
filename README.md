@@ -665,6 +665,47 @@ for record in client.query(record=[record_type]):
 
 In this example, the `e3db.Client.query` method returns an iterator that contains each record that matches the query.
 
+## Notes
+
+Notes provide a mechanism to transfer or save data encrypted for a single specified set of cryptographic keys. These keys may or may not belong to another client in the TozStore system. This is a one way transfer. The writer of a note can not read it. The reader of the note can read it, but can not update or delete it. The writer and reader keys on a note can be the same.
+
+At this time Notes are partially implemented in this SDK. You can not delete or update a note at this time. You can not read by note name or send an anonymous note.
+
+```python
+import e3db
+from uuid import uuid4
+
+# Load default config in ~/.tozny/e3db.json
+conf = e3db.Config.load()
+
+# Now create a client using that configuration.
+client = e3db.Client(conf)
+
+# Create Note Options object - must have a unique id_string
+note_options = NoteOptions(
+    note_writer_client_id=client.client_id,
+    max_views=1, # use -1 to save for an indefinite number of reads
+    id_string=f"globally-unique-note-name-{uuid4()}",
+    expiration=expirationDate,
+    expires=False, 
+    type='',
+    plain={},
+    file_meta={}
+)
+
+data = {'lyrics' : 'What a wonderful world'}
+
+# Write a note to myself, use public encryption and signing keys of the reader here
+written = client.write_note(data, client.encryption_keys.public_key,
+                            client.signing_keys.public_key, note_options)
+
+# The write_note method returns a unique note_id which can be used for lookup
+read_by_id = client.read_note(written.note_id)
+
+# prints out "What a wonderful world"
+print(read_by_id.data['lyrics'])
+```
+
 ## More examples
 
 See [the simple example code](https://github.com/tozny/e3db-python/blob/master/examples/simple.py) for runnable detailed examples.

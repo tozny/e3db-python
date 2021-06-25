@@ -94,6 +94,30 @@ class TestNoteSupport():
 
     self.client1 = e3db.Client(client1_config())
 
+    # Client 2
+    client2_public_key, client2_private_key = e3db.Client.generate_keypair()
+    client2_public_signing_key, client2_private_signing_key = e3db.Client.generate_signing_keypair()
+    client2_name = "client_{0}".format(binascii.hexlify(os.urandom(16)))
+    test_client2 = e3db.Client.register(token, client2_name, client2_public_key, backup=False, api_url=api_url, 
+                                        public_signing_key=client2_public_signing_key,
+                                        private_signing_key=client2_private_signing_key)
+    client2_api_key_id = test_client2.api_key_id
+    client2_api_secret = test_client2.api_secret
+    client2_id = test_client2.client_id
+
+    client2_config = e3db.Config(
+        client2_id,
+        client2_api_key_id,
+        client2_api_secret,
+        client2_public_key,
+        client2_private_key,
+        api_url=api_url,
+        public_signing_key=client2_public_signing_key,
+        private_signing_key=client2_private_signing_key
+    )
+
+    self.client2 = e3db.Client(client2_config())
+
   def test_decrypt_valid_note_succeeds(self):
     '''
     Asserts that a note with the correct decrypted data is returned.
@@ -192,7 +216,7 @@ class TestNoteSupport():
     }
     # Write note from client1 to client1
     returned_note = self.client1.write_note(data1, 
-                                              self.client1.encryption_keys.public_key, 
+                                self.client1.encryption_keys.public_key, 
                                               self.client1.signing_keys.public_key,
                                               note_options)
     assert(type(returned_note) == Note)
@@ -201,7 +225,7 @@ class TestNoteSupport():
     # Assert the data is returned unencrypted
     assert(returned_note.data == data1)
 
-  def test_write_and_read_a_note(self):
+  def test_write_and_read_a_note_one_client(self):
     """Asserts that writing and reading a note returns the original data"""
 
     note_options2 = NoteOptions(
@@ -230,3 +254,31 @@ class TestNoteSupport():
     assert(read_note.note_id == returned_note.note_id)
     assert(read_note.data == data2)
     
+  def test_write_and_read_a_note_two_clients(self):
+    """Asserts that writing and reading a note returns the original data"""
+
+    note_options2 = NoteOptions(
+      note_writer_client_id=self.client1.client_id,
+      max_views=1,
+      id_string=f"globalNoteName-${uuid4()}",
+      expiration='0001-01-01T00:00:00Z',
+      expires=False,
+      type='',
+      plain={},
+      file_meta={}
+    )
+
+    data = {
+      "data" : str(uuid4())
+    }
+    # Write note from client1 to client2
+    returned_note = self.client1.write_note(data, 
+                                              self.client2.encryption_keys.public_key, 
+                                              self.client2.signing_keys.public_key,
+                                              note_options2)
+    assert(returned_note.note_id) is not None
+    # Read the note from the server
+    read_note = self.client2.read_note(note_id=returned_note.note_id)
+    assert(read_note.note_id) is not None
+    assert(read_note.note_id == returned_note.note_id)
+    assert(read_note.data == data)

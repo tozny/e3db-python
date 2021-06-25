@@ -999,7 +999,7 @@ class TestIntegrationClient():
         # If this doesn't throw an exception during instantiation, we loaded
         # the configuration properly
         config_client = e3db.Client(read_client_config())
-        assert(config_client) is not none
+        assert(config_client) is not None
 
     def test_client_signing_keys_optional(self):
         """

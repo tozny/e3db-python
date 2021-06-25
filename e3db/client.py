@@ -1520,11 +1520,8 @@ class Client:
             Decrypted note
         """
         auth_params['note_id'] = note_id
-        return self.__read_note(auth_params, auth_headers)
-
-    def __read_note(self, params: dict, headers: dict) -> Note:
         url = self.__get_url("v2", "storage", "notes")
-        response = requests.get(url=url, auth=self.e3db_tsv1_auth, params=params, headers=headers)
+        response = requests.get(url=url, auth=self.e3db_tsv1_auth, params=auth_params, headers=auth_headers)
         self.__response_check(response)
         note = Note.decode(response.json())
         decrypted_note = self.decrypt_note(note, self.encryption_keys.private_key)

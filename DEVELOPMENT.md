@@ -6,7 +6,7 @@
 
 Create a [PyPi API token](https://pypi.org/help/#apitoken)
 
-Install twine 
+Install twine
 
 ```
 pip3 install twine
@@ -37,6 +37,17 @@ Upload to pypi
 ```
 twine upload dist/*
 ```
+
+
+
+Tag release in Github
+
+```
+git tag -a 2.2.0 -m "Release support for reading and writing basic notes."
+git push origin 2.2.0
+```
+
+
 
 Verify you can download the newly published version
 

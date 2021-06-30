@@ -7,7 +7,7 @@ import nacl.hash
 import nacl.encoding
 
 BLAKE2B_HASHER = nacl.hash.blake2b
-SIGNATURE_VERSION = 'e7737e7c-1637-511e-8bab-93c4f3e26fd9'  
+SIGNATURE_VERSION = 'e7737e7c-1637-511e-8bab-93c4f3e26fd9'
 
 class BaseCrypto:
     @classmethod

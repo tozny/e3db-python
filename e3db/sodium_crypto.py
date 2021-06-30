@@ -1,3 +1,5 @@
+from e3db.types.signing_key_pair import SigningKeyPair
+from e3db.types.encyption_key_pair import EncryptionKeyPair
 from .base_crypto import BaseCrypto
 import nacl.utils
 import nacl.secret
@@ -15,6 +17,7 @@ TAG_FINAL = nacl.bindings.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 TAG_MESSAGE = nacl.bindings.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 ABYTES = nacl.bindings.crypto_secretstream_xchacha20poly1305_ABYTES
 FILE_VERSION = 3
+DEFAULT_KDF_ITERATIONS = 10000
 
 
 class SodiumCrypto(BaseCrypto):
@@ -388,3 +391,57 @@ class SodiumCrypto(BaseCrypto):
         encrypted_byte_strings = (edk.ciphertext, edk.nonce, ef.ciphertext, ef.nonce)
         encrypted_strings = map(lambda x: self.base64encode(x).decode('utf-8'), encrypted_byte_strings)
         return ".".join(encrypted_strings)
+
+    @classmethod
+    def derive_crypto_keypair(self, seed: bytes, salt: bytes, iterations: int = DEFAULT_KDF_ITERATIONS):
+        """
+        Derive a Curve25519 keypair from a password and a random salt
+
+        Parameters
+        ----------
+        seed : byte string
+            User-specified derivation seed (byte string) #password
+        salt : byte string
+            User-specified salt (should be random)
+        iterations : int
+            Option number of hash iterations to create the seed.
+            Default is 10,000
+
+        Returns
+        -------
+        EncryptionKeyPair
+            Object containing base64 encoded publicKey and privateKey encryption strings
+        """
+        # seed keylength 32 bytes
+        stretch_seed = hashlib.pbkdf2_hmac('sha512', seed, salt, iterations, nacl.bindings.crypto_box_SEEDBYTES)
+        
+        # deterministically generate keypair using eliptic curve 25519
+        key_pair_bytes = nacl.bindings.crypto_box_seed_keypair(stretch_seed)
+        public_key, private_key = map(lambda x: self.base64encode(x).decode('utf-8'), key_pair_bytes)
+        return EncryptionKeyPair(public_key, private_key)
+
+    @classmethod
+    def derive_signing_keypair(self, seed: bytes, salt: bytes, iterations: int = DEFAULT_KDF_ITERATIONS):
+        """
+        Derive an Ed25519 keypair from a password and a random salt
+    
+        Parameters
+        ----------
+        seed : byte string
+            User-specified derivation seed
+        salt : byte string
+            User-specified salt (should be random)
+        iterations : int
+            Option number of hash iterations to create the seed. Default is 10,000
+    
+        Returns
+        -------
+        SigningKeyPair 
+            Object containing base64 encoded publicKey and privateKey signing strings
+        """
+        # seed keylength 32 bytes
+        stretch_seed = hashlib.pbkdf2_hmac('sha512', seed, salt, iterations, nacl.bindings.crypto_sign_SEEDBYTES)
+        # deterministically generate keypair using eliptic curve 25519
+        key_pair_bytes = nacl.bindings.crypto_sign_seed_keypair(stretch_seed)
+        public_key, private_key = map(lambda x: self.base64encode(x).decode('utf-8'), key_pair_bytes)
+        return SigningKeyPair(public_key, private_key)

@@ -61,8 +61,8 @@ class Client:
         self.signing_keys = SigningKeyPair(self.public_signing_key, self.private_signing_key)
         self.encryption_keys = EncryptionKeyPair(self.public_key, self.private_key)
 
-    @classmethod
-    def __response_check(self, response):
+    @staticmethod
+    def __response_check(response):
         """
         Raises errors based on response HTTP status code.
 
@@ -1491,17 +1491,56 @@ class Client:
         """
  
         url = self.__get_url("v2", "storage", "notes")
-        encrypted_note = self.create_encrypted_note(data, recipient_encryption_key, recipient_signing_key, self.encryption_keys, self.signing_keys, options)
-        response = requests.post(url, json=encrypted_note.to_json(), auth=self.e3db_tsv1_auth, params=options.to_json())
-        self.__response_check(response)
+        return Client.write_anonymous_note(data, recipient_encryption_key, recipient_signing_key, self.encryption_keys, self.signing_keys, options, self.api_url) 
+
+    @staticmethod
+    def write_anonymous_note(data: dict,
+                            recipient_encryption_key: str,
+                            recipient_signing_key: str,
+                            encryption_key_pair: EncryptionKeyPair,
+                            signing_key_pair: SigningKeyPair,
+                            options: NoteOptions,
+                            api_url: str = DEFAULT_API_URL):
+        """ 
+        A static method to create a note without an instatiated client
+        The Client class methods to write notes are a convenient wrapper on this method to pass
+        the clients credentials automatically.
+
+        Parameters
+        ----------
+        data : dict 
+
+
+        recipient_encryption_key : str
+
+
+        recipient_signing_key : str
+
+
+        options : types.NoteOptions
+      
+        Returns
+        -------
+        e3db.Note
+            Decrypted E3DB note
+        """
+        url = f"{api_url}/v2/storage/notes"
+        encrypted_note = Client.create_encrypted_note(data, recipient_encryption_key, recipient_signing_key, encryption_key_pair, signing_key_pair, options)
+        auth = E3DBTSV1Auth(signing_key_pair.private_key, options.note_writer_client_id)
+        response = requests.post(url, json=encrypted_note.to_json(), auth=auth)
+        Client.__response_check(response)
         response_note = Note.decode(response.json())
+        
         # reattach unencrypted data for user convenience
         response_note.data = data
-        return response_note
+        return response_note 
+
 
     def read_note(self, note_id, auth_params={}, auth_headers={}) -> Note:
         """
-        Public method to read a note by note_id.
+        Public method to read a note by note_id. This is a wrapper for the 
+        static read_anonymous_note_by_id class to make is easier for a client to read
+        a note without looking up their keys. 
 
         Parameters
         ----------
@@ -1519,16 +1558,147 @@ class Client:
         e3db.Note
             Decrypted note
         """
+        return Client.read_anonymous_note_by_id(note_id,
+                                                self.encryption_keys.private_key,
+                                                self.signing_keys.private_key,
+                                                auth_params,
+                                                auth_headers,
+                                                self.api_url,
+                                                self.client_id)
+
+
+    @staticmethod
+    def read_anonymous_note_by_id(note_id: str,
+                                    private_encryption_key: str,
+                                    private_signing_key: str,
+                                    auth_params: dict={},
+                                    auth_headers: dict={},
+                                    api_url: str=DEFAULT_API_URL,
+                                    client_id: str="") -> Note:
+        """
+        Anonymously read a note by Id
+        
+        Parameters
+        ----------
+        note_id : str
+            UUID assigned by Tozstore, used to identify a note.
+
+        private_encryption_key : str
+
+        private_signing_key : str
+
+        auth_params : dict
+            Extra request parameters for EACP authorizations. Optional.
+
+        auth_headers : dict
+            Extra request headers for EACP authorizations. Optional
+
+        api_url: str
+            Defaults to "https://api.e3db.com"
+
+        client_id: str
+            Defaults to the empty string.
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note        
+        """
+
         auth_params['note_id'] = note_id
-        url = self.__get_url("v2", "storage", "notes")
-        response = requests.get(url=url, auth=self.e3db_tsv1_auth, params=auth_params, headers=auth_headers)
-        self.__response_check(response)
+        url = f"{api_url}/v2/storage/notes"
+
+        auth = E3DBTSV1Auth(private_signing_key, client_id)
+        response = requests.get(url=url, auth=auth, params=auth_params, headers=auth_headers)
+        Client.__response_check(response)
         note = Note.decode(response.json())
-        decrypted_note = self.decrypt_note(note, self.encryption_keys.private_key)
+        decrypted_note = Client.decrypt_note(note, private_encryption_key)
+        return decrypted_note
+
+    def read_note_by_name(self, name, auth_params={}, auth_headers={}) -> Note:
+        """
+        Public method to read a note by name. This is a wrapper for the 
+        static read_anonymous_note_by_name class to make is easier for a client to read
+        a note without looking up their keys. 
+
+        Parameters
+        ----------
+        note_id : str
+            UUID assigned by Tozstore, used to identify a note.
+
+        auth_params : dict
+            Extra request parameters for EACP authorizations. Optional.
+
+        auth_headers : dict
+            Extra request headers for EACP authorizations. Optional
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note
+        """
+        return Client.read_anonymous_note_by_name(name,
+                                                self.encryption_keys.private_key,
+                                                self.signing_keys.private_key,
+                                                auth_params,
+                                                auth_headers,
+                                                self.api_url,
+                                                self.client_id) 
+
+    @staticmethod
+    def read_anonymous_note_by_name(name: str,
+                                    private_encryption_key: str,
+                                    private_signing_key: str,
+                                    auth_params: dict={},
+                                    auth_headers: dict={},
+                                    api_url: str=DEFAULT_API_URL,
+                                    client_id: str="") -> Note:
+        """
+        Anonymously read a note by name. In the NoteOptions class the note name is
+        somewhat confusingly labled id_string, which can easily be confused with note_id.
+        id_string is a globally unique string generated by the note writer. note_id is a
+        UUID assigned by the e3db storage service.
+
+        Parameters
+        ----------
+        name : str
+            Globally unique string assigned at time of note creation in the 
+            note_options.id_string field, used to identify a note.
+
+        private_encryption_key : str
+
+        private_signing_key : str
+
+        auth_params : dict
+            Extra request parameters for EACP authorizations. Optional.
+
+        auth_headers : dict
+            Extra request headers for EACP authorizations. Optional
+
+        api_url: str
+            Defaults to "https://api.e3db.com"
+
+        client_id: str
+            Defaults to the empty string.
+
+        Returns
+        -------
+        e3db.Note
+            Decrypted note 
+        """
+
+        auth_params['id_string'] = name
+        url = f"{api_url}/v2/storage/notes"
+
+        auth = E3DBTSV1Auth(private_signing_key, client_id)
+        response = requests.get(url=url, auth=auth, params=auth_params, headers=auth_headers)
+        Client.__response_check(response)
+        note = Note.decode(response.json())
+        decrypted_note = Client.decrypt_note(note, private_encryption_key)
         return decrypted_note
 
     @classmethod
-    def decrypt_note(self, note: Note, private_key: str, verify_signature=True) -> Note:
+    def decrypt_note(cls, note: Note, private_key: str, verify_signature=True) -> Note:
         """
         Decrypt and validate a note response from TozStore using the proper keys.
 
@@ -1556,14 +1726,14 @@ class Client:
         public_signing_key = note.get_writer_signing_key()
         # decrypt the eak to get ak
         ak = Crypto.decrypt_note_eak(private_key, eak, public_key)
-        decrypted_note = self.decrypt_note_with_key(note, ak, public_signing_key, verify_signature)
+        decrypted_note = cls.decrypt_note_with_key(note, ak, public_signing_key, verify_signature)
         # if the note isn't signed, throw an error
         if verify_signature & (decrypted_note.get_signature() == ''):
             raise NoteValidationError('Decrypted note does not include a signature.')
         return decrypted_note
 
     @classmethod
-    def decrypt_note_with_key(self, encrypted_note, ak, verifying_key, verify_signature=True) -> Note:
+    def decrypt_note_with_key(cls, encrypted_note, ak, verifying_key, verify_signature=True) -> Note:
         """
         Decrypt and validate every field within a note.
 
@@ -1590,7 +1760,7 @@ class Client:
         """
 
         # verify the signature from the note
-        verified_salt = self.verify_field('signature', encrypted_note.get_signature(), verifying_key, verify_signature=verify_signature)
+        verified_salt = cls.verify_field('signature', encrypted_note.get_signature(), verifying_key, verify_signature=verify_signature)
         if verified_salt == encrypted_note.get_signature():
             signature_salt = None
         else:
@@ -1601,13 +1771,13 @@ class Client:
         # decrypt and verify the signature of each field in data
         for key in encrypted_note.data:
             raw_field = Crypto.decrypt_field(encrypted_note.data[key], ak)
-            decrypted_data[key] = self.verify_field(key, raw_field, verifying_key, signature_salt, verify_signature=verify_signature)
+            decrypted_data[key] = cls.verify_field(key, raw_field, verifying_key, signature_salt, verify_signature=verify_signature)
         # replace the data in the new note with the decrypted data
         decrypted_note.data = decrypted_data
         return decrypted_note
 
     @classmethod
-    def verify_field(self, key, value, verifying_key, salt = None, verify_signature=True):
+    def verify_field(cls, key, value, verifying_key, salt = None, verify_signature=True):
         """
         Verify the key, value & the salt, if it's provided using the verifying key
 
@@ -1657,16 +1827,15 @@ class Client:
             raise NoteValidationError("Message does not match the expected. Received: {} Expected: {}".format(valid_message, message))
         return plaintext
 
-    @classmethod
-    def create_encrypted_note(self,
-                    data,
-                    recipient_public_key,
-                    recipient_public_signing_key,
-                    writer_key_pair: EncryptionKeyPair,
-                    writer_signing_key_pair: SigningKeyPair,
-                    note_options: NoteOptions) -> Note:
+    @staticmethod
+    def create_encrypted_note(data,
+                                recipient_public_key,
+                                recipient_public_signing_key,
+                                writer_key_pair: EncryptionKeyPair,
+                                writer_signing_key_pair: SigningKeyPair,
+                                note_options: NoteOptions) -> Note:
         """ 
-        Creates a signed and encrypted note.
+        Static method that creates a signed and encrypted note.
 
         Parameters
         ----------

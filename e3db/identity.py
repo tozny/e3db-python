@@ -9,7 +9,10 @@ else:
 
 
 class Identity:
-    """This is a placeholder class pending further development of Identity Login"""
+    """
+    This is a placeholder class pending further development of Identity Login
+    TODO:  Contains a realm, have a client, have all of its OAuth tokens
+    """
 
 
     @staticmethod

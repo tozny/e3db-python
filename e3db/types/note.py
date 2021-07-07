@@ -60,6 +60,7 @@ class Note():
         note_keys_decoded = self.__note_keys.to_json()
         note_options_decoded = self.__note_options.to_json()
 
+        # Note: Storage Service cannot parse empty string, the zero value for client_id must be None
         to_serialize = {
             'data': self.data,
             'signature': self.__signature,
@@ -70,7 +71,7 @@ class Note():
             'writer_signing_key': note_keys_decoded['note_writer_signing_key'],
             'writer_encryption_key': note_keys_decoded['note_writer_encryption_key'],
             'encrypted_access_key': note_keys_decoded['encrypted_access_key'],
-            'client_id': str(note_options_decoded['client_id']),
+            'client_id': str(note_options_decoded['note_writer_client_id']) if 'note_writer_client_id' in note_options_decoded else None,
             'type': note_options_decoded['type'],
             'plain': note_options_decoded['plain'],
             'file_meta': note_options_decoded['plain'],
@@ -80,7 +81,6 @@ class Note():
             'eacp': note_options_decoded['eacp'],
             'id_string': note_options_decoded['id_string']
         }
-
         return to_serialize
 
     @staticmethod

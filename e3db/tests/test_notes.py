@@ -1,13 +1,11 @@
-from datetime import datetime, timedelta
 from e3db.types.signing_key_pair import SigningKeyPair
 from e3db.types.encyption_key_pair import EncryptionKeyPair
-from e3db import base_crypto, sodium_crypto
-from e3db.exceptions import NoteValidationError
+from e3db import sodium_crypto
+from e3db.exceptions import NoteValidationError, ConflictError, APIError
 import e3db
-import e3db.types as types
 from e3db.types import Note, NoteKeys, NoteOptions
 import pytest
-from uuid import UUID, uuid4
+from uuid import uuid4
 import binascii
 import os
 
@@ -64,6 +62,18 @@ reader_public_signing_key_A, reader_private_signing_key_A = e3db.Client.generate
 unencrypted_data_A = {
   'secret': 'data' 
 }
+
+def generate_note_options(client_id: str) -> NoteOptions:
+  return NoteOptions(
+      note_writer_client_id=client_id,
+      max_views=3,
+      id_string=f"globalNoteName-${uuid4()}",
+      expiration='0001-01-01T00:00:00Z',
+      expires=False,
+      type='',
+      plain={},
+      file_meta={}
+    )
 
 
 class TestNoteSupport():
@@ -176,16 +186,8 @@ class TestNoteSupport():
   def test_encrypt_valid_note_suceeds(self):
     '''Asserts that a note with the correct encrypted data is returned'''
     
-    note_options_A = NoteOptions(
-      note_writer_client_id=self.client1.client_id,
-      max_views=3,
-      id_string=f"globalNoteName-${uuid4()}",
-      expiration='0001-01-01T00:00:00Z',
-      expires=False,
-      type='',
-      plain={},
-      file_meta={}
-    )
+    note_options_A = generate_note_options(self.client1.client_id)
+
     # NOTE: KEYS ARE BASE64URLENCODED string of bytes
     encrypted_note_A = e3db.Client.create_encrypted_note(unencrypted_data_A, 
                              reader_public_key_A,
@@ -200,17 +202,8 @@ class TestNoteSupport():
   def test_write_note(self):
     """Asserts that the write note method returns a note with a signature, a note_id and unencrypted data"""
 
-    note_options = NoteOptions(
-      note_writer_client_id=self.client1.client_id,
-      max_views=-1,
-      id_string=f"globalNoteName-${uuid4()}",
-      expiration='0001-01-01T00:00:00Z',
-      expires=False,
-      type='',
-      plain={},
-      file_meta={}
-    )
-
+    note_options = generate_note_options(self.client1.client_id)
+    
     data1 = {
       "data" : "WRITE NOTE TEST"
     }
@@ -228,25 +221,16 @@ class TestNoteSupport():
   def test_write_and_read_a_note_one_client(self):
     """Asserts that writing and reading a note returns the original data"""
 
-    note_options2 = NoteOptions(
-      note_writer_client_id=self.client1.client_id,
-      max_views=-1,
-      id_string=f"globalNoteName-${uuid4()}",
-      expiration='0001-01-01T00:00:00Z',
-      expires=False,
-      type='',
-      plain={},
-      file_meta={}
-    )
+    note_options2 = generate_note_options(self.client1.client_id)
 
     data2 = {
       "data" : str(uuid4())
     }
     # Write note from client1 to client1
     returned_note = self.client1.write_note(data2, 
-                                              self.client1.encryption_keys.public_key, 
-                                              self.client1.signing_keys.public_key,
-                                              note_options2)
+                                            self.client1.encryption_keys.public_key, 
+                                            self.client1.signing_keys.public_key,
+                                            note_options2)
     assert(returned_note.note_id) is not None
     # Read the note from the server
     read_note = self.client1.read_note(note_id=returned_note.note_id)
@@ -257,16 +241,7 @@ class TestNoteSupport():
   def test_write_and_read_a_note_two_clients(self):
     """Asserts that writing and reading a note returns the original data"""
 
-    note_options2 = NoteOptions(
-      note_writer_client_id=self.client1.client_id,
-      max_views=1,
-      id_string=f"globalNoteName-${uuid4()}",
-      expiration='0001-01-01T00:00:00Z',
-      expires=False,
-      type='',
-      plain={},
-      file_meta={}
-    )
+    note_options2 = generate_note_options(self.client1.client_id)
 
     data = {
       "data" : str(uuid4())
@@ -282,3 +257,137 @@ class TestNoteSupport():
     assert(read_note.note_id) is not None
     assert(read_note.note_id == returned_note.note_id)
     assert(read_note.data == data)
+
+  def test_write_and_read_a_note_by_name(self):
+    """Asserts that writing and reading a note returns the original data"""
+
+    note_options = generate_note_options(self.client1.client_id)
+
+    data = {
+      "data" : str(uuid4())
+    }
+    # Write note from client1 to client2
+    returned_note = self.client1.write_note(data, 
+                                              self.client2.encryption_keys.public_key, 
+                                              self.client2.signing_keys.public_key,
+                                              note_options)
+    assert(returned_note.note_id) is not None
+    # Read the note from the server using name
+    read_note = self.client2.read_note_by_name(name=note_options.id_string)
+    assert(read_note.note_id) is not None
+    assert(read_note.note_id == returned_note.note_id)
+    assert(read_note.data == data)
+
+  def test_read_a_note_anonymously_by_id(self):
+    """Asserts that writing and reading a note returns the original data"""
+
+    note_options2 = generate_note_options(self.client1.client_id)
+
+    data = {
+      "data" : str(uuid4())
+    }
+    # Write note from client1 to client2
+    returned_note = self.client1.write_note(data, 
+                                              self.client2.encryption_keys.public_key, 
+                                              self.client2.signing_keys.public_key,
+                                              note_options2)
+    assert(returned_note.note_id) is not None
+
+    # Read the note from the server without a client - using the note ID - no client ID
+    read_note = e3db.Client.read_anonymous_note_by_id(returned_note.note_id,
+                                            self.client2.encryption_keys.private_key,
+                                            self.client2.signing_keys.private_key,
+                                            api_url=api_url)
+
+    assert(read_note.note_id) is not None
+    assert(read_note.note_id == returned_note.note_id)
+    assert(read_note.data == data)
+
+  def test_read_a_note_anonymously_by_name(self):
+    """Asserts that writing and reading a note returns the original data"""
+
+    note_options = generate_note_options(self.client1.client_id)
+
+    data = {
+      "data" : str(uuid4())
+    }
+    # Write note from client1 to client2
+    returned_note = self.client1.write_note(data, 
+                                              self.client2.encryption_keys.public_key, 
+                                              self.client2.signing_keys.public_key,
+                                              note_options)
+    assert(returned_note.note_id) is not None
+
+    # note_name is confusingly called id_string in the note options class.  
+    note_name = note_options.id_string
+    # Read the note from the server without a client - using the note ID - no client ID
+    read_note = e3db.Client.read_anonymous_note_by_name(note_name,
+                                            self.client2.encryption_keys.private_key,
+                                            self.client2.signing_keys.private_key,
+                                            api_url=api_url)
+
+    assert(read_note.note_id) is not None
+    assert(read_note.note_id == returned_note.note_id)
+    assert(read_note.data == data)
+
+  def test_write_anonymous_note(self):
+    """Asserts we can write a note anonymously and without an instatiated client"""
+    
+    # No client ID in Note Options
+    note_options = generate_note_options("")
+    
+    data = { "test data" : str(uuid4) }
+
+    returned_note = e3db.Client.write_anonymous_note(data,
+                                                self.client2.encryption_keys.public_key,
+                                                self.client2.signing_keys.public_key,
+                                                self.client1.encryption_keys,
+                                                self.client1.signing_keys,
+                                                note_options,
+                                                api_url)
+    assert(type(returned_note) == Note)
+    assert(returned_note.note_id) is not None
+    assert(returned_note.signature) is not None
+    # Assert the data is returned unencrypted
+    assert(returned_note.data == data)
+
+# TODO: Test error response if no note exists by name or by ID (404)
+  def test_read_note_returns_404_if_note_not_found(self):
+    """Asserts 404 response when note does not exist"""
+    note_options = generate_note_options(self.client1.client_id)
+
+    data = {
+      "data" : str(uuid4())
+    }
+
+    with pytest.raises(APIError) as excinfo:
+      e3db.Client.read_anonymous_note_by_name(note_options.id_string,
+                                            self.client2.encryption_keys.private_key,
+                                            self.client2.signing_keys.private_key,
+                                            api_url=api_url)
+    assert("HTTP 404" in str(excinfo.value))
+
+
+# TODO: Test name collision (409)
+  def test_write_two_notes_with_same_name_returns_409(self):
+    """Asserts naming collision results in 409"""
+    note_options = generate_note_options(self.client1.client_id)
+
+    returned_note = e3db.Client.write_anonymous_note(data,
+                                                  self.client2.encryption_keys.public_key,
+                                                  self.client2.signing_keys.public_key,
+                                                  self.client1.encryption_keys,
+                                                  self.client1.signing_keys,
+                                                  note_options,
+                                                  api_url)
+    assert(type(returned_note) == Note)
+    assert(returned_note.note_id) is not None
+    with pytest.raises(ConflictError) as excinfo:
+      e3db.Client.write_anonymous_note(data,
+                                        self.client2.encryption_keys.public_key,
+                                        self.client2.signing_keys.public_key,
+                                        self.client1.encryption_keys,
+                                        self.client1.signing_keys,
+                                        note_options,
+                                        api_url)
+    assert("HTTP 409" in str(excinfo.value))

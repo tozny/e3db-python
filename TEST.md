@@ -40,7 +40,7 @@ flake8 e3db/
 ## Install dependencies
 Tests for the e3db-python SDK use pytest. This can be installed by running the following:
 ```bash
-pip install pytest pytest-cov
+pip install pytest pytest-cov responses
 ```
 
 ## Setup environment variables

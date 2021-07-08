@@ -167,3 +167,12 @@ def test_nist_public_key_sharing():
     plaintext = alice_box.decrypt(nonce, encrypted, None)
 
     assert(message == plaintext)
+
+def test_generate_pkce_challenge():
+    if crypto_mode() != 'sodium':
+        pytest.skip("Skipping Libsodium-reliant test")
+    verifier, challenge = e3db.Crypto.generate_pkce_challenge()
+    assert(type(verifier) == bytes)
+    assert(len(verifier) == 11 + 32)
+    _, challenge_2 = e3db.Crypto.generate_pkce_challenge()
+    assert(challenge != challenge_2)

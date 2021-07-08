@@ -25,3 +25,7 @@ class CryptoError(Exception):
 class NoteValidationError(Exception):
     def __init__(self, text):
         Exception.__init__(self, "Error during note handling: {0}".format(text))
+
+class UnsupportedAPIResponse(Exception):
+    def __init__(self, text):
+        Exception.__init__(self, "API requested an action that is not currently supported in this SDK: {0}".format(text))

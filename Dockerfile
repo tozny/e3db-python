@@ -1,6 +1,6 @@
 FROM python:3.9-alpine
 
-RUN apk add --no-cache gcc cargo musl-dev libffi-dev make openssl-dev
+RUN apk add --no-cache gcc cargo musl-dev libffi-dev make cmake openssl-dev
 RUN mkdir -p /src
 WORKDIR /src/
 

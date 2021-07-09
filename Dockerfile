@@ -5,7 +5,7 @@ RUN mkdir -p /src
 WORKDIR /src/
 
 RUN pip install --upgrade pip
-RUN pip install --no-use-pep517 PyNaCl
+RUN pip install --no-use-pep517 discord.py[voice]
 RUN pip install -U pytest pytest-cov sphinx flake8
 
 COPY e3db/ /src/e3db/

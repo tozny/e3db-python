@@ -1,10 +1,12 @@
 import base64
 import copy
 from hashlib import blake2b
+import hashlib
 from os import system
 from uuid import uuid4
 import nacl.hash
 import nacl.encoding
+from typing import Tuple
 
 BLAKE2B_HASHER = nacl.hash.blake2b
 SIGNATURE_VERSION = 'e7737e7c-1637-511e-8bab-93c4f3e26fd9'
@@ -65,6 +67,10 @@ class BaseCrypto:
 
     @classmethod
     def random_nonce(self):
+        pass
+
+    @classmethod
+    def random_verifier(self) -> bytes:
         pass
 
     @classmethod
@@ -255,3 +261,10 @@ class BaseCrypto:
         signature = self.base64encode(raw_signature).decode('utf-8')
         length = len(signature)
         return f'{SIGNATURE_VERSION};{salt};{length};{signature}{value}'
+
+    @classmethod
+    def generate_pkce_challenge(self) -> Tuple[bytes, bytes]:
+        """ returns a tuple of the verifier and challenge"""
+        verifier = self.base64encode(self.random_verifier())
+        hash = hashlib.sha256(verifier).digest()
+        return verifier, self.base64encode(hash)

@@ -416,6 +416,20 @@ class Note():
         """
         return self.__note_options.expiration
 
+    def get_id_string(self) -> str:
+        """
+        Get the name of the note
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        id_string : str
+        """
+        return self.__note_options.id_string
+
     def is_expired(self) -> bool:
         """
         Checks whether the note has expired.

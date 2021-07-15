@@ -18,6 +18,7 @@ TAG_MESSAGE = nacl.bindings.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 ABYTES = nacl.bindings.crypto_secretstream_xchacha20poly1305_ABYTES
 FILE_VERSION = 3
 DEFAULT_KDF_ITERATIONS = 10000
+PKCE_VERIFIER_LENGTH = 32
 
 
 class SodiumCrypto(BaseCrypto):
@@ -73,6 +74,10 @@ class SodiumCrypto(BaseCrypto):
     @classmethod
     def random_nonce(self):
         return nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
+
+    @classmethod
+    def random_verifier(self) -> bytes:
+        return nacl.utils.random(PKCE_VERIFIER_LENGTH)
 
     @classmethod
     def generate_keypair(self):

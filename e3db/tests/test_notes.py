@@ -4,6 +4,8 @@ from e3db import sodium_crypto
 from e3db.exceptions import NoteValidationError, ConflictError, APIError
 import e3db
 from e3db.types import Note, NoteKeys, NoteOptions
+from e3db.identity import Identity
+from e3db.client import Client
 import pytest
 from uuid import uuid4
 import binascii
@@ -320,7 +322,7 @@ class TestNoteSupport():
 
     # note_name is confusingly called id_string in the note options class.  
     note_name = note_options.id_string
-    # Read the note from the server without a client - using the note ID - no client ID
+    # Read the note from the server without a client - using the note name - no client ID
     read_note = e3db.Client.read_anonymous_note_by_name(note_name,
                                             self.client2.encryption_keys.private_key,
                                             self.client2.signing_keys.private_key,
@@ -328,6 +330,8 @@ class TestNoteSupport():
 
     assert(read_note.note_id) is not None
     assert(read_note.note_id == returned_note.note_id)
+    assert(returned_note.get_id_string() == note_options.id_string)
+    assert(read_note.get_id_string() == note_options.id_string)
     assert(read_note.data == data)
 
   def test_write_anonymous_note(self):
@@ -348,10 +352,11 @@ class TestNoteSupport():
     assert(type(returned_note) == Note)
     assert(returned_note.note_id) is not None
     assert(returned_note.signature) is not None
+    assert returned_note.get_id_string() == ''
     # Assert the data is returned unencrypted
     assert(returned_note.data == data)
 
-# TODO: Test error response if no note exists by name or by ID (404)
+  # Test error response if no note exists by name or by ID (404)
   def test_read_note_returns_404_if_note_not_found(self):
     """Asserts 404 response when note does not exist"""
     note_options = generate_note_options(self.client1.client_id)
@@ -368,7 +373,7 @@ class TestNoteSupport():
     assert("HTTP 404" in str(excinfo.value))
 
 
-# TODO: Test name collision (409)
+  # Test name collision (409)
   def test_write_two_notes_with_same_name_returns_409(self):
     """Asserts naming collision results in 409"""
     note_options = generate_note_options(self.client1.client_id)

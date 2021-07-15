@@ -1530,7 +1530,6 @@ class Client:
         response = requests.post(url, json=encrypted_note.to_json(), auth=auth)
         Client.__response_check(response)
         response_note = Note.decode(response.json())
-        
         # reattach unencrypted data for user convenience
         response_note.data = data
         return response_note 

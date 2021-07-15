@@ -13,7 +13,7 @@ class E3DBTSV1Auth(AuthBase):
     AUTHORIZATION_HEADER = "Authorization"
     SECRET_KEY_BYTES = 32
 
-    def __init__(self, private_signing_key: str, client_id: str):
+    def __init__(self, private_signing_key: str, client_id: str=""):
         self.private_signing_key = private_signing_key
         self.client_id = client_id
 

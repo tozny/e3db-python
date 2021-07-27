@@ -706,6 +706,20 @@ read_by_id = client.read_note(written.note_id)
 print(read_by_id.data['lyrics'])
 ```
 
+## Identity
+Currently the Python SDK has limited implementation of the Tozny Identity primatives. The functionality exists to login an existing Identity created in the Tozny Identity console. Login from the Python SDK can be performed by calling the static identity_login method in the Identity class. The method requires the user_name, password, realm name and app name. An instance of the Identity class is returned, which includes the OAuth tokens necessary to interact with the Tozny Identity service along with a Storage Client. 
+
+Currently the Python SDK does not support Multi Factor Authentication (MFA) or Brokered login. 
+
+The parameter app_name can be the default account or a valid TozID application that supports API style login.
+
+```python
+from e3db.identity import *
+
+admin_identity = identity_login('my_user_name', 'mypasswordphrase', 'realm_name', 'account')
+
+```
+
 ## More examples
 
 See [the simple example code](https://github.com/tozny/e3db-python/blob/master/examples/simple.py) for runnable detailed examples.

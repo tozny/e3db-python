@@ -10,29 +10,57 @@ from typing import Tuple
 from e3db.tsv1_auth import E3DBTSV1Auth
 import requests
 import json
-from .exceptions import APIError, LookupError, CryptoError, QueryError, ConflictError, NoteValidationError, UnsupportedAPIResponse
+from .exceptions import APIError, UnsupportedAPIResponse
 
 TOZID_LOGIN_HEADER = "X-TOZID-LOGIN-TOKEN"
 DEFAULT_API_URL = "https://api.e3db.com"
 
 class Identity:
     """
-    This is a placeholder class pending further development of Identity Login
-    TODO WASH-902:  Contains a realm_info object, a storage client, and all of its OAuth tokens
+    Identity represents a connection to the Tozny Identity service on behalf of a realm.
+ 
+    Before registration, login, or other client creation methods are possible, the configuration
+    for a Tozny Identity realm is needed. Identity holds this configuration and provides methods
+    for all pre-client operations. In other words, the methods this object make identity clients
+    for users that belong to the configured realm. It helps authenticate users.
+    
     """
 
-    def __init__(self):
+    def __init__(self, config, client_config, agent):
         """
-        TODO
+        Initialize the Identity class. This constructor should not be called directly.
+        Please use the identity_login method instead
+
+        Parameters
+        ----------
+        config : dict
+            dictionary with config elements unique to this Identity. Config must include values for the following:
+            realm_name, realm_domain, app_name, api_url, and user_id
+        
+        client_config : dict
+            A dict that holds the configuration for a storage client. 
+
+        agent : dict
+            A dict that holds OAuth values neccessary for a logged in Identity: access_token, token_type,
+            refresh_token, expiry, and refresh_expiry
         """
+        self.realm_name = config['realm_name']
+        self.realm_domain = config['realm_domain']
+        self.app_name = config['app_name']
+        self.api_url = config['api_url']
+        self.user_id = config['user_id']
+        self.storage_client = Client(client_config)
+        self.access_token = agent['access_token']
+        self.token_type = agent['token_type']
+        self.refresh_token = agent['refresh_token']
+        self.expiry = agent['expiry']
+        self.refresh_expiry = agent['refresh_expiry']
 
     @staticmethod
-    def identity_login(user_name: str, password: str, realm_name, app_name: str, api_url: str=DEFAULT_API_URL) -> dict:
+    def identity_login(user_name: str, password: str, realm_name: str, app_name: str, api_url: str=DEFAULT_API_URL) -> 'Identity':
         """
         A factory method to login an existing user, get the stored identity credentials for a user,
         create a client for them, and return an Identity object.
-
-        TODO WASH-902: Currently returns a config object - need to create an Id_Client class to create with the config
 
         The username and password are used to derive encryption keys used to fetch a pre-stored
         note which contains the users identity credentials.
@@ -57,8 +85,8 @@ class Identity:
 
         Returns
         -------
-        dict
-            config object for creating an identity client
+        Identity
+            an instance of the Identity Class
         """
         realm_info = get_public_realm_info(realm_name, api_url)
         realm_name = realm_info['name']
@@ -84,11 +112,9 @@ class Identity:
                                                     auth_headers={ TOZID_LOGIN_HEADER : access_token },
                                                     api_url=api_url)
 
-        return {
-            "config": json.loads(stored_creds.data['config']),
-            "client_config": json.loads(stored_creds.data['storage']),
-            "agent": credentials
-        }
+        return Identity(json.loads(stored_creds.data['config']),
+                        json.loads(stored_creds.data['storage']),
+                        credentials)
 
     @staticmethod
     def derive_note_creds(user_name: str, password: str, realm_name: str) -> Tuple[str, EncryptionKeyPair, SigningKeyPair]:

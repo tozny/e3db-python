@@ -185,9 +185,39 @@ def test_identity_login_mocked():
     responses.add(responses.GET, f'{api_url}/v2/storage/notes?id_string={note_name}',
                     json=encrypted_note, status=200)
 
-    config = Identity.identity_login(user_name, password, realm_name, app_name, api_url)
-    storage_client = Client(config['client_config'])
-    assert type(config) == dict
-    assert type(storage_client) == Client
+    my_identity = Identity.identity_login(user_name, password, realm_name, app_name, api_url)
+    assert type(my_identity) == Identity
+    assert type(my_identity.storage_client) == Client
+
     assert len(responses.calls) == 5
+
+def test_init_identity():
+    config = {
+        "realm_name":"mushroomkingdom",
+        "realm_domain":"mushroomkingdom",
+        "app_name":"account",
+        "api_url":"https://api.e3db.com",
+        "user_id":2,
+        "broker_target_url":"http://localhost:8081/mushroomkingdom/recover"}
     
+    storage = {
+        "version":2,
+        "api_url":"http://platform.local.tozny.com:8000",
+        "api_key_id":"11fb390ed3e0e0283740617f6d5a01d1e9359bf3d353436a4c4f37806871c018",
+        "api_secret":"38e5088e0ddc8091bc70eb47026c5b495ba77f5afe145324c6b966ab21bd940b",
+        "client_id":"af54af02-293f-4c71-8415-d96c892550ea",
+        "public_key":"PjHL3VRAZNlFoCJO2ft4cwtvz2j45yOlhp6nivxq328",
+        "private_key":"uOx2S3wciLa328Bt5B0LwabjkJz8Z--WiAngAt4QEpA",
+        "public_signing_key":"SrFOxDoogO-fUvIN2dfb7r5pqhbZrYZvQddZb5qU3m8",
+        "private_signing_key":"mvulcHTMuvZkuAcRVOpVUQMikMY6gQxy7fG4_ORYvtJKsU7EOiiA759S8g3Z19vuvmmqFtmthm9B11lvmpTebw"}
+
+    agent = {
+        'access_token': 'averylongtoken',
+        'token_type': 'bearer', 'refresh_token': 'moretoken',
+        'expiry': '2021-07-14T01:51:06.3415312Z', 
+        'refresh_expiry': '2021-07-15T00:51:06.3415709Z'}
+    
+    my_identity = Identity(config, storage, agent)
+    assert type(my_identity) == Identity
+    assert type(my_identity.storage_client) == Client
+    assert my_identity.realm_name == config['realm_name']
